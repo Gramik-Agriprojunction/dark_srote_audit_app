@@ -46,7 +46,11 @@ class ProductVariantModel {
     required this.auditQty,
     this.auditComment,
     this.auditUpdatedAt,
+    this.damageQty = 0,
+    this.damageComment,
+    this.systemOnHandQty = 0,
     this.currentStock = 0,
+    this.availableStock = 0,
   });
 
   final int id;
@@ -57,12 +61,19 @@ class ProductVariantModel {
   final int auditQty;
   final String? auditComment;
   final DateTime? auditUpdatedAt;
+  final int damageQty;
+  final String? damageComment;
+  final int systemOnHandQty;
   final int currentStock;
+  final int availableStock;
 
   ProductVariantModel copyWith({
     int? auditQty,
     String? auditComment,
     DateTime? auditUpdatedAt,
+    int? damageQty,
+    String? damageComment,
+    int? systemOnHandQty,
   }) {
     return ProductVariantModel(
       id: id,
@@ -73,7 +84,11 @@ class ProductVariantModel {
       auditQty: auditQty ?? this.auditQty,
       auditComment: auditComment ?? this.auditComment,
       auditUpdatedAt: auditUpdatedAt ?? this.auditUpdatedAt,
+      damageQty: damageQty ?? this.damageQty,
+      damageComment: damageComment ?? this.damageComment,
+      systemOnHandQty: systemOnHandQty ?? this.systemOnHandQty,
       currentStock: currentStock,
+      availableStock: availableStock,
     );
   }
 
@@ -100,9 +115,22 @@ class ProductVariantModel {
           : int.tryParse('${json['auditQty']}') ?? 0,
       auditComment: json['auditComment']?.toString(),
       auditUpdatedAt: updatedAt,
+      damageQty: json['damageQty'] is int
+          ? json['damageQty'] as int
+          : int.tryParse('${json['damageQty']}') ?? 0,
+      damageComment: json['damageComment']?.toString(),
+      systemOnHandQty: json['systemOnHandQty'] is int
+          ? json['systemOnHandQty'] as int
+          : int.tryParse('${json['systemOnHandQty']}') ?? 0,
       currentStock: json['currentStock'] is int
           ? json['currentStock'] as int
           : int.tryParse('${json['currentStock']}') ?? 0,
+      availableStock: json['availableStock'] is int
+          ? json['availableStock'] as int
+          : int.tryParse('${json['availableStock']}') ??
+                (json['currentStock'] is int
+                    ? json['currentStock'] as int
+                    : int.tryParse('${json['currentStock']}') ?? 0),
     );
   }
 }

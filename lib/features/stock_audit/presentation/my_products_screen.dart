@@ -64,8 +64,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     final rows = state.pagedRows;
     final formatter = NumberFormat.decimalPattern('en_IN');
 
-    final missing = state.filteredRows.where((r) => r.difference > 0).length;
-    final extra = state.filteredRows.where((r) => r.difference < 0).length;
+    final short = state.filteredRows.where((r) => r.difference < 0).length;
+    final excess = state.filteredRows.where((r) => r.difference > 0).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -116,7 +116,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                       Expanded(
                         child: _StatTile(
                           label: 'Short',
-                          value: '$missing',
+                          value: '$short',
                           icon: Icons.trending_down_rounded,
                           color: AppColors.outStock,
                         ),
@@ -124,8 +124,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: _StatTile(
-                          label: 'Extra',
-                          value: '$extra',
+                          label: 'Excess',
+                          value: '$excess',
                           icon: Icons.trending_up_rounded,
                           color: AppColors.warning,
                         ),
@@ -134,8 +134,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                   ),
                   const SizedBox(height: 20),
                   const SectionHeading(
-                    title: 'Inventory Plot Run',
-                    subtitle: 'Sirf wahi SKU jinme difference ≠ 0 hai',
+                    title: 'SKU Reconciliation',
+                    subtitle:
+                        'CRM full report jaisa — sirf difference ≠ 0 wale SKU',
                   ),
                   const SizedBox(height: 14),
                   AppSearchField(
@@ -300,8 +301,12 @@ class _MismatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isShort = row.difference > 0;
-    final diffColor = isShort ? AppColors.outStock : AppColors.warning;
+    final isExcess = row.difference > 0;
+    final diffColor = isExcess ? AppColors.primaryDark : AppColors.outStock;
+    final damageColor = row.damageStock > 0
+        ? AppColors.outStock
+        : AppColors.textPrimary;
+    final comment = (row.comment ?? '').trim();
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: 10),
@@ -355,11 +360,10 @@ class _MismatchCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               AppChip(
-                label:
-                    '${row.difference > 0 ? '-' : '+'}${formatter.format(row.difference.abs())}',
-                icon: isShort
-                    ? Icons.arrow_downward_rounded
-                    : Icons.arrow_upward_rounded,
+                label: formatter.format(row.difference),
+                icon: isExcess
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded,
                 color: diffColor,
               ),
             ],
@@ -371,27 +375,78 @@ class _MismatchCard extends StatelessWidget {
               color: AppColors.fieldBg,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _MetricCell(
-                    label: 'System',
-                    value: formatter.format(row.systemStock),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetricCell(
+                        label: 'System Stock',
+                        value: formatter.format(row.systemStock),
+                      ),
+                    ),
+                    const _MetricDivider(),
+                    Expanded(
+                      child: _MetricCell(
+                        label: 'Total Physical',
+                        value: formatter.format(row.totalPhysicalStock),
+                      ),
+                    ),
+                  ],
                 ),
-                const _MetricDivider(),
-                Expanded(
-                  child: _MetricCell(
-                    label: 'Physical',
-                    value: formatter.format(row.physicalStock),
-                  ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MetricCell(
+                        label: 'Physical',
+                        value: formatter.format(row.physicalStock),
+                      ),
+                    ),
+                    const _MetricDivider(),
+                    Expanded(
+                      child: _MetricCell(
+                        label: 'Damage',
+                        value: formatter.format(row.damageStock),
+                        valueColor: damageColor,
+                      ),
+                    ),
+                  ],
                 ),
-                const _MetricDivider(),
-                Expanded(
-                  child: _MetricCell(
-                    label: 'Difference',
-                    value: formatter.format(row.difference),
-                    valueColor: diffColor,
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _MetricCell(
+                          label: 'Comment',
+                          value: comment.isEmpty ? '—' : comment,
+                          valueColor: comment.isEmpty
+                              ? AppColors.textMuted
+                              : AppColors.textPrimary,
+                          valueSize: 12.5,
+                          alignStart: true,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 88,
+                        child: _MetricCell(
+                          label: 'Difference',
+                          value: formatter.format(row.difference),
+                          valueColor: diffColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -442,15 +497,22 @@ class _MetricCell extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueColor,
+    this.valueSize = 15,
+    this.alignStart = false,
   });
 
   final String label;
   final String value;
   final Color? valueColor;
+  final double valueSize;
+  final bool alignStart;
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: alignStart
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
       children: [
         Text(
           label.toUpperCase(),
@@ -464,8 +526,10 @@ class _MetricCell extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           value,
+          maxLines: alignStart ? 2 : 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: valueSize,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
             color: valueColor ?? AppColors.textPrimary,

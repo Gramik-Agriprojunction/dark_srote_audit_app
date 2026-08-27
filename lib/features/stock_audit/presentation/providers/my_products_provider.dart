@@ -33,7 +33,8 @@ class MyProductsState {
       return row.productName.toLowerCase().contains(term) ||
           (row.sku ?? '').toLowerCase().contains(term) ||
           (row.storeName ?? '').toLowerCase().contains(term) ||
-          (row.variantLabel ?? '').toLowerCase().contains(term);
+          (row.variantLabel ?? '').toLowerCase().contains(term) ||
+          (row.comment ?? '').toLowerCase().contains(term);
     }).toList();
   }
 
@@ -121,9 +122,16 @@ class MyProductsController extends StateNotifier<MyProductsState> {
           for (final variant in product.variants) {
             if (variant.auditUpdatedAt == null) continue;
 
-            final systemStock = variant.currentStock;
-            final physicalStock = variant.auditQty;
-            final difference = systemStock - physicalStock;
+            final totalPhysicalStock = variant.auditQty;
+            // CRM Total Available Stock (on-hand with backlog)
+            final systemStock = variant.availableStock;
+            final damageStock = variant.damageQty;
+            final physicalStock = (totalPhysicalStock - damageStock).clamp(
+              0,
+              totalPhysicalStock,
+            );
+            // CRM: Difference = Total Physical − Total Available Stock
+            final difference = totalPhysicalStock - systemStock;
             if (difference == 0) continue;
 
             rows.add(
@@ -133,7 +141,10 @@ class MyProductsController extends StateNotifier<MyProductsState> {
                 sku: variant.sku,
                 storeName: location.label,
                 systemStock: systemStock,
+                totalPhysicalStock: totalPhysicalStock,
                 physicalStock: physicalStock,
+                damageStock: damageStock,
+                comment: _normalizeComment(variant.damageComment),
                 difference: difference,
               ),
             );
@@ -155,6 +166,12 @@ class MyProductsController extends StateNotifier<MyProductsState> {
         allRows: const [],
       );
     }
+  }
+
+  String? _normalizeComment(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 
   Future<void> setStoreFilter(int? storeId) async {

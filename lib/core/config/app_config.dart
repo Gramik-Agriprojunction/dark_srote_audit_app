@@ -4,6 +4,7 @@ class AppConfig {
   AppConfig._();
 
   static const String liveBaseUrl = 'https://lens-api.gramik.in';
+  static const String localBaseUrl = 'http://localhost:5000';
 
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
