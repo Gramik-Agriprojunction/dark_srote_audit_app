@@ -8,8 +8,8 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData light() {
-    final plusJakarta = GoogleFonts.plusJakartaSansTextTheme();
-    final display = GoogleFonts.plusJakartaSans();
+    final inter = GoogleFonts.interTextTheme();
+    final display = GoogleFonts.inter();
 
     OutlineInputBorder outline(Color color, [double width = 1.2]) {
       return OutlineInputBorder(
@@ -27,7 +27,7 @@ class AppTheme {
         primary: AppColors.primary,
         surface: AppColors.surface,
       ),
-      textTheme: plusJakarta.apply(
+      textTheme: inter.apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
       ),
@@ -51,7 +51,7 @@ class AppTheme {
         ),
         border: outline(Colors.transparent, 0),
         enabledBorder: outline(Colors.transparent, 0),
-        focusedBorder: outline(AppColors.primaryMid, 1.6),
+        focusedBorder: outline(AppColors.primary, 1.6),
         errorBorder: outline(AppColors.errorBorder, 1.4),
         hintStyle: const TextStyle(
           color: AppColors.textMuted,

@@ -4,6 +4,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/product_mismatch_model.dart';
 import '../../data/stock_audit_repository.dart';
+import '../utils/resolve_store_id.dart';
 
 class MyProductsState {
   const MyProductsState({
@@ -96,9 +97,10 @@ class MyProductsController extends StateNotifier<MyProductsState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final locations = await _repository.getBusinessLocations();
+      final storeId = resolvePreferredStoreId(locations, preferredStoreId);
       state = state.copyWith(
         locations: locations,
-        selectedStoreId: preferredStoreId,
+        selectedStoreId: storeId,
         isLoading: false,
       );
       await loadReport();

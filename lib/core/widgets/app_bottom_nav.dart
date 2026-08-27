@@ -3,13 +3,14 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 
-enum AppTab { home, stock, transactions, variance }
+enum AppTab { home, orders, stock, transactions, variance }
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
     required this.currentTab,
     required this.onHomeTap,
+    required this.onOrdersTap,
     required this.onStockTap,
     required this.onTransactionsTap,
     required this.onVarianceTap,
@@ -17,6 +18,7 @@ class AppBottomNav extends StatelessWidget {
 
   final AppTab currentTab;
   final VoidCallback onHomeTap;
+  final VoidCallback onOrdersTap;
   final VoidCallback onStockTap;
   final VoidCallback onTransactionsTap;
   final VoidCallback onVarianceTap;
@@ -37,7 +39,7 @@ class AppBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
           child: Row(
             children: [
               Expanded(
@@ -51,6 +53,15 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
+                  label: 'Orders',
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  isActive: currentTab == AppTab.orders,
+                  onTap: onOrdersTap,
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
                   label: 'Stock',
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2_rounded,
@@ -60,9 +71,9 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Transaction',
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
+                  label: 'Trans',
+                  icon: Icons.swap_horiz_outlined,
+                  activeIcon: Icons.swap_horiz_rounded,
                   isActive: currentTab == AppTab.transactions,
                   onTap: onTransactionsTap,
                 ),
@@ -118,7 +129,7 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
               height: 32,
-              width: isActive ? 52 : 38,
+              width: isActive ? 48 : 34,
               decoration: BoxDecoration(
                 color: isActive ? AppColors.footerActiveBg : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
@@ -126,7 +137,7 @@ class _NavItem extends StatelessWidget {
               child: Center(
                 child: Icon(
                   isActive ? activeIcon : icon,
-                  size: 20,
+                  size: 19,
                   color: color,
                 ),
               ),
@@ -138,7 +149,7 @@ class _NavItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 9.5,
+                fontSize: 9,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 letterSpacing: 0.1,
               ),

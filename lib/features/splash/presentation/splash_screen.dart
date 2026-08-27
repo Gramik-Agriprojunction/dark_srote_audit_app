@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,22 +11,25 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 
-/// Branded launch screen. Starts on the same white background as the native
-/// splash so the hand-off is invisible, then animates the logo and wordmark in.
+/// Gramik Darkstore splash — orange sheet, shop monogram, animated title.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
-  static const minimumDuration = Duration(milliseconds: 2100);
+  static const minimumDuration = Duration(milliseconds: 1800);
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1500),
+  );
+  late final AnimationController _progressController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
   );
 
   Timer? _minimumTimer;
@@ -38,12 +42,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _reveal());
   }
 
-  /// Hands over from the native splash once the real window size has settled.
   Future<void> _reveal() async {
-    await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
+    // Native splash is solid orange — remove as soon as the Dart splash is ready.
     FlutterNativeSplash.remove();
     _controller.forward();
+    _progressController.forward();
     _minimumTimer = Timer(SplashScreen.minimumDuration, () {
       _minimumElapsed = true;
       _maybeNavigate();
@@ -54,6 +58,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void dispose() {
     _minimumTimer?.cancel();
     _controller.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
@@ -76,162 +81,221 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authControllerProvider, (_, _) => _maybeNavigate());
 
-    final logoFade = _fade(0, 0.45);
-    final logoScale = Tween<double>(begin: 0.86, end: 1).animate(
+    final monoFade = _fade(0, 0.35);
+    final monoScale = Tween<double>(begin: 0.8, end: 1).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0, 0.55, curve: Curves.easeOutBack),
+        curve: const Interval(0, 0.45, curve: Curves.easeOutBack),
       ),
     );
-    final textFade = _fade(0.35, 0.75);
-    final footerFade = _fade(0.6, 1);
+    final iconFade = _fade(0.25, 0.55);
+    final titleFade = _fade(0.45, 0.8);
+    final footerFade = _fade(0.55, 1);
+    final width = MediaQuery.sizeOf(context).width;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.white, AppColors.primarySoft],
-            stops: [0, 0.62, 1],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FadeTransition(
-                        opacity: logoFade,
-                        child: ScaleTransition(
-                          scale: logoScale,
-                          child: Image.asset(
-                            AppAssets.logo,
-                            width: 226,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      FadeTransition(
-                        opacity: textFade,
-                        child: Column(
-                          children: [
-                            Text(
-                              'StockShield',
-                              style: context.sora.copyWith(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.8,
-                                color: AppColors.primaryDark,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Smart Inventory • Accurate Stock',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.2,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.primary,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.primary,
+        body: Stack(
+          children: [
+            Positioned(
+              top: -width * 0.4,
+              right: -width * 0.2,
+              child: Container(
+                width: width * 0.9,
+                height: width * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
-              FadeTransition(
-                opacity: footerFade,
-                child: Column(
-                  children: [
-                    const _SplashProgress(),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Powered by GRAMiK',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: AppColors.textMuted.withValues(alpha: 0.9),
+            ),
+            Positioned(
+              bottom: -width * 0.2,
+              left: -width * 0.2,
+              child: Container(
+                width: width * 0.6,
+                height: width * 0.6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.06),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FadeTransition(
+                            opacity: monoFade,
+                            child: ScaleTransition(
+                              scale: monoScale,
+                              child: SizedBox(
+                                width: 190,
+                                height: 190,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    FadeTransition(
+                                      opacity: iconFade,
+                                      child: Container(
+                                        width: 190,
+                                        height: 190,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    FadeTransition(
+                                      opacity: iconFade,
+                                      child: Container(
+                                        width: 150,
+                                        height: 150,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.25,
+                                            ),
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    FadeTransition(
+                                      opacity: iconFade,
+                                      child: Container(
+                                        width: 110,
+                                        height: 110,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: ColorFiltered(
+                                          colorFilter: const ColorFilter.mode(
+                                            AppColors.primary,
+                                            BlendMode.srcIn,
+                                          ),
+                                          child: Image.asset(
+                                            AppAssets.shopIcon,
+                                            width: 52,
+                                            height: 52,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          FadeTransition(
+                            opacity: titleFade,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Gramik',
+                                  style: context.sora.copyWith(
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'DARKSTORE',
+                                  style: context.sora.copyWith(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 3,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  FadeTransition(
+                    opacity: footerFade,
+                    child: Column(
+                      children: [
+                        _SplashProgress(controller: _progressController),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Powered by Gramik Darkstore',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
+                            color: Colors.white.withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 50),
+                ],
               ),
-              const SizedBox(height: 26),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Slim indeterminate bar that reads as "getting things ready".
-class _SplashProgress extends StatefulWidget {
-  const _SplashProgress();
+class _SplashProgress extends StatelessWidget {
+  const _SplashProgress({required this.controller});
 
-  @override
-  State<_SplashProgress> createState() => _SplashProgressState();
-}
-
-class _SplashProgressState extends State<_SplashProgress>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final AnimationController controller;
 
   @override
   Widget build(BuildContext context) {
-    const width = 108.0;
-    const barWidth = 42.0;
+    final width = MediaQuery.sizeOf(context).width * 0.35;
 
-    return SizedBox(
-      width: width,
-      height: 4,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final t = Curves.easeInOut.transform(
-              (_controller.value * 2 <= 1
-                  ? _controller.value * 2
-                  : 2 - _controller.value * 2),
-            );
-            return Align(
-              alignment: Alignment(-1 + 2 * t, 0),
-              child: Container(
-                width: barWidth,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryMid, AppColors.primaryDark],
-                  ),
-                  borderRadius: BorderRadius.circular(999),
-                ),
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Container(
+          width: width,
+          height: 3,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(1.5),
+          ),
+          clipBehavior: Clip.antiAlias,
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: Curves.easeInOut.transform(controller.value),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(1.5),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

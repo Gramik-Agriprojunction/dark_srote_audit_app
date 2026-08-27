@@ -8,6 +8,8 @@ import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
 import '../features/stock_audit/presentation/transactions_screen.dart';
 import '../features/stock_audit/presentation/variance_screen.dart';
+import '../features/orders/presentation/order_detail_screen.dart';
+import '../features/orders/presentation/orders_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 
@@ -46,6 +48,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: '/orders/:orderId',
+        builder: (context, state) {
+          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
+          if (orderId <= 0) return const OrdersScreen();
+          return OrderDetailScreen(orderId: orderId);
+        },
+      ),
       GoRoute(
         path: '/my-products',
         builder: (context, state) => const MyProductsScreen(),

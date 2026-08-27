@@ -1,11 +1,14 @@
 class AppAssets {
   AppAssets._();
 
-  /// StockShield badge with transparent corners — splash and login hero.
-  static const logo = 'assets/images/stockshield_logo.png';
+  /// Darkstore shop glyph — splash, login header, brand icon.
+  static const shopIcon = 'assets/images/darkstore_shop.png';
 
-  /// Same badge as a rounded app-icon tile — small spots like the app bar.
-  static const icon = 'assets/images/stockshield_icon.png';
+  /// App icon tile from Gramik Darkstore theme.
+  static const icon = 'assets/images/darkstore_icon.png';
 
-  static const authFarmHero = 'assets/images/auth_farm_hero.jpg';
+  /// Launcher / splash badge.
+  static const logo = 'assets/images/darkstore_launcher.png';
+
+  static const logoutIcon = 'assets/images/darkstore_logout.png';
 }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_assets.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import 'providers/auth_provider.dart';
 import 'widgets/auth_theme.dart';
@@ -169,27 +170,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: _otpStep
-          ? _OtpView(
-              mobile: _mobile,
-              controller: _otpController,
-              loading: _loading,
-              error: _error,
-              resendSeconds: _resendSeconds,
-              expireSeconds: _expireSeconds,
-              onBack: _backToLogin,
-              onVerify: _verifyOtp,
-              onResend: () => _sendOtp(resend: true),
-            )
-          : _LoginView(
-              controller: _mobileController,
-              loading: _loading,
-              error: _error,
-              enabled: _validMobile,
-              onSend: _sendOtp,
-            ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AuthTheme.primary,
+      ),
+      child: Scaffold(
+        backgroundColor: _otpStep ? AuthTheme.primary : AuthTheme.screenBg,
+        body: _otpStep
+            ? _OtpView(
+                mobile: _mobile,
+                controller: _otpController,
+                loading: _loading,
+                error: _error,
+                resendSeconds: _resendSeconds,
+                expireSeconds: _expireSeconds,
+                onBack: _backToLogin,
+                onVerify: _verifyOtp,
+                onResend: () => _sendOtp(resend: true),
+              )
+            : _LoginView(
+                controller: _mobileController,
+                loading: _loading,
+                error: _error,
+                enabled: _validMobile,
+                onSend: _sendOtp,
+              ),
+      ),
     );
   }
 }
@@ -211,117 +217,122 @@ class _LoginView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         children: [
-          SizedBox(
-            height: 375 + MediaQuery.paddingOf(context).top,
+          Container(
             width: double.infinity,
-            child: Stack(
-              fit: StackFit.expand,
+            color: AuthTheme.primary,
+            padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
+            child: Column(
               children: [
-                Image.asset(AppAssets.authFarmHero, fit: BoxFit.cover),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.30),
-                        Colors.white.withValues(alpha: 0.55),
-                        Colors.white.withValues(alpha: 0.86),
-                      ],
-                      stops: const [0, 0.52, 1],
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      AuthTheme.primary,
+                      BlendMode.srcIn,
+                    ),
+                    child: Image.asset(
+                      AppAssets.shopIcon,
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
-                SafeArea(
-                  bottom: false,
-                  child: Column(
+                const SizedBox(height: 14),
+                RichText(
+                  text: TextSpan(
+                    style: AuthTheme.brandName(),
                     children: [
-                      const SizedBox(height: 12),
-                      Image.asset(
-                        AppAssets.logo,
-                        height: 96,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.medium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text('StockShield', style: AuthTheme.brandName()),
-                      Text(
-                        'Smart Inventory • Accurate Stock',
-                        style: AuthTheme.caption(
-                          AuthTheme.brandTagline,
-                        ).copyWith(fontWeight: FontWeight.w600, fontSize: 13),
+                      const TextSpan(text: 'Gramik '),
+                      TextSpan(
+                        text: 'Darkstore',
+                        style: AuthTheme.brandNameBold(),
                       ),
                     ],
                   ),
                 ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 52,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 25),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Welcome Back! 👋',
-                          style: AuthTheme.title(),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 9),
-                        Text(
-                          'Login to manage your store stock\nwith confidence.',
-                          style: AuthTheme.body(),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  'Stock Audit • Dark Store',
+                  style: AuthTheme.caption(
+                    Colors.white.withValues(alpha: 0.5),
+                  ).copyWith(fontSize: 12),
                 ),
               ],
             ),
           ),
           Transform.translate(
-            offset: const Offset(0, -35),
+            offset: const Offset(0, -28),
             child: Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AuthTheme.cardBorder, width: 0.5),
+                boxShadow: AppColors.cardShadow,
               ),
-              padding: const EdgeInsets.fromLTRB(25, 30, 25, 35),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Mobile Number', style: AuthTheme.label()),
-                  const SizedBox(height: 10),
+                  Text('Apna Number Daalo', style: AuthTheme.title()),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Number daalo, hum OTP bhej denge turant',
+                    style: AuthTheme.bodySm(),
+                  ),
+                  const SizedBox(height: 20),
                   Container(
-                    height: 58,
+                    height: 52,
                     decoration: BoxDecoration(
+                      color: AuthTheme.inputBg,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: AuthTheme.line),
-                      borderRadius: BorderRadius.circular(15),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Row(
                       children: [
-                        Container(
-                          width: 76,
-                          alignment: Alignment.center,
-                          color: AuthTheme.inputBg,
-                          child: Text(
-                            '+91',
-                            style: AuthTheme.body(
-                              AuthTheme.ink,
-                            ).copyWith(fontWeight: FontWeight.w700),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              const Text('🇮🇳', style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 5),
+                              Text(
+                                '+91',
+                                style: AuthTheme.label(
+                                  const Color(0xFF555555),
+                                ).copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                            ],
                           ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 24,
+                          color: const Color(0xFFDDDDDD),
                         ),
                         Expanded(
                           child: TextField(
                             controller: controller,
                             keyboardType: TextInputType.phone,
-                            style: AuthTheme.body(AuthTheme.ink),
+                            style: AuthTheme.label().copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                               LengthLimitingTextInputFormatter(10),
@@ -329,12 +340,12 @@ class _LoginView extends StatelessWidget {
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                horizontal: 12,
                               ),
-                              hintText: 'Enter your mobile number',
-                              hintStyle: AuthTheme.body(
-                                const Color(0xFF9AA2AA),
-                              ),
+                              hintText: 'Mobile Number',
+                              hintStyle: AuthTheme.bodySm(
+                                const Color(0xFFBBBBBB),
+                              ).copyWith(fontSize: 16),
                             ),
                             onSubmitted: (_) {
                               if (enabled) onSend();
@@ -344,55 +355,39 @@ class _LoginView extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 11),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.verified_user_outlined,
-                        size: 16,
-                        color: AuthTheme.primary,
-                      ),
-                      const SizedBox(width: 7),
-                      Text(
-                        "We'll send you a secure OTP",
-                        style: AuthTheme.caption(const Color(0xFF6B756D)),
-                      ),
-                    ],
-                  ),
                   if (error != null) ...[
                     const SizedBox(height: 12),
                     _ErrorText(message: error!),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   _PrimaryButton(
-                    label: 'Send OTP',
+                    label: 'OTP Bhejo  →',
                     loading: loading,
                     enabled: enabled,
                     onPressed: onSend,
                   ),
-                  const SizedBox(height: 27),
-                  _WhyDivider(),
-                  const SizedBox(height: 20),
-                  const _FeatureRow(
-                    emoji: '🌱',
-                    bg: AuthTheme.featureGreenBg,
-                    title: 'Farmer First',
-                    subtitle: 'Everything you need to grow\nyour business',
-                  ),
-                  const SizedBox(height: 17),
-                  const _FeatureRow(
-                    emoji: '📊',
-                    bg: AuthTheme.featureYellowBg,
-                    title: 'Smart Insights',
-                    subtitle: 'AI-powered insights to make\nbetter decisions',
-                  ),
-                  const SizedBox(height: 17),
-                  const _FeatureRow(
-                    emoji: '🛡️',
-                    bg: AuthTheme.featureGreenBg,
-                    title: 'Secure & Reliable',
-                    subtitle:
-                        'Your data is safe with\nenterprise-grade security',
+                  const SizedBox(height: 28),
+                  _FeatureDot(text: 'Stock audit karo real-time'),
+                  const SizedBox(height: 10),
+                  _FeatureDot(text: 'Inventory variance track karo'),
+                  const SizedBox(height: 10),
+                  _FeatureDot(text: 'Pickup & RTO transactions dekho'),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: RichText(
+              text: TextSpan(
+                style: AuthTheme.caption(const Color(0xFFCCCCCC)),
+                children: [
+                  const TextSpan(text: 'Powered by '),
+                  TextSpan(
+                    text: 'Gramik',
+                    style: AuthTheme.caption(
+                      const Color(0xFFBBBBBB),
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -427,249 +422,162 @@ class _OtpView extends StatelessWidget {
   final VoidCallback onVerify;
   final VoidCallback onResend;
 
-  String get _formattedMobile =>
-      '+91 ${mobile.substring(0, 5)} ${mobile.substring(5)}';
-
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(25, top + 30, 25, 32),
+      padding: EdgeInsets.fromLTRB(24, top + 12, 24, 32),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Material(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            elevation: 0,
-            child: InkWell(
-              onTap: loading ? null : onBack,
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: const Color(0xFFE7EAE7)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x0D000000),
-                      blurRadius: 16,
-                      offset: Offset(0, 5),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Material(
+              color: Colors.white.withValues(alpha: 0.2),
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: loading ? null : onBack,
+                customBorder: const CircleBorder(),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: Text(
+                      '←',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  '‹',
-                  style: TextStyle(fontSize: 28, color: AuthTheme.ink),
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 38),
-          Center(
-            child: Container(
-              width: 105,
-              height: 105,
-              decoration: BoxDecoration(
-                color: AuthTheme.shieldBg,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AuthTheme.shieldBg.withValues(alpha: 0.65),
-                    spreadRadius: 12,
-                  ),
-                  BoxShadow(
-                    color: AuthTheme.brand.withValues(alpha: 0.08),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: const Text('🛡️', style: TextStyle(fontSize: 55)),
-            ),
-          ),
-          const SizedBox(height: 30),
-          Center(
-            child: Text(
-              'Verify Your Number',
-              style: AuthTheme.otpTitle(),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 9),
-          Center(
-            child: Text(
-              "We've sent a 5-digit OTP to",
-              style: AuthTheme.bodySm(),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              _formattedMobile,
-              style: AuthTheme.body(
-                AuthTheme.primaryDark,
-              ).copyWith(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(height: 35),
+          const SizedBox(height: 16),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 25, 18, 21),
+            width: 80,
+            height: 80,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: ColorFiltered(
+              colorFilter: const ColorFilter.mode(
+                AuthTheme.primary,
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                AppAssets.shopIcon,
+                width: 40,
+                height: 40,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('OTP Daalo', style: AuthTheme.otpTitle()),
+          const SizedBox(height: 6),
+          Text(
+            'Tumhare number pe OTP bheja hai',
+            style: AuthTheme.bodySm(
+              Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
             decoration: BoxDecoration(
-              border: Border.all(color: AuthTheme.lineSoft),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Column(
-              children: [
-                OtpPinInput(
-                  controller: controller,
-                  enabled: !loading,
-                  onCompleted: (_) => onVerify(),
-                ),
-                const SizedBox(height: 18),
-                RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: AuthTheme.caption(
-                      const Color(0xFF727A75),
-                    ).copyWith(fontSize: 13),
-                    children: [
-                      const TextSpan(text: 'OTP will expire in '),
-                      TextSpan(
-                        text: expireSeconds > 0
-                            ? '00:${expireSeconds.toString().padLeft(2, '0')}'
-                            : 'Expired',
-                        style: AuthTheme.caption(
-                          AuthTheme.timerGreen,
-                        ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AuthTheme.warningBg,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Text('🔒', style: TextStyle(fontSize: 20)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Don't share your OTP with anyone",
-                              style: AuthTheme.label().copyWith(fontSize: 13),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'Gramik will never ask for your OTP',
-                              style: AuthTheme.caption(),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            child: Text(
+              '+91 $mobile',
+              style: AuthTheme.label(Colors.white).copyWith(
+                fontSize: 15,
+                letterSpacing: 1,
+              ),
             ),
           ),
+          const SizedBox(height: 28),
+          OtpPinInput(
+            controller: controller,
+            enabled: !loading,
+            inverted: true,
+            onCompleted: (_) => onVerify(),
+          ),
+          const SizedBox(height: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'OTP nahi aaya? ',
+                style: AuthTheme.bodySm(
+                  Colors.white.withValues(alpha: 0.6),
+                ),
+              ),
+              GestureDetector(
+                onTap: resendSeconds == 0 && !loading ? onResend : null,
+                child: Text(
+                  loading && resendSeconds == 0
+                      ? 'Bhej rahe hai...'
+                      : resendSeconds == 0
+                          ? 'Dubara Bhejo'
+                          : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
+                  style: AuthTheme.bodySm(Colors.white).copyWith(
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (expireSeconds > 0) ...[
+            const SizedBox(height: 10),
+            Text(
+              'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
+              style: AuthTheme.caption(
+                Colors.white.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
           if (error != null) ...[
             const SizedBox(height: 12),
-            _ErrorText(message: error!),
+            _ErrorText(message: error!, onPrimary: true),
           ],
           const SizedBox(height: 28),
-          Center(
-            child: Column(
-              children: [
-                Text("Didn't receive OTP?", style: AuthTheme.caption()),
-                const SizedBox(height: 7),
-                GestureDetector(
-                  onTap: resendSeconds == 0 && !loading ? onResend : null,
-                  child: RichText(
-                    text: TextSpan(
-                      style: AuthTheme.caption(
-                        AuthTheme.resendGreen,
-                      ).copyWith(fontWeight: FontWeight.w700, fontSize: 13),
-                      children: [
-                        const TextSpan(text: 'Resend OTP '),
-                        TextSpan(
-                          text: resendSeconds == 0
-                              ? ''
-                              : '(00:${resendSeconds.toString().padLeft(2, '0')})',
-                          style: AuthTheme.caption(
-                            const Color(0xFF7B837D),
-                          ).copyWith(fontWeight: FontWeight.w400),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 45),
-          Container(
+          SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: AuthTheme.secureBg,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AuthTheme.secureBorder),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text('🔐', style: TextStyle(fontSize: 31)),
+            height: 50,
+            child: ElevatedButton(
+              onPressed: controller.text.length == 5 && !loading
+                  ? onVerify
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
+                foregroundColor: AuthTheme.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Secure Login',
-                        style: AuthTheme.label().copyWith(fontSize: 15),
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: AuthTheme.primary,
                       ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Your security is our priority. All data is encrypted and protected.',
-                        style: AuthTheme.caption().copyWith(
-                          fontSize: 11,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    )
+                  : Text(
+                      'Verify Karo',
+                      style: AuthTheme.button(AuthTheme.primary),
+                    ),
             ),
           ),
         ],
@@ -695,18 +603,17 @@ class _PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 58,
+      height: 50,
       child: ElevatedButton(
         onPressed: enabled && !loading ? onPressed : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AuthTheme.primary,
-          disabledBackgroundColor: AuthTheme.primary.withValues(alpha: 0.45),
+          disabledBackgroundColor: AuthTheme.primary.withValues(alpha: 0.4),
           foregroundColor: Colors.white,
           disabledForegroundColor: Colors.white70,
           elevation: 0,
-          shadowColor: AuthTheme.primary.withValues(alpha: 0.22),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: loading
@@ -718,83 +625,41 @@ class _PrimaryButton extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('➤', style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 9),
-                  Text(label, style: AuthTheme.button()),
-                ],
-              ),
+            : Text(label, style: AuthTheme.button()),
       ),
     );
   }
 }
 
-class _WhyDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: AuthTheme.lineSoft)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            'Why StockShield?',
-            style: AuthTheme.label(const Color(0xFF626B65)),
-          ),
-        ),
-        Expanded(child: Divider(color: AuthTheme.lineSoft)),
-      ],
-    );
-  }
-}
+class _FeatureDot extends StatelessWidget {
+  const _FeatureDot({required this.text});
 
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow({
-    required this.emoji,
-    required this.bg,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String emoji;
-  final Color bg;
-  final String title;
-  final String subtitle;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 47,
-          height: 47,
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: Text(emoji, style: const TextStyle(fontSize: 21)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AuthTheme.label().copyWith(fontSize: 14)),
-              const SizedBox(height: 3),
-              Text(subtitle, style: AuthTheme.caption()),
-            ],
+          width: 6,
+          height: 6,
+          decoration: const BoxDecoration(
+            color: AuthTheme.primary,
+            shape: BoxShape.circle,
           ),
         ),
+        const SizedBox(width: 10),
+        Text(text, style: AuthTheme.bodySm(const Color(0xFF888888))),
       ],
     );
   }
 }
 
 class _ErrorText extends StatelessWidget {
-  const _ErrorText({required this.message});
+  const _ErrorText({required this.message, this.onPrimary = false});
 
   final String message;
+  final bool onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -802,11 +667,22 @@ class _ErrorText extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFEBEE),
+        color: onPrimary
+            ? Colors.white.withValues(alpha: 0.15)
+            : const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFCDD2)),
+        border: Border.all(
+          color: onPrimary
+              ? Colors.white.withValues(alpha: 0.25)
+              : const Color(0xFFFFCDD2),
+        ),
       ),
-      child: Text(message, style: AuthTheme.caption(const Color(0xFFC62828))),
+      child: Text(
+        message,
+        style: AuthTheme.caption(
+          onPrimary ? Colors.white : const Color(0xFFC62828),
+        ),
+      ),
     );
   }
 }

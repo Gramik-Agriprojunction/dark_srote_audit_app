@@ -11,7 +11,6 @@ import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import 'providers/stock_audit_provider.dart';
-import 'widgets/business_location_picker.dart';
 import 'widgets/comment_bottom_sheet.dart';
 import 'widgets/product_variant_row.dart';
 
@@ -47,21 +46,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref
         .read(stockAuditControllerProvider.notifier)
         .loadLocations(preferredStoreId: preferredStoreId);
+    final selectedId = ref.read(stockAuditControllerProvider).selectedLocationId;
+    if (selectedId != null) {
+      await storage.saveSelectedStoreId(selectedId);
+    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  Future<void> _onLocationChanged(int? locationId) async {
-    ref.read(authControllerProvider.notifier).touchActivity();
-    final storage = ref.read(sessionStorageProvider);
-    await storage.saveSelectedStoreId(locationId);
-    await ref
-        .read(stockAuditControllerProvider.notifier)
-        .selectLocation(locationId);
   }
 
   Future<void> _logout() async {
@@ -109,21 +103,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           AppHeader(
-            title: 'StockShield',
+            title: 'Gramik Darkstore',
             showBrandIcon: true,
             subtitle: 'Namaste, $userName',
             trailing: HeaderLogoutButton(onPressed: _logout),
-            bottom: AppCard(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-              radius: 18,
-              shadow: AppColors.floatShadow,
-              child: BusinessLocationPicker(
-                locations: audit.locations,
-                selectedId: audit.selectedLocationId,
-                isLoading: audit.isLoadingLocations,
-                onChanged: _onLocationChanged,
-              ),
-            ),
           ),
           Expanded(
             child: RefreshIndicator(
@@ -291,6 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 curve: Curves.easeOut,
               );
             },
+            onOrdersTap: () => context.go('/orders'),
             onStockTap: () => context.go('/my-products'),
             onTransactionsTap: () => context.go('/transactions'),
             onVarianceTap: () => context.go('/variance'),

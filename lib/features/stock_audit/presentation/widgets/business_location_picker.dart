@@ -21,6 +21,12 @@ class BusinessLocationPicker extends StatelessWidget {
   BusinessLocationModel? get _selected =>
       locations.where((location) => location.id == selectedId).firstOrNull;
 
+  BusinessLocationModel? get _effectiveSelected {
+    if (_selected != null) return _selected;
+    if (locations.length == 1) return locations.first;
+    return null;
+  }
+
   Future<void> _openSearchSheet(BuildContext context) async {
     if (locations.isEmpty) return;
 
@@ -35,25 +41,87 @@ class BusinessLocationPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = _selected;
+    final selected = _effectiveSelected;
     final parts = splitLocationLabel(selected?.label);
+    final isSingleLocation = locations.length <= 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const FieldLabel('Business Location', icon: Icons.place_outlined),
         const SizedBox(height: 10),
-        AppSelectTile(
-          value: parts.title,
-          subtitle: parts.subtitle,
-          placeholder: locations.isEmpty
-              ? 'No location available'
-              : 'Select location',
-          isLoading: isLoading,
-          enabled: locations.isNotEmpty,
-          onTap: () => _openSearchSheet(context),
-        ),
+        if (isSingleLocation)
+          BusinessLocationReadOnly(
+            title: parts.title ?? selected?.label ?? '—',
+            subtitle: parts.subtitle,
+          )
+        else
+          AppSelectTile(
+            value: parts.title,
+            subtitle: parts.subtitle,
+            placeholder: locations.isEmpty
+                ? 'No location available'
+                : 'Select location',
+            isLoading: isLoading,
+            enabled: locations.isNotEmpty,
+            onTap: () => _openSearchSheet(context),
+          ),
       ],
+    );
+  }
+}
+
+class BusinessLocationReadOnly extends StatelessWidget {
+  const BusinessLocationReadOnly({super.key, required this.title, this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: AppColors.fieldBg,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.storefront_rounded,
+            size: 18,
+            color: AppColors.primaryDark,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if ((subtitle ?? '').isNotEmpty)
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

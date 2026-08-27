@@ -12,7 +12,6 @@ import '../../../core/widgets/app_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/variance_model.dart';
 import 'providers/variance_provider.dart';
-import 'widgets/business_location_picker.dart';
 
 class VarianceScreen extends ConsumerStatefulWidget {
   const VarianceScreen({super.key});
@@ -39,18 +38,15 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
     await ref
         .read(varianceControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    final selectedId = ref.read(varianceControllerProvider).selectedStoreId;
+    if (selectedId != null) {
+      await storage.saveSelectedStoreId(selectedId);
+    }
   }
 
   Future<void> _logout() async {
     await ref.read(authControllerProvider.notifier).logout();
     if (mounted) context.go('/login');
-  }
-
-  Future<void> _onStoreChanged(int? storeId) async {
-    ref.read(authControllerProvider.notifier).touchActivity();
-    final storage = ref.read(sessionStorageProvider);
-    await storage.saveSelectedStoreId(storeId);
-    await ref.read(varianceControllerProvider.notifier).setStoreFilter(storeId);
   }
 
   @override
@@ -73,21 +69,11 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
               padding: const EdgeInsets.all(14),
               radius: 18,
               shadow: AppColors.floatShadow,
-              child: Column(
-                children: [
-                  BusinessLocationPicker(
-                    locations: state.locations,
-                    selectedId: state.selectedStoreId,
-                    onChanged: _onStoreChanged,
-                  ),
-                  const SizedBox(height: 12),
-                  _TypeFilterRow(
-                    selected: state.typeFilter,
-                    onChanged: (filter) => ref
-                        .read(varianceControllerProvider.notifier)
-                        .setTypeFilter(filter),
-                  ),
-                ],
+              child: _TypeFilterRow(
+                selected: state.typeFilter,
+                onChanged: (filter) => ref
+                    .read(varianceControllerProvider.notifier)
+                    .setTypeFilter(filter),
               ),
             ),
           ),
@@ -160,6 +146,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
           AppBottomNav(
             currentTab: AppTab.variance,
             onHomeTap: () => context.go('/home'),
+            onOrdersTap: () => context.go('/orders'),
             onStockTap: () => context.go('/my-products'),
             onTransactionsTap: () => context.go('/transactions'),
             onVarianceTap: () {},

@@ -39,6 +39,7 @@ dependencies:
   google_fonts: ^6.3.0
   intl: ^0.20.2
   shared_preferences: ^2.5.3
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -50,20 +51,19 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  image_path: assets/images/stockshield_launcher.png
-  adaptive_icon_background: assets/images/stockshield_adaptive_background.png
-  adaptive_icon_foreground: assets/images/stockshield_adaptive_foreground.png
+  image_path: assets/images/darkstore_launcher.png
+  adaptive_icon_background: "#EC5800"
+  adaptive_icon_foreground: assets/images/darkstore_icon.png
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: assets/images/stockshield_logo.png
+  color: "#EC5800"
   android: true
   ios: true
   web: false
   android_12:
-    color: "#FFFFFF"
-    image: assets/images/stockshield_splash_android12.png
-    icon_background_color: "#FFFFFF"
+    color: "#EC5800"
+    image: assets/images/darkstore_shop.png
+    icon_background_color: "#EC5800"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -77,9 +77,10 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/stockshield_logo.png
-    - assets/images/stockshield_icon.png
-    - assets/images/auth_farm_hero.jpg
+    - assets/images/darkstore_shop.png
+    - assets/images/darkstore_icon.png
+    - assets/images/darkstore_launcher.png
+    - assets/images/darkstore_logout.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

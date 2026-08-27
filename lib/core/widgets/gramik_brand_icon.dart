@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_assets.dart';
+import '../constants/app_colors.dart';
 
-/// The StockShield app icon rendered inline. A hairline white ring keeps it
-/// separated from the green header behind it.
+/// Darkstore shop icon inside a white tile — matches RN header monogram.
 class GramikBrandIcon extends StatelessWidget {
   const GramikBrandIcon({
     super.key,
     this.size = 42,
-    this.borderRadius = 13,
-    this.padding = 0,
+    this.borderRadius = 14,
+    this.padding = 8,
     this.showBackground = true,
   });
 
@@ -20,54 +20,60 @@ class GramikBrandIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final image = Image.asset(
-      AppAssets.icon,
-      width: size,
-      height: size,
-      fit: BoxFit.cover,
-      filterQuality: FilterQuality.medium,
+    final iconSize = size - (padding * 2);
+    final icon = ColorFiltered(
+      colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+      child: Image.asset(
+        AppAssets.shopIcon,
+        width: iconSize,
+        height: iconSize,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+      ),
     );
 
-    if (!showBackground) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: image,
-      );
-    }
+    if (!showBackground) return icon;
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.55)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33062F1B),
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: image,
+      alignment: Alignment.center,
+      child: icon,
     );
   }
 }
 
-/// Full StockShield badge, for large brand areas.
+/// Shop glyph for large brand areas.
 class GramikLogo extends StatelessWidget {
-  const GramikLogo({super.key, this.height = 28});
+  const GramikLogo({super.key, this.size = 52});
 
-  final double height;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      AppAssets.logo,
-      height: height,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
+    return Container(
+      width: size * 2.1,
+      height: size * 2.1,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: ColorFiltered(
+        colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+        child: Image.asset(
+          AppAssets.shopIcon,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+        ),
+      ),
     );
   }
 }

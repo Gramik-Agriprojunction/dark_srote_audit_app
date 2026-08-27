@@ -12,7 +12,6 @@ import '../../../core/widgets/app_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/transaction_model.dart';
 import 'providers/transactions_provider.dart';
-import 'widgets/business_location_picker.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -39,20 +38,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     await ref
         .read(transactionsControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    final selectedId = ref.read(transactionsControllerProvider).selectedStoreId;
+    if (selectedId != null) {
+      await storage.saveSelectedStoreId(selectedId);
+    }
   }
 
   Future<void> _logout() async {
     await ref.read(authControllerProvider.notifier).logout();
     if (mounted) context.go('/login');
-  }
-
-  Future<void> _onStoreChanged(int? storeId) async {
-    ref.read(authControllerProvider.notifier).touchActivity();
-    final storage = ref.read(sessionStorageProvider);
-    await storage.saveSelectedStoreId(storeId);
-    await ref
-        .read(transactionsControllerProvider.notifier)
-        .setStoreFilter(storeId);
   }
 
   Future<void> _pickDate(DateTime current) async {
@@ -91,19 +85,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               padding: const EdgeInsets.all(14),
               radius: 18,
               shadow: AppColors.floatShadow,
-              child: Column(
-                children: [
-                  BusinessLocationPicker(
-                    locations: state.locations,
-                    selectedId: state.selectedStoreId,
-                    onChanged: _onStoreChanged,
-                  ),
-                  const SizedBox(height: 12),
-                  _DateFilterTile(
-                    label: dateLabel,
-                    onTap: () => _pickDate(selectedDate),
-                  ),
-                ],
+              child: _DateFilterTile(
+                label: dateLabel,
+                onTap: () => _pickDate(selectedDate),
               ),
             ),
           ),
@@ -175,6 +159,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           AppBottomNav(
             currentTab: AppTab.transactions,
             onHomeTap: () => context.go('/home'),
+            onOrdersTap: () => context.go('/orders'),
             onStockTap: () => context.go('/my-products'),
             onTransactionsTap: () {},
             onVarianceTap: () => context.go('/variance'),
@@ -404,13 +389,6 @@ class _TransactionProductCard extends StatelessWidget {
                     label: 'RTO Qty',
                     value: formatter.format(row.rtoDeliveredQty),
                     color: AppColors.warning,
-                  ),
-                ),
-                Expanded(
-                  child: _QtyCell(
-                    label: 'Total',
-                    value: formatter.format(row.totalQty),
-                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

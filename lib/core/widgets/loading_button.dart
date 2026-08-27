@@ -134,7 +134,7 @@ class LoadingButton extends StatelessWidget {
           boxShadow: active
               ? const [
                   BoxShadow(
-                    color: Color(0x452E8B57),
+                    color: Color(0x45EC5800),
                     blurRadius: 20,
                     offset: Offset(0, 8),
                   ),

@@ -17,5 +17,10 @@ class AppConfig {
 
   static String get apiBaseUrl => '$baseUrl$apiPrefix';
 
+  /// Gramik Darkstore app API (orders, profile, etc.)
+  static const String darkStoreApiPrefix = '/api/v1';
+
+  static String get darkStoreApiBaseUrl => '$baseUrl$darkStoreApiPrefix';
+
   static const Duration inactivityTimeout = Duration(hours: 1);
 }

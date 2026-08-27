@@ -10,10 +10,8 @@ import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
-import '../data/models/business_location_model.dart';
 import '../data/models/product_mismatch_model.dart';
 import 'providers/my_products_provider.dart';
-import 'widgets/business_location_picker.dart';
 
 class MyProductsScreen extends ConsumerStatefulWidget {
   const MyProductsScreen({super.key});
@@ -40,20 +38,15 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     await ref
         .read(myProductsControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    final selectedId = ref.read(myProductsControllerProvider).selectedStoreId;
+    if (selectedId != null) {
+      await storage.saveSelectedStoreId(selectedId);
+    }
   }
 
   Future<void> _logout() async {
     await ref.read(authControllerProvider.notifier).logout();
     if (mounted) context.go('/login');
-  }
-
-  Future<void> _onStoreChanged(int? storeId) async {
-    ref.read(authControllerProvider.notifier).touchActivity();
-    final storage = ref.read(sessionStorageProvider);
-    await storage.saveSelectedStoreId(storeId);
-    await ref
-        .read(myProductsControllerProvider.notifier)
-        .setStoreFilter(storeId);
   }
 
   @override
@@ -73,16 +66,6 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
             showBrandIcon: true,
             subtitle: 'Namaste, $userName',
             trailing: HeaderLogoutButton(onPressed: _logout),
-            bottom: AppCard(
-              padding: const EdgeInsets.all(14),
-              radius: 18,
-              shadow: AppColors.floatShadow,
-              child: _ReportLocationFilter(
-                locations: state.locations,
-                selectedId: state.selectedStoreId,
-                onChanged: _onStoreChanged,
-              ),
-            ),
           ),
           Expanded(
             child: RefreshIndicator(
@@ -155,6 +138,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
           AppBottomNav(
             currentTab: AppTab.stock,
             onHomeTap: () => context.go('/home'),
+            onOrdersTap: () => context.go('/orders'),
             onStockTap: () {},
             onTransactionsTap: () => context.go('/transactions'),
             onVarianceTap: () => context.go('/variance'),
@@ -333,56 +317,6 @@ class _StatTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ReportLocationFilter extends StatelessWidget {
-  const _ReportLocationFilter({
-    required this.locations,
-    required this.selectedId,
-    required this.onChanged,
-  });
-
-  final List<BusinessLocationModel> locations;
-  final int? selectedId;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedLabel = selectedId == null
-        ? 'All Business Locations'
-        : locations
-                  .where((l) => l.id == selectedId)
-                  .map((l) => l.label)
-                  .firstOrNull ??
-              'Select location';
-    final parts = selectedId == null
-        ? (title: selectedLabel, subtitle: null)
-        : splitLocationLabel(selectedLabel);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const FieldLabel('Business Location', icon: Icons.place_outlined),
-        const SizedBox(height: 10),
-        AppSelectTile(
-          value: parts.title,
-          subtitle: parts.subtitle,
-          icon: selectedId == null
-              ? Icons.apps_rounded
-              : Icons.storefront_rounded,
-          onTap: () async {
-            final result = await showLocationPickerSheet(
-              context: context,
-              locations: locations,
-              selectedId: selectedId,
-              includeAllOption: true,
-            );
-            if (result != null) onChanged(result.id);
-          },
-        ),
-      ],
     );
   }
 }
@@ -742,10 +676,3 @@ class _PageButton extends StatelessWidget {
   }
 }
 
-extension _FirstOrNull<E> on Iterable<E> {
-  E? get firstOrNull {
-    final iterator = this.iterator;
-    if (!iterator.moveNext()) return null;
-    return iterator.current;
-  }
-}

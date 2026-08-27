@@ -11,12 +11,14 @@ class OtpPinInput extends StatefulWidget {
     this.length = 5,
     this.onCompleted,
     this.enabled = true,
+    this.inverted = false,
   });
 
   final TextEditingController controller;
   final int length;
   final ValueChanged<String>? onCompleted;
   final bool enabled;
+  final bool inverted;
 
   @override
   State<OtpPinInput> createState() => _OtpPinInputState();
@@ -56,6 +58,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
     final activeIndex = value.length >= widget.length
         ? widget.length - 1
         : value.length;
+    final inverted = widget.inverted;
 
     return GestureDetector(
       onTap: widget.enabled ? _focusNode.requestFocus : null,
@@ -85,24 +88,41 @@ class _OtpPinInputState extends State<OtpPinInput> {
             children: List.generate(widget.length, (index) {
               final filled = index < value.length;
               final focused = widget.enabled && index == activeIndex && !filled;
+              final active = focused || filled;
+
+              Color bg;
+              Color border;
+              Color digitColor;
+
+              if (inverted) {
+                bg = active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.15);
+                border = active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.2);
+                digitColor = AuthTheme.ink;
+              } else {
+                bg = Colors.white;
+                border = focused ? AuthTheme.primary : AuthTheme.line;
+                digitColor = AuthTheme.ink;
+              }
 
               return Container(
-                width: 45,
-                height: 53,
+                width: inverted ? 56 : 45,
+                height: inverted ? 56 : 53,
                 margin: EdgeInsets.only(
-                  right: index == widget.length - 1 ? 0 : 8,
+                  right: index == widget.length - 1 ? 0 : (inverted ? 10 : 8),
                 ),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  color: bg,
+                  borderRadius: BorderRadius.circular(inverted ? 14 : 12),
                   border: Border.all(
-                    color: focused
-                        ? AuthTheme.primary
-                        : const Color(0xFFE0E4E0),
-                    width: focused ? 1.5 : 1,
+                    color: border,
+                    width: inverted ? 2 : (focused ? 1.5 : 1),
                   ),
-                  boxShadow: focused
+                  boxShadow: !inverted && focused
                       ? [
                           BoxShadow(
                             color: AuthTheme.primary.withValues(alpha: 0.1),
@@ -112,14 +132,27 @@ class _OtpPinInputState extends State<OtpPinInput> {
                         ]
                       : null,
                 ),
-                child: Text(
-                  filled ? value[index] : '',
-                  style: GoogleFonts.inter(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                    color: AuthTheme.ink,
-                  ),
-                ),
+                child: filled
+                    ? Text(
+                        value[index],
+                        style: GoogleFonts.inter(
+                          fontSize: inverted ? 28 : 21,
+                          fontWeight: FontWeight.w800,
+                          color: digitColor,
+                        ),
+                      )
+                    : (inverted && !active
+                        ? Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: focused
+                                  ? AuthTheme.primary
+                                  : Colors.white.withValues(alpha: 0.3),
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        : null),
               );
             }),
           ),

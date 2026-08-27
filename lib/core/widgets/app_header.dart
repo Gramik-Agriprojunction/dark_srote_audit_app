@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../constants/app_assets.dart';
 import '../constants/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'gramik_brand_icon.dart';
@@ -40,19 +41,8 @@ class AppHeader extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primaryMid, AppColors.primaryDark],
-          ),
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x2E10402A),
-              blurRadius: 24,
-              offset: Offset(0, 10),
-            ),
-          ],
+          color: AppColors.primary,
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         child: Stack(
           children: [
@@ -245,10 +235,36 @@ class HeaderLogoutButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HeaderIconButton(
-      icon: Icons.logout_rounded,
-      tooltip: 'Logout',
-      onPressed: onPressed,
+    const size = 40.0;
+
+    return Tooltip(
+      message: 'Logout',
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(size / 2),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onPressed();
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Image.asset(
+                AppAssets.logoutIcon,
+                fit: BoxFit.contain,
+                color: Colors.white,
+                colorBlendMode: BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

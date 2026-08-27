@@ -4,6 +4,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/stock_audit_repository.dart';
+import '../utils/resolve_store_id.dart';
 
 class StockAuditState {
   const StockAuditState({
@@ -109,11 +110,7 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     state = state.copyWith(isLoadingLocations: true, clearMessages: true);
     try {
       final locations = await _repository.getBusinessLocations();
-      int? selectedId;
-      if (preferredStoreId != null &&
-          locations.any((location) => location.id == preferredStoreId)) {
-        selectedId = preferredStoreId;
-      }
+      final selectedId = resolvePreferredStoreId(locations, preferredStoreId);
       state = state.copyWith(
         locations: locations,
         isLoadingLocations: false,

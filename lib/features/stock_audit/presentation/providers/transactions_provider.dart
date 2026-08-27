@@ -4,6 +4,7 @@ import '../../../../core/network/api_exception.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/transaction_model.dart';
 import '../../data/stock_audit_repository.dart';
+import '../utils/resolve_store_id.dart';
 
 class TransactionsState {
   const TransactionsState({
@@ -66,8 +67,7 @@ class TransactionsController extends StateNotifier<TransactionsState> {
     );
     try {
       final locations = await _repository.getBusinessLocations();
-      final storeId = preferredStoreId ??
-          (locations.length == 1 ? locations.first.id : null);
+      final storeId = resolvePreferredStoreId(locations, preferredStoreId);
       state = state.copyWith(
         locations: locations,
         selectedStoreId: storeId,
