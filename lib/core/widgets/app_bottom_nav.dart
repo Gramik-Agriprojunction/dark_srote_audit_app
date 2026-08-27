@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../../../core/constants/app_colors.dart';
+import '../constants/app_colors.dart';
 
 enum AppTab { home, myProducts }
 
@@ -20,42 +21,42 @@ class AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE4EBE4))),
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Color(0x0F0F1F0F),
-            blurRadius: 18,
-            offset: Offset(0, -4),
+            color: Color(0x14101B12),
+            blurRadius: 24,
+            offset: Offset(0, -6),
           ),
         ],
       ),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        10 + MediaQuery.paddingOf(context).bottom,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _NavItem(
-              label: 'Home',
-              icon: Icons.home_rounded,
-              isActive: currentTab == AppTab.home,
-              onTap: onHomeTap,
-            ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _NavItem(
+                  label: 'Home',
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  isActive: currentTab == AppTab.home,
+                  onTap: onHomeTap,
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
+                  label: 'My Product',
+                  icon: Icons.inventory_2_outlined,
+                  activeIcon: Icons.inventory_2_rounded,
+                  isActive: currentTab == AppTab.myProducts,
+                  onTap: onMyProductsTap,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _NavItem(
-              label: 'My Product',
-              icon: Icons.inventory_2_outlined,
-              isActive: currentTab == AppTab.myProducts,
-              onTap: onMyProductsTap,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -65,44 +66,60 @@ class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.label,
     required this.icon,
+    required this.activeIcon,
     required this.isActive,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
+  final IconData activeIcon;
   final bool isActive;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isActive ? AppColors.footerActiveBg : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          height: 52,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isActive ? AppColors.primary : AppColors.textMuted,
-                size: 24,
+    final color = isActive ? AppColors.primaryDark : AppColors.textMuted;
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              height: 32,
+              width: isActive ? 62 : 44,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.footerActiveBg : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? AppColors.primary : AppColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              child: Center(
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  size: 22,
+                  color: color,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ],
         ),
       ),
     );

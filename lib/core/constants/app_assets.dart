@@ -1,6 +1,11 @@
 class AppAssets {
   AppAssets._();
 
-  static const gramikLogo = 'assets/images/gramik_logo.png';
-  static const gramikIcon = 'assets/images/gramik_icon.png';
+  /// StockShield badge with transparent corners — splash and login hero.
+  static const logo = 'assets/images/stockshield_logo.png';
+
+  /// Same badge as a rounded app-icon tile — small spots like the app bar.
+  static const icon = 'assets/images/stockshield_icon.png';
+
+  static const authFarmHero = 'assets/images/auth_farm_hero.jpg';
 }

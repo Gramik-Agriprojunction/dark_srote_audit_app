@@ -40,16 +40,25 @@ class ApiClient {
   late final Dio _dio;
   final SessionStorage _storage;
 
-  Future<Map<String, dynamic>> get(String path, {Map<String, dynamic>? query}) async {
+  Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(path, queryParameters: query);
+      final response = await _dio.get<Map<String, dynamic>>(
+        path,
+        queryParameters: query,
+      );
       return _unwrap(response.data);
     } on DioException catch (e) {
       throw _mapError(e);
     }
   }
 
-  Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body}) async {
+  Future<Map<String, dynamic>> post(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(path, data: body);
       return _unwrap(response.data);
@@ -63,7 +72,8 @@ class ApiClient {
       throw ApiException('Empty response from server');
     }
     final success = json['success'] != false;
-    final message = (json['message'] ?? json['msg'] ?? 'Something went wrong').toString();
+    final message = (json['message'] ?? json['msg'] ?? 'Something went wrong')
+        .toString();
     if (!success) {
       throw ApiException(message);
     }
@@ -73,7 +83,8 @@ class ApiClient {
   ApiException _mapError(DioException e) {
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {
-      final message = (data['message'] ?? data['msg'] ?? 'Something went wrong').toString();
+      final message = (data['message'] ?? data['msg'] ?? 'Something went wrong')
+          .toString();
       return ApiException(message, statusCode: e.response?.statusCode);
     }
     if (e.type == DioExceptionType.connectionError ||

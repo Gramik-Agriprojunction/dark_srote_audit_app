@@ -2,10 +2,10 @@ class RoleHelper {
   RoleHelper._();
 
   static String normalizeRoleName(String? roleName) {
-    return (roleName ?? '')
-        .trim()
-        .toUpperCase()
-        .replaceAll(RegExp(r'[\s_-]+'), '');
+    return (roleName ?? '').trim().toUpperCase().replaceAll(
+      RegExp(r'[\s_-]+'),
+      '',
+    );
   }
 
   static bool isDarkStoreRole(String? roleName) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/widgets/loading_button.dart';
 import '../providers/stock_audit_provider.dart';
 
@@ -17,7 +18,9 @@ Future<void> showCommentSheet({
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
+    showDragHandle: false,
     builder: (sheetContext) {
       return _CommentSheet(
         productId: productId,
@@ -78,7 +81,9 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
       _error = null;
     });
 
-    final ok = await ref.read(stockAuditControllerProvider.notifier).saveComment(
+    final ok = await ref
+        .read(stockAuditControllerProvider.notifier)
+        .saveComment(
           productId: widget.productId,
           variantId: widget.variantId,
           comment: comment,
@@ -98,73 +103,66 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        margin: const EdgeInsets.all(18),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
+    return AppSheet(
+      title: 'Add Comment',
+      subtitle: '${widget.productName} — ${widget.variantLabel}',
+      maxHeightFactor: 0.7,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Comment',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${widget.productName} — ${widget.variantLabel}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 10),
             TextField(
               controller: _controller,
               maxLines: 4,
               maxLength: 1000,
+              autofocus: true,
+              style: const TextStyle(fontSize: 14.5, height: 1.4),
               decoration: const InputDecoration(
                 hintText: 'Enter comment for this variant',
                 counterText: '',
               ),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                _error!,
-                style: const TextStyle(color: AppColors.errorText, fontSize: 13),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 15,
+                    color: AppColors.errorText,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppColors.errorText,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 44),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: const Text('Cancel'),
+                  child: LoadingButton(
+                    label: 'Cancel',
+                    secondary: true,
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.of(context).pop(),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
+                  flex: 2,
                   child: LoadingButton(
-                    label: 'Submit',
-                    compact: true,
+                    label: 'Save Comment',
                     isLoading: _submitting,
                     onPressed: _submit,
                   ),

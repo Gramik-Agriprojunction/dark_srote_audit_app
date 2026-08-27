@@ -6,10 +6,13 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
+import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ValueNotifier<AuthState>(ref.read(authControllerProvider));
+  final authNotifier = ValueNotifier<AuthState>(
+    ref.read(authControllerProvider),
+  );
 
   ref.listen<AuthState>(authControllerProvider, (_, next) {
     authNotifier.value = next;
@@ -18,26 +21,29 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(authNotifier.dispose);
 
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/splash',
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final auth = authNotifier.value;
       final loggingIn = state.matchedLocation == '/login';
 
+      // Splash decides where to go itself, once the session has been restored.
+      if (state.matchedLocation == '/splash') return null;
+
       if (auth.status == AuthStatus.unknown) return null;
-      if (auth.status == AuthStatus.unauthenticated && !loggingIn) return '/login';
+      if (auth.status == AuthStatus.unauthenticated && !loggingIn) {
+        return '/login';
+      }
       if (auth.status == AuthStatus.authenticated && loggingIn) return '/home';
       return null;
     },
     routes: [
       GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/my-products',
         builder: (context, state) => const MyProductsScreen(),
@@ -45,9 +51,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/variant-audit',
         builder: (context, state) {
-          final storeId = int.tryParse(state.uri.queryParameters['storeId'] ?? '') ?? 0;
-          final productId = int.tryParse(state.uri.queryParameters['productId'] ?? '') ?? 0;
-          final variantId = int.tryParse(state.uri.queryParameters['variantId'] ?? '') ?? 0;
+          final storeId =
+              int.tryParse(state.uri.queryParameters['storeId'] ?? '') ?? 0;
+          final productId =
+              int.tryParse(state.uri.queryParameters['productId'] ?? '') ?? 0;
+          final variantId =
+              int.tryParse(state.uri.queryParameters['variantId'] ?? '') ?? 0;
           if (storeId <= 0 || productId <= 0 || variantId <= 0) {
             return const HomeScreen();
           }

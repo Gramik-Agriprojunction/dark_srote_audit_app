@@ -28,9 +28,9 @@ class ProductModel {
       image: json['image']?.toString(),
       variants: variantsRaw is List
           ? variantsRaw
-              .whereType<Map<String, dynamic>>()
-              .map(ProductVariantModel.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(ProductVariantModel.fromJson)
+                .toList()
           : const [],
     );
   }
@@ -90,8 +90,11 @@ class ProductVariantModel {
           ? json['productId'] as int
           : int.parse('${json['productId']}'),
       sku: (json['sku'] ?? '').toString(),
-      label: (json['label'] ?? json['variantName'] ?? json['sku'] ?? 'Variant').toString(),
-      variantName: (json['variantName'] ?? json['label'] ?? json['sku'] ?? 'Variant').toString(),
+      label: (json['label'] ?? json['variantName'] ?? json['sku'] ?? 'Variant')
+          .toString(),
+      variantName:
+          (json['variantName'] ?? json['label'] ?? json['sku'] ?? 'Variant')
+              .toString(),
       auditQty: json['auditQty'] is int
           ? json['auditQty'] as int
           : int.tryParse('${json['auditQty']}') ?? 0,
@@ -129,7 +132,9 @@ class BulkSaveItemModel {
       variantId: json['variantId'] is int
           ? json['variantId'] as int
           : int.parse('${json['variantId']}'),
-      qty: json['qty'] is int ? json['qty'] as int : int.parse('${json['qty']}'),
+      qty: json['qty'] is int
+          ? json['qty'] as int
+          : int.parse('${json['qty']}'),
       updatedAt: updatedAt,
     );
   }
@@ -157,9 +162,9 @@ class BulkSaveResultModel {
           : int.tryParse('${json['updated']}') ?? 0,
       items: itemsRaw is List
           ? itemsRaw
-              .whereType<Map<String, dynamic>>()
-              .map(BulkSaveItemModel.fromJson)
-              .toList()
+                .whereType<Map<String, dynamic>>()
+                .map(BulkSaveItemModel.fromJson)
+                .toList()
           : const [],
     );
   }

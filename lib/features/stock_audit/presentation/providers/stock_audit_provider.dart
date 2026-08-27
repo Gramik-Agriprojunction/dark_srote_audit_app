@@ -75,26 +75,30 @@ class StockAuditState {
   }) {
     return StockAuditState(
       locations: locations ?? this.locations,
-      selectedLocationId:
-          clearSelectedLocation ? null : (selectedLocationId ?? this.selectedLocationId),
+      selectedLocationId: clearSelectedLocation
+          ? null
+          : (selectedLocationId ?? this.selectedLocationId),
       products: products ?? this.products,
       searchQuery: searchQuery ?? this.searchQuery,
       isLoadingLocations: isLoadingLocations ?? this.isLoadingLocations,
       isLoadingProducts: isLoadingProducts ?? this.isLoadingProducts,
       isSaving: isSaving ?? this.isSaving,
       error: clearMessages ? null : (error ?? this.error),
-      successMessage: clearMessages ? null : (successMessage ?? this.successMessage),
+      successMessage: clearMessages
+          ? null
+          : (successMessage ?? this.successMessage),
       qtyDrafts: clearDrafts ? const {} : (qtyDrafts ?? this.qtyDrafts),
-      emptyDraftVariantIds:
-          clearDrafts ? const {} : (emptyDraftVariantIds ?? this.emptyDraftVariantIds),
+      emptyDraftVariantIds: clearDrafts
+          ? const {}
+          : (emptyDraftVariantIds ?? this.emptyDraftVariantIds),
     );
   }
 }
 
 final stockAuditControllerProvider =
     StateNotifierProvider<StockAuditController, StockAuditState>((ref) {
-  return StockAuditController(ref.watch(stockAuditRepositoryProvider));
-});
+      return StockAuditController(ref.watch(stockAuditRepositoryProvider));
+    });
 
 class StockAuditController extends StateNotifier<StockAuditState> {
   StockAuditController(this._repository) : super(const StockAuditState());
@@ -138,12 +142,20 @@ class StockAuditController extends StateNotifier<StockAuditState> {
   }
 
   Future<void> loadProducts(int locationId) async {
-    state = state.copyWith(isLoadingProducts: true, clearMessages: true, clearDrafts: true);
+    state = state.copyWith(
+      isLoadingProducts: true,
+      clearMessages: true,
+      clearDrafts: true,
+    );
     try {
       final products = await _repository.getLocationProducts(locationId);
       state = state.copyWith(products: products, isLoadingProducts: false);
     } on ApiException catch (e) {
-      state = state.copyWith(isLoadingProducts: false, error: e.message, products: const []);
+      state = state.copyWith(
+        isLoadingProducts: false,
+        error: e.message,
+        products: const [],
+      );
     }
   }
 
@@ -166,12 +178,17 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       emptyIds.remove(variantId);
     }
 
-    state = state.copyWith(qtyDrafts: drafts, emptyDraftVariantIds: emptyIds, clearMessages: true);
+    state = state.copyWith(
+      qtyDrafts: drafts,
+      emptyDraftVariantIds: emptyIds,
+      clearMessages: true,
+    );
   }
 
   void clearQtyDraft(int variantId) {
     final drafts = Map<int, int>.from(state.qtyDrafts)..remove(variantId);
-    final emptyIds = Set<int>.from(state.emptyDraftVariantIds)..remove(variantId);
+    final emptyIds = Set<int>.from(state.emptyDraftVariantIds)
+      ..remove(variantId);
     state = state.copyWith(qtyDrafts: drafts, emptyDraftVariantIds: emptyIds);
   }
 
@@ -188,7 +205,9 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     if (items.isEmpty) return;
     final products = state.products.map((product) {
       final variants = product.variants.map((variant) {
-        final saved = items.where((item) => item.variantId == variant.id).firstOrNull;
+        final saved = items
+            .where((item) => item.variantId == variant.id)
+            .firstOrNull;
         if (saved == null) return variant;
         return variant.copyWith(
           auditQty: saved.qty,
@@ -231,7 +250,9 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       }
       state = state.copyWith(
         isSaving: false,
-        successMessage: result.updated > 0 ? 'Successfully updated.' : 'Successfully saved.',
+        successMessage: result.updated > 0
+            ? 'Successfully updated.'
+            : 'Successfully saved.',
       );
       return true;
     } on ApiException catch (e) {
@@ -262,7 +283,9 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     }
 
     if (items.isEmpty) {
-      state = state.copyWith(error: 'Kam se kam ek variant ki qty update karein.');
+      state = state.copyWith(
+        error: 'Kam se kam ek variant ki qty update karein.',
+      );
       return false;
     }
 
@@ -277,7 +300,9 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       }
       state = state.copyWith(
         isSaving: false,
-        successMessage: result.updated > 0 ? 'Successfully updated.' : 'Successfully saved.',
+        successMessage: result.updated > 0
+            ? 'Successfully updated.'
+            : 'Successfully saved.',
       );
       return true;
     } on ApiException catch (e) {

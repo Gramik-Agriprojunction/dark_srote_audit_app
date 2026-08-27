@@ -8,10 +8,12 @@ import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/app_header.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/business_location_model.dart';
 import '../data/models/product_mismatch_model.dart';
 import 'providers/my_products_provider.dart';
+import 'widgets/business_location_picker.dart';
 
 class MyProductsScreen extends ConsumerStatefulWidget {
   const MyProductsScreen({super.key});
@@ -35,9 +37,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
     final preferredStoreId = await storage.getSelectedStoreId();
-    await ref.read(myProductsControllerProvider.notifier).initialize(
-          preferredStoreId: preferredStoreId,
-        );
+    await ref
+        .read(myProductsControllerProvider.notifier)
+        .initialize(preferredStoreId: preferredStoreId);
   }
 
   Future<void> _logout() async {
@@ -49,7 +51,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
     await storage.saveSelectedStoreId(storeId);
-    await ref.read(myProductsControllerProvider.notifier).setStoreFilter(storeId);
+    await ref
+        .read(myProductsControllerProvider.notifier)
+        .setStoreFilter(storeId);
   }
 
   @override
@@ -60,114 +64,114 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     final rows = state.pagedRows;
     final formatter = NumberFormat.decimalPattern('en_IN');
 
+    final missing = state.filteredRows.where((r) => r.difference > 0).length;
+    final extra = state.filteredRows.where((r) => r.difference < 0).length;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           AppHeader(
-            title: 'Stock Audit',
+            title: 'My Product',
             showBrandIcon: true,
             subtitle: 'Namaste, $userName',
             trailing: HeaderLogoutButton(onPressed: _logout),
+            bottom: AppCard(
+              padding: const EdgeInsets.all(14),
+              radius: 18,
+              shadow: AppColors.floatShadow,
+              child: _ReportLocationFilter(
+                locations: state.locations,
+                selectedId: state.selectedStoreId,
+                onChanged: _onStoreChanged,
+              ),
+            ),
           ),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () => ref.read(myProductsControllerProvider.notifier).loadReport(),
+              onRefresh: () =>
+                  ref.read(myProductsControllerProvider.notifier).loadReport(),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 100),
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
                 children: [
                   if (state.error != null) ...[
                     AlertBanner(message: state.error!, isError: true),
                     const SizedBox(height: 14),
                   ],
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x0A000000),
-                          blurRadius: 20,
-                          offset: Offset(0, 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatTile(
+                          label: 'Mismatch',
+                          value: '${state.total}',
+                          icon: Icons.difference_outlined,
+                          color: AppColors.primaryDark,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Full Inventory Plot Run Report',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Only SKUs with a mismatch (difference ≠ 0)',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatTile(
+                          label: 'Short',
+                          value: '$missing',
+                          icon: Icons.trending_down_rounded,
+                          color: AppColors.outStock,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                          child: _ReportLocationFilter(
-                            locations: state.locations,
-                            selectedId: state.selectedStoreId,
-                            onChanged: _onStoreChanged,
-                          ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatTile(
+                          label: 'Extra',
+                          value: '$extra',
+                          icon: Icons.trending_up_rounded,
+                          color: AppColors.warning,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                          child: TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Search product, SKU or darkstore',
-                              prefixIcon: const Icon(Icons.search, size: 20),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onChanged: ref.read(myProductsControllerProvider.notifier).setSearch,
-                          ),
-                        ),
-                        const Divider(height: 1, color: AppColors.border),
-                        if (state.isLoading)
-                          const Padding(
-                            padding: EdgeInsets.all(28),
-                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          )
-                        else if (rows.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(28),
-                            child: Center(
-                              child: Text(
-                                'No mismatch found.',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                              ),
-                            ),
-                          )
-                        else
-                          ...rows.map((row) => _MismatchRow(row: row, formatter: formatter)),
-                        if (!state.isLoading && state.total > 0) ...[
-                          const Divider(height: 1, color: AppColors.border),
-                          _PaginationBar(state: state),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 20),
+                  const SectionHeading(
+                    title: 'Inventory Plot Run',
+                    subtitle: 'Sirf wahi SKU jinme difference ≠ 0 hai',
+                  ),
+                  const SizedBox(height: 14),
+                  AppSearchField(
+                    hintText: 'Search product, SKU or darkstore',
+                    onChanged: ref
+                        .read(myProductsControllerProvider.notifier)
+                        .setSearch,
+                  ),
+                  const SizedBox(height: 16),
+                  if (state.isLoading)
+                    const Column(
+                      children: [
+                        ProductRowSkeleton(),
+                        ProductRowSkeleton(),
+                        ProductRowSkeleton(),
+                      ],
+                    )
+                  else if (rows.isEmpty)
+                    AppCard(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: const AppEmptyState(
+                        icon: Icons.verified_outlined,
+                        title: 'Koi mismatch nahi mila',
+                        message:
+                            'Is location ke saare audited SKU system stock se match kar rahe hain.',
+                      ),
+                    )
+                  else ...[
+                    ...rows.map(
+                      (row) => _MismatchCard(row: row, formatter: formatter),
+                    ),
+                    if (state.total > 0) ...[
+                      const SizedBox(height: 4),
+                      _PaginationBar(state: state),
+                    ],
+                  ],
                 ],
               ),
             ),
@@ -183,9 +187,59 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
   }
 }
 
-class _StoreFilterResult {
-  const _StoreFilterResult(this.storeId);
-  final int? storeId;
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+      radius: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.6,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ReportLocationFilter extends StatelessWidget {
@@ -203,232 +257,183 @@ class _ReportLocationFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final selectedLabel = selectedId == null
         ? 'All Business Locations'
-        : locations.where((l) => l.id == selectedId).firstOrNull?.label ?? 'Select location';
+        : locations
+                  .where((l) => l.id == selectedId)
+                  .map((l) => l.label)
+                  .firstOrNull ??
+              'Select location';
+    final parts = selectedId == null
+        ? (title: selectedLabel, subtitle: null)
+        : splitLocationLabel(selectedLabel);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'BUSINESS LOCATION',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: () async {
-              final result = await showModalBottomSheet<_StoreFilterResult>(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => _AllLocationsSheet(
-                  locations: locations,
-                  selectedId: selectedId,
-                ),
-              );
-              if (result != null) onChanged(result.storeId);
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                suffixIcon: const Icon(Icons.keyboard_arrow_down_rounded),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Text(
-                selectedLabel,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13),
-              ),
-            ),
-          ),
+        const FieldLabel('Business Location', icon: Icons.place_outlined),
+        const SizedBox(height: 10),
+        AppSelectTile(
+          value: parts.title,
+          subtitle: parts.subtitle,
+          icon: selectedId == null
+              ? Icons.apps_rounded
+              : Icons.storefront_rounded,
+          onTap: () async {
+            final result = await showLocationPickerSheet(
+              context: context,
+              locations: locations,
+              selectedId: selectedId,
+              includeAllOption: true,
+            );
+            if (result != null) onChanged(result.id);
+          },
         ),
       ],
     );
   }
 }
 
-class _AllLocationsSheet extends StatefulWidget {
-  const _AllLocationsSheet({
-    required this.locations,
-    required this.selectedId,
-  });
-
-  final List<BusinessLocationModel> locations;
-  final int? selectedId;
-
-  @override
-  State<_AllLocationsSheet> createState() => _AllLocationsSheetState();
-}
-
-class _AllLocationsSheetState extends State<_AllLocationsSheet> {
-  final _controller = TextEditingController();
-  String _query = '';
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  List<({int? id, String label})> get _options {
-    final all = <({int? id, String label})>[
-      (id: null, label: 'All Business Locations'),
-      ...widget.locations.map((l) => (id: l.id, label: l.label)),
-    ];
-    final term = _query.trim().toLowerCase();
-    if (term.isEmpty) return all;
-    return all.where((item) => item.label.toLowerCase().contains(term)).toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        margin: const EdgeInsets.all(12),
-        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
-        child: Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _controller,
-                decoration: const InputDecoration(
-                  hintText: 'Search business location...',
-                  prefixIcon: Icon(Icons.search, size: 20),
-                ),
-                onChanged: (v) => setState(() => _query = v),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _options.length,
-                separatorBuilder: (_, _) => const Divider(
-                  height: 1,
-                  indent: 16,
-                  endIndent: 16,
-                  color: Color(0xFFEEF3EE),
-                ),
-                itemBuilder: (context, index) {
-                  final item = _options[index];
-                  final isSelected = item.id == widget.selectedId;
-                  return Material(
-                    color: isSelected ? AppColors.footerActiveBg : Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.pop(
-                        context,
-                        _StoreFilterResult(item.id),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.label,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                            if (isSelected)
-                              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MismatchRow extends StatelessWidget {
-  const _MismatchRow({required this.row, required this.formatter});
+class _MismatchCard extends StatelessWidget {
+  const _MismatchCard({required this.row, required this.formatter});
 
   final ProductMismatchRow row;
   final NumberFormat formatter;
 
   @override
   Widget build(BuildContext context) {
-    final diffColor = row.difference < 0
-        ? AppColors.outStock
-        : row.difference > 0
-            ? AppColors.inStock
-            : AppColors.textPrimary;
+    final isShort = row.difference > 0;
+    final diffColor = isShort ? AppColors.outStock : AppColors.warning;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEEF3EE))),
-      ),
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      radius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            row.productName,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          if ((row.variantLabel ?? '').isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                row.variantLabel!,
-                style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary),
-              ),
-            ),
-          const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _MetricCell(
-                  label: 'System Stock',
-                  value: formatter.format(row.systemStock),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row.productName,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        height: 1.25,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if ((row.variantLabel ?? '').isNotEmpty ||
+                        (row.sku ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if ((row.variantLabel ?? '').isNotEmpty)
+                            AppChip(
+                              label: row.variantLabel!,
+                              color: AppColors.textSecondary,
+                              background: AppColors.fieldBg,
+                            ),
+                          if ((row.sku ?? '').isNotEmpty)
+                            AppChip(
+                              label: row.sku!,
+                              color: AppColors.textMuted,
+                              background: AppColors.fieldBg,
+                              bold: false,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              Expanded(
-                child: _MetricCell(
-                  label: 'Total Physical Stock',
-                  value: formatter.format(row.physicalStock),
-                ),
-              ),
-              Expanded(
-                child: _MetricCell(
-                  label: 'Difference',
-                  value: formatter.format(row.difference),
-                  valueColor: diffColor,
-                ),
+              const SizedBox(width: 10),
+              AppChip(
+                label:
+                    '${row.difference > 0 ? '-' : '+'}${formatter.format(row.difference.abs())}',
+                icon: isShort
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
+                color: diffColor,
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(
+              color: AppColors.fieldBg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _MetricCell(
+                    label: 'System',
+                    value: formatter.format(row.systemStock),
+                  ),
+                ),
+                const _MetricDivider(),
+                Expanded(
+                  child: _MetricCell(
+                    label: 'Physical',
+                    value: formatter.format(row.physicalStock),
+                  ),
+                ),
+                const _MetricDivider(),
+                Expanded(
+                  child: _MetricCell(
+                    label: 'Difference',
+                    value: formatter.format(row.difference),
+                    valueColor: diffColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if ((row.storeName ?? '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  Icons.storefront_outlined,
+                  size: 13,
+                  color: AppColors.textMuted,
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    row.storeName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 26, color: AppColors.border);
   }
 }
 
@@ -446,23 +451,23 @@ class _MetricCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
           label.toUpperCase(),
           style: const TextStyle(
             fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textSecondary,
-            letterSpacing: 0.3,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textMuted,
+            letterSpacing: 0.6,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
           value,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
             color: valueColor ?? AppColors.textPrimary,
           ),
         ),
@@ -482,27 +487,77 @@ class _PaginationBar extends ConsumerWidget {
     final total = state.total;
     final start = total == 0 ? 0 : ((state.page - 1) * state.limit) + 1;
     final end = (state.page * state.limit).clamp(0, total);
+    final totalPages = state.totalPages == 0 ? 1 : state.totalPages;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      radius: 18,
       child: Row(
         children: [
           Expanded(
             child: Text(
               'Showing $start–$end of $total',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
-          IconButton(
-            onPressed: state.page > 1 ? () => notifier.setPage(state.page - 1) : null,
-            icon: const Icon(Icons.chevron_left_rounded),
+          _PageButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: state.page > 1
+                ? () => notifier.setPage(state.page - 1)
+                : null,
           ),
-          Text('${state.page}/${state.totalPages == 0 ? 1 : state.totalPages}'),
-          IconButton(
-            onPressed: state.page < state.totalPages ? () => notifier.setPage(state.page + 1) : null,
-            icon: const Icon(Icons.chevron_right_rounded),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              '${state.page} / $totalPages',
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          _PageButton(
+            icon: Icons.chevron_right_rounded,
+            onTap: state.page < state.totalPages
+                ? () => notifier.setPage(state.page + 1)
+                : null,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PageButton extends StatelessWidget {
+  const _PageButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
+    return Material(
+      color: enabled ? AppColors.primarySoft : AppColors.fieldBg,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(11),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(
+            icon,
+            size: 20,
+            color: enabled ? AppColors.primaryDark : AppColors.textMuted,
+          ),
+        ),
       ),
     );
   }

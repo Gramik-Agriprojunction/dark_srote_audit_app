@@ -1,6 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
+
+/// Adds the subtle press-in scale that native buttons have.
+class PressScale extends StatefulWidget {
+  const PressScale({
+    super.key,
+    required this.child,
+    required this.onTap,
+    this.borderRadius = 16,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double borderRadius;
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+      onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+      onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
+      onTap: enabled
+          ? () {
+              HapticFeedback.lightImpact();
+              widget.onTap!();
+            }
+          : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
 
 class LoadingButton extends StatelessWidget {
   const LoadingButton({
@@ -11,6 +57,7 @@ class LoadingButton extends StatelessWidget {
     this.enabled = true,
     this.compact = false,
     this.secondary = false,
+    this.icon,
   });
 
   final String label;
@@ -19,48 +66,63 @@ class LoadingButton extends StatelessWidget {
   final bool enabled;
   final bool compact;
   final bool secondary;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     final active = enabled && !isLoading && onPressed != null;
+    final radius = compact ? 12.0 : 16.0;
+    final height = compact ? 36.0 : 54.0;
 
     if (secondary) {
-      return SizedBox(
-        width: compact ? 56 : null,
-        height: compact ? 32 : 52,
-        child: OutlinedButton(
-          onPressed: active ? onPressed : null,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primaryDark,
-            backgroundColor: AppColors.btnSecondaryBg,
-            side: const BorderSide(color: AppColors.btnSecondaryBorder),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(compact ? 9 : 14)),
-            textStyle: TextStyle(
-              fontSize: compact ? 12 : 15,
-              fontWeight: FontWeight.w700,
+      return PressScale(
+        borderRadius: radius,
+        onTap: active ? onPressed : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: height,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primarySoft : AppColors.fieldBg,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: active ? AppColors.primarySoftBorder : AppColors.border,
             ),
-            padding: compact ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 12),
           ),
-          child: isLoading
-              ? SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primaryDark.withValues(alpha: active ? 1 : 0.5),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: AppColors.primaryDark,
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: compact ? 13 : 15,
+                      fontWeight: FontWeight.w700,
+                      color: active
+                          ? AppColors.primaryDark
+                          : AppColors.textMuted,
+                    ),
                   ),
-                )
-              : Text(label),
+          ),
         ),
       );
     }
 
-    return SizedBox(
-      width: double.infinity,
-      height: compact ? 32 : 52,
-      child: DecoratedBox(
+    return PressScale(
+      borderRadius: radius,
+      onTap: active ? onPressed : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(compact ? 9 : 14),
+          borderRadius: BorderRadius.circular(radius),
           gradient: active
               ? const LinearGradient(
                   begin: Alignment.topLeft,
@@ -68,49 +130,57 @@ class LoadingButton extends StatelessWidget {
                   colors: [AppColors.primaryMid, AppColors.primaryDark],
                 )
               : null,
-          color: active ? null : AppColors.primaryMid.withValues(alpha: 0.65),
+          color: active ? null : AppColors.border,
           boxShadow: active
               ? const [
                   BoxShadow(
-                    color: Color(0x4D1A7A52),
-                    blurRadius: 22,
-                    offset: Offset(0, 6),
+                    color: Color(0x452E8B57),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
                   ),
                 ]
               : null,
         ),
-        child: ElevatedButton(
-          onPressed: active ? onPressed : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            disabledForegroundColor: Colors.white70,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(compact ? 9 : 14)),
-            textStyle: TextStyle(
-              fontSize: compact ? 12 : 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+        child: Center(
           child: isLoading
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        strokeWidth: 2.4,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(label),
+                    Text(label, style: _labelStyle(active, compact)),
                   ],
                 )
-              : Text(label),
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(
+                        icon,
+                        size: compact ? 16 : 19,
+                        color: active ? Colors.white : AppColors.textMuted,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(label, style: _labelStyle(active, compact)),
+                  ],
+                ),
         ),
       ),
     );
   }
+
+  TextStyle _labelStyle(bool active, bool compact) => TextStyle(
+    fontSize: compact ? 13 : 15.5,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.1,
+    color: active ? Colors.white : AppColors.textMuted,
+  );
 }

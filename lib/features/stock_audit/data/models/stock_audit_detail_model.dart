@@ -38,7 +38,8 @@ class StockAuditDetailModel {
           ? json['variantId'] as int
           : int.parse('${json['variantId']}'),
       productName: (json['productName'] ?? 'Product').toString(),
-      variantLabel: (json['variantLabel'] ?? json['variantSku'] ?? 'Variant').toString(),
+      variantLabel: (json['variantLabel'] ?? json['variantSku'] ?? 'Variant')
+          .toString(),
       variantSku: (json['variantSku'] ?? '').toString(),
       image: json['image']?.toString(),
       currentStock: json['currentStock'] is int

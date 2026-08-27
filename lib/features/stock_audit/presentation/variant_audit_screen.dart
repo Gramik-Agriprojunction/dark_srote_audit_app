@@ -9,7 +9,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_header.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/stock_audit_detail_model.dart';
@@ -61,7 +61,9 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
     });
 
     try {
-      final detail = await ref.read(stockAuditRepositoryProvider).getAuditDetail(
+      final detail = await ref
+          .read(stockAuditRepositoryProvider)
+          .getAuditDetail(
             businessLocationId: widget.storeId,
             productId: widget.productId,
             variantId: widget.variantId,
@@ -70,7 +72,9 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
       setState(() {
         _detail = detail;
         _loading = false;
-        _damageQtyController.text = detail.damageQty > 0 ? '${detail.damageQty}' : '';
+        _damageQtyController.text = detail.damageQty > 0
+            ? '${detail.damageQty}'
+            : '';
         _damageCommentController.text = detail.damageComment ?? '';
       });
     } on ApiException catch (e) {
@@ -80,6 +84,14 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
         _error = e.message;
       });
     }
+  }
+
+  void _stepDamage(int delta) {
+    final current = int.tryParse(_damageQtyController.text.trim()) ?? 0;
+    final next = current + delta;
+    if (next < 0) return;
+    HapticFeedback.selectionClick();
+    setState(() => _damageQtyController.text = '$next');
   }
 
   Future<void> _submit() async {
@@ -106,16 +118,17 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
     });
 
     try {
-      final wasUpdated =
-          await ref.read(stockAuditRepositoryProvider).saveDiscrepancy(
-                businessLocationId: widget.storeId,
-                productId: widget.productId,
-                variantId: widget.variantId,
-                damageQty: damageQty,
-                damageComment: _damageCommentController.text.trim().isEmpty
-                    ? null
-                    : _damageCommentController.text.trim(),
-              );
+      final wasUpdated = await ref
+          .read(stockAuditRepositoryProvider)
+          .saveDiscrepancy(
+            businessLocationId: widget.storeId,
+            productId: widget.productId,
+            variantId: widget.variantId,
+            damageQty: damageQty,
+            damageComment: _damageCommentController.text.trim().isEmpty
+                ? null
+                : _damageCommentController.text.trim(),
+          );
 
       if (!mounted) return;
       setState(() {
@@ -144,15 +157,20 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
         children: [
           AppHeader(
             centerTitle: true,
-            title: 'Stock Audit Detail',
-            subtitle: detail?.variantSku ?? (_loading ? 'Loading...' : 'Variant audit'),
+            title: 'Audit Detail',
+            subtitle:
+                detail?.variantSku ??
+                (_loading ? 'Loading...' : 'Variant audit'),
             leading: HeaderBackButton(
               onPressed: () => context.go('/home?storeId=${widget.storeId}'),
             ),
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 20, 18, 100),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
               children: [
                 if (_error != null) ...[
                   AlertBanner(message: _error!, isError: true),
@@ -163,101 +181,175 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                   const SizedBox(height: 14),
                 ],
                 if (_loading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                else if (detail != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
+                  const AppCard(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _DetailImage(imageUrl: detail.image),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        AppSkeleton(height: 62, radius: 16),
+                        SizedBox(height: 16),
+                        AppSkeleton(height: 14, width: 160),
+                        SizedBox(height: 10),
+                        AppSkeleton(height: 14, width: 110),
+                      ],
+                    ),
+                  )
+                else if (detail != null) ...[
+                  AppCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _DetailImage(imageUrl: detail.image),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    detail.productName,
+                                    style: const TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 7),
+                                  AppChip(
+                                    label: detail.variantLabel,
+                                    color: AppColors.textSecondary,
+                                    background: AppColors.fieldBg,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.fieldBg,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
                             children: [
-                              Text(
-                                detail.productName,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
+                              Expanded(
+                                child: _StatCell(
+                                  label: 'System Stock',
+                                  value: '${detail.currentStock}',
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                detail.variantLabel,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF4B5F4B),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: AppColors.border,
+                              ),
+                              Expanded(
+                                child: _StatCell(
+                                  label: 'Audit Qty',
+                                  value: '${detail.auditQty}',
+                                  valueColor: AppColors.primaryDark,
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'System stock: ${detail.currentStock} Pcs · Audit: ${detail.auditQty} Pcs',
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Last updated: ${DateFormatter.formatAuditDetailUpdatedAt(detail.auditUpdatedAt)}',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                               ),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.history_rounded,
+                              size: 13,
+                              color: AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                DateFormatter.formatAuditDetailUpdatedAt(
+                                  detail.auditUpdatedAt,
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
+                  AppCard(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'DAMAGE QTY',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark,
-                            letterSpacing: 0.4,
-                          ),
+                        const SectionHeading(
+                          title: 'Damage Quantity',
+                          subtitle:
+                              'Audit qty me se kitna stock damaged hai wo enter karein.',
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            _CircleStep(
+                              icon: Icons.remove_rounded,
+                              onTap: () => _stepDamage(-1),
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: _damageQtyController,
+                                keyboardType: TextInputType.number,
+                                textAlign: TextAlign.center,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.5,
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText: '0',
+                                  filled: false,
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  hintStyle: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            _CircleStep(
+                              icon: Icons.add_rounded,
+                              onTap: () => _stepDamage(1),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        const FieldLabel(
+                          'Comment',
+                          icon: Icons.chat_bubble_outline_rounded,
                         ),
                         const SizedBox(height: 10),
                         TextField(
-                          controller: _damageQtyController,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(hintText: '0'),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'COMMENT',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        TextField(
                           controller: _damageCommentController,
-                          maxLines: 2,
+                          maxLines: 3,
                           maxLength: 1000,
+                          style: const TextStyle(fontSize: 14, height: 1.4),
                           decoration: const InputDecoration(
                             hintText: 'Damage stock comment (optional)',
                             counterText: '',
@@ -266,23 +358,80 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  LoadingButton(
-                    label: 'Submit',
-                    isLoading: _submitting,
-                    onPressed: _submitting ? null : _submit,
-                  ),
                 ],
               ],
             ),
           ),
-          AppBottomNav(
-            currentTab: AppTab.home,
-            onHomeTap: () => context.go('/home?storeId=${widget.storeId}'),
-            onMyProductsTap: () => context.go('/my-products'),
-          ),
+          if (!_loading && detail != null)
+            StickyActionBar(
+              child: LoadingButton(
+                label: _submitting ? 'Submitting...' : 'Submit',
+                icon: Icons.check_rounded,
+                isLoading: _submitting,
+                onPressed: _submitting ? null : _submit,
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _CircleStep extends StatelessWidget {
+  const _CircleStep({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primarySoft,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 46,
+          height: 46,
+          child: Icon(icon, size: 22, color: AppColors.primaryDark),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  const _StatCell({required this.label, required this.value, this.valueColor});
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+            color: AppColors.textMuted,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$value Pcs',
+          style: TextStyle(
+            fontSize: 15.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+            color: valueColor ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -295,19 +444,36 @@ class _DetailImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      width: 62,
+      height: 62,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFDFEBDF)),
+        color: AppColors.fieldBg,
+        borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
       child: imageUrl != null && imageUrl!.isNotEmpty
-          ? CachedNetworkImage(imageUrl: imageUrl!, fit: BoxFit.cover)
-          : const Center(
-              child: Text('Img', style: TextStyle(fontSize: 9, color: AppColors.textSecondary)),
-            ),
+          ? CachedNetworkImage(
+              imageUrl: imageUrl!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 200),
+              errorWidget: (_, _, _) => const _Fallback(),
+            )
+          : const _Fallback(),
+    );
+  }
+}
+
+class _Fallback extends StatelessWidget {
+  const _Fallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: 24,
+        color: AppColors.textMuted,
+      ),
     );
   }
 }

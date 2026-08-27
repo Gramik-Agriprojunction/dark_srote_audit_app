@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/widgets/loading_button.dart';
 import '../../data/models/product_model.dart';
 import '../providers/stock_audit_provider.dart';
@@ -82,6 +83,26 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     );
   }
 
+  /// Shared by the text field and the +/- stepper so both behave identically.
+  void _applyQty(int value) {
+    final notifier = ref.read(stockAuditControllerProvider.notifier);
+    final baseline = AuditQtyHelper.todayAuditQty(widget.variant);
+    if (value == baseline && _isRecent) {
+      notifier.clearQtyDraft(widget.variant.id);
+    } else {
+      notifier.setQtyDraft(widget.variant.id, value);
+    }
+  }
+
+  void _step(int delta) {
+    final current = int.tryParse(_controller.text.trim()) ?? 0;
+    final next = current + delta;
+    if (next < 0) return;
+    HapticFeedback.selectionClick();
+    _controller.text = '$next';
+    _applyQty(next);
+  }
+
   Future<void> _save() async {
     if (!_canSave || _saving) return;
     setState(() => _saving = true);
@@ -90,7 +111,9 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     final draft = state.qtyDrafts[widget.variant.id];
     final qty = draft ?? AuditQtyHelper.todayAuditQty(widget.variant);
 
-    final ok = await ref.read(stockAuditControllerProvider.notifier).saveSingleVariant(
+    final ok = await ref
+        .read(stockAuditControllerProvider.notifier)
+        .saveSingleVariant(
           productId: widget.product.id,
           variantId: widget.variant.id,
           qty: qty,
@@ -105,110 +128,172 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   @override
   Widget build(BuildContext context) {
     final pcsQty = AuditQtyHelper.displayPcsQty(widget.variant);
-    final updatedLabel = DateFormatter.formatAuditUpdatedAt(widget.variant.auditUpdatedAt);
+    final updatedLabel = DateFormatter.formatAuditUpdatedAt(
+      widget.variant.auditUpdatedAt,
+    );
     final saveLabel = _isRecent ? 'Update' : 'Save';
+    final hasComment = (widget.variant.auditComment ?? '').trim().isNotEmpty;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.all(6),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
       decoration: BoxDecoration(
-        color: _isRecent ? AppColors.auditRecentBg : Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _isRecent ? AppColors.auditRecentBorder : const Color(0xFFE6EFE6),
+          color: _isRecent ? AppColors.auditRecentBorder : Colors.transparent,
+          width: 1.2,
         ),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ProductThumb(imageUrl: widget.product.image),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        color: AppColors.textPrimary,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        AppChip(
+                          label: widget.variant.variantName,
+                          color: AppColors.textSecondary,
+                          background: AppColors.fieldBg,
+                        ),
+                        AppChip(
+                          label: '$pcsQty Pcs',
+                          icon: pcsQty > 0
+                              ? Icons.check_circle_rounded
+                              : Icons.remove_circle_outline_rounded,
+                          color: pcsQty > 0
+                              ? AppColors.inStock
+                              : AppColors.outStock,
+                        ),
+                        if (hasComment)
+                          const AppChip(
+                            label: 'Note',
+                            icon: Icons.sticky_note_2_outlined,
+                            color: AppColors.warning,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              _RowMenuButton(
+                onDamage: widget.onOpenDamage,
+                onComment: widget.onOpenComment,
+              ),
+            ],
+          ),
+          if (updatedLabel.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 58),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.history_rounded,
+                    size: 12,
+                    color: AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Updated $updatedLabel',
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _qtyStepper()),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 84,
+                child: LoadingButton(
+                  label: saveLabel,
+                  compact: true,
+                  secondary: true,
+                  enabled: _canSave,
+                  isLoading: _saving,
+                  onPressed: _canSave ? _save : null,
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _qtyStepper() {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.fieldBg,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          _StepButton(icon: Icons.remove_rounded, onTap: () => _step(-1)),
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ProductThumb(imageUrl: widget.product.image),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Wrap(
-                        spacing: 10,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            widget.variant.variantName,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF4B5F4B),
-                            ),
-                          ),
-                          Text(
-                            '$pcsQty Pcs',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: pcsQty > 0 ? AppColors.inStock : AppColors.outStock,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (updatedLabel.isNotEmpty)
-                        Text(
-                          'Updated $updatedLabel',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 68,
             child: TextField(
               controller: _controller,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
               ),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                filled: false,
                 hintText: '0',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFD9E5D9)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFD9E5D9)),
-                ),
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
               onChanged: (raw) {
-                final notifier = ref.read(stockAuditControllerProvider.notifier);
+                final notifier = ref.read(
+                  stockAuditControllerProvider.notifier,
+                );
                 final trimmed = raw.trim();
                 if (trimmed.isEmpty) {
-                  notifier.setQtyDraft(widget.variant.id, null, emptyInput: true);
+                  notifier.setQtyDraft(
+                    widget.variant.id,
+                    null,
+                    emptyInput: true,
+                  );
                   return;
                 }
                 final val = int.tryParse(trimmed);
@@ -216,49 +301,94 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                   _syncController();
                   return;
                 }
-                final baseline = AuditQtyHelper.todayAuditQty(widget.variant);
-                final auditedToday =
-                    DateFormatter.isAuditUpdatedToday(widget.variant.auditUpdatedAt);
-                if (val == baseline && auditedToday) {
-                  notifier.clearQtyDraft(widget.variant.id);
-                } else {
-                  notifier.setQtyDraft(widget.variant.id, val);
-                }
+                _applyQty(val);
               },
             ),
           ),
-          const SizedBox(width: 6),
-          LoadingButton(
-            label: saveLabel,
-            compact: true,
-            secondary: true,
-            enabled: _canSave,
-            isLoading: _saving,
-            onPressed: _canSave ? _save : null,
-          ),
-          PopupMenuButton<String>(
-            padding: EdgeInsets.zero,
-            icon: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDBE6DB)),
-              ),
-              child: const Icon(Icons.more_vert, size: 18, color: Color(0xFF4B5F4B)),
-            ),
-            onSelected: (value) {
-              if (value == 'damage') widget.onOpenDamage();
-              if (value == 'comment') widget.onOpenComment();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'damage', child: Text('Update Damage Quantity')),
-              PopupMenuItem(value: 'comment', child: Text('Comment')),
-            ],
-          ),
+          _StepButton(icon: Icons.add_rounded, onTap: () => _step(1)),
         ],
       ),
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  const _StepButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 38,
+          height: 40,
+          child: Icon(icon, size: 18, color: AppColors.primaryDark),
+        ),
+      ),
+    );
+  }
+}
+
+class _RowMenuButton extends StatelessWidget {
+  const _RowMenuButton({required this.onDamage, required this.onComment});
+
+  final VoidCallback onDamage;
+  final VoidCallback onComment;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      padding: EdgeInsets.zero,
+      splashRadius: 18,
+      offset: const Offset(0, 34),
+      icon: const Icon(
+        Icons.more_vert_rounded,
+        size: 20,
+        color: AppColors.textMuted,
+      ),
+      onSelected: (value) {
+        HapticFeedback.selectionClick();
+        if (value == 'damage') onDamage();
+        if (value == 'comment') onComment();
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: 'damage',
+          height: 46,
+          child: Row(
+            children: [
+              Icon(
+                Icons.report_gmailerrorred_rounded,
+                size: 18,
+                color: AppColors.warning,
+              ),
+              SizedBox(width: 10),
+              Text('Update Damage Qty'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'comment',
+          height: 46,
+          child: Row(
+            children: [
+              Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 10),
+              Text('Comment'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -271,19 +401,20 @@ class _ProductThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 46,
+      height: 46,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F7F3),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFDFEBDF)),
+        color: AppColors.fieldBg,
+        borderRadius: BorderRadius.circular(14),
       ),
       clipBehavior: Clip.antiAlias,
       child: imageUrl != null && imageUrl!.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: imageUrl!,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => const _FallbackImage(),
+              fadeInDuration: const Duration(milliseconds: 200),
+              placeholder: (_, _) => const _FallbackImage(),
+              errorWidget: (_, _, _) => const _FallbackImage(),
             )
           : const _FallbackImage(),
     );
@@ -296,9 +427,10 @@ class _FallbackImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: Text(
-        'Img',
-        style: TextStyle(fontSize: 9, color: AppColors.textSecondary),
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: 20,
+        color: AppColors.textMuted,
       ),
     );
   }

@@ -1,6 +1,6 @@
-# dark_srote_audit_app
+# StockShield
 
-Gramik Stock Audit Flutter app — Dark Store users ke liye physical stock audit.
+StockShield — Gramik stock audit Flutter app, Dark Store users ke liye physical stock audit.
 
 Yeh app **Gramik backend** ke dedicated Stock Audit API use karti hai (`/mobile/stock-audit/api`) — **sirf Dark Store login**. Web `/mobile/login` unchanged.
 
@@ -14,7 +14,7 @@ Yeh app **Gramik backend** ke dedicated Stock Audit API use karti hai (`/mobile/
 - Variant menu: **Update Damage Quantity**, **Comment**
 - Stock audit detail screen (damage qty + comment)
 - 1 hour inactivity auto logout
-- UI matches mobile web Stock Audit design (green theme, cards, footer)
+- Native mobile UI: branded splash, rounded app bar, sticky save bar, bottom nav
 
 ## Project structure
 

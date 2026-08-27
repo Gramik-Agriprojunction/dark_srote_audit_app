@@ -63,7 +63,9 @@ class MyProductsState {
     return MyProductsState(
       locations: locations ?? this.locations,
       allRows: allRows ?? this.allRows,
-      selectedStoreId: clearSelectedStore ? null : (selectedStoreId ?? this.selectedStoreId),
+      selectedStoreId: clearSelectedStore
+          ? null
+          : (selectedStoreId ?? this.selectedStoreId),
       searchQuery: searchQuery ?? this.searchQuery,
       page: page ?? this.page,
       limit: limit ?? this.limit,
@@ -75,8 +77,8 @@ class MyProductsState {
 
 final myProductsControllerProvider =
     StateNotifierProvider<MyProductsController, MyProductsState>((ref) {
-  return MyProductsController(ref.watch(stockAuditRepositoryProvider));
-});
+      return MyProductsController(ref.watch(stockAuditRepositoryProvider));
+    });
 
 class MyProductsController extends StateNotifier<MyProductsState> {
   MyProductsController(this._repository) : super(const MyProductsState());
@@ -147,7 +149,11 @@ class MyProductsController extends StateNotifier<MyProductsState> {
 
       state = state.copyWith(allRows: rows, isLoading: false, page: 1);
     } on ApiException catch (e) {
-      state = state.copyWith(isLoading: false, error: e.message, allRows: const []);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
+        allRows: const [],
+      );
     }
   }
 

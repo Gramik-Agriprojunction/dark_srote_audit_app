@@ -40,15 +40,18 @@ class AuthState {
   }
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
-  return AuthController(
-    ref.watch(authRepositoryProvider),
-    ref.watch(sessionStorageProvider),
-  );
-});
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (ref) {
+    return AuthController(
+      ref.watch(authRepositoryProvider),
+      ref.watch(sessionStorageProvider),
+    );
+  },
+);
 
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._repository, this._storage) : super(const AuthState(status: AuthStatus.unknown)) {
+  AuthController(this._repository, this._storage)
+    : super(const AuthState(status: AuthStatus.unknown)) {
     _restoreSession();
   }
 
@@ -66,7 +69,8 @@ class AuthController extends StateNotifier<AuthState> {
       }
       final lastActivity = await _storage.getLastActivity();
       if (lastActivity != null &&
-          DateTime.now().difference(lastActivity) > AppConfig.inactivityTimeout) {
+          DateTime.now().difference(lastActivity) >
+              AppConfig.inactivityTimeout) {
         await logout();
         return;
       }

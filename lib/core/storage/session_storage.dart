@@ -21,7 +21,10 @@ class SessionStorage {
 
   Future<String?> getAccessToken() async => _prefs.getString(_tokenKey);
 
-  Future<void> saveSession({required String token, required UserModel user}) async {
+  Future<void> saveSession({
+    required String token,
+    required UserModel user,
+  }) async {
     await _prefs.setString(_tokenKey, token);
     await _prefs.setString(_userKey, jsonEncode(user.toJson()));
     await touchActivity();
@@ -59,7 +62,10 @@ class SessionStorage {
   }
 
   Future<void> touchActivity() async {
-    await _prefs.setInt(_lastActivityKey, DateTime.now().millisecondsSinceEpoch);
+    await _prefs.setInt(
+      _lastActivityKey,
+      DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<DateTime?> getLastActivity() async {

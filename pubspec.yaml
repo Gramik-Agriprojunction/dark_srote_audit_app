@@ -1,5 +1,5 @@
 name: stock_audit
-description: Gramik Stock Audit mobile app for DSO/BSO/Dark Store users.
+description: StockShield — Gramik stock audit mobile app for Dark Store users.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -33,6 +33,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   cached_network_image: ^3.4.1
   dio: ^5.9.0
+  flutter_native_splash: ^2.4.6
   flutter_riverpod: ^2.6.1
   go_router: ^16.2.0
   google_fonts: ^6.3.0
@@ -48,10 +49,21 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assets/images/gramik_icon.png
-  adaptive_icon_background: "#17887A"
-  adaptive_icon_foreground: assets/images/gramik_icon.png
   remove_alpha_ios: true
+  image_path: assets/images/stockshield_launcher.png
+  adaptive_icon_background: assets/images/stockshield_adaptive_background.png
+  adaptive_icon_foreground: assets/images/stockshield_adaptive_foreground.png
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/stockshield_logo.png
+  android: true
+  ios: true
+  web: false
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/stockshield_splash_android12.png
+    icon_background_color: "#FFFFFF"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -65,8 +77,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/gramik_logo.png
-    - assets/images/gramik_icon.png
+    - assets/images/stockshield_logo.png
+    - assets/images/stockshield_icon.png
+    - assets/images/auth_farm_hero.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

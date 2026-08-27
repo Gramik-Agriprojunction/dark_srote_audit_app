@@ -18,14 +18,22 @@ class StockAuditRepository {
     final json = await _client.get('/business-locations');
     final data = json['data'];
     if (data is! List) return [];
-    return data.whereType<Map<String, dynamic>>().map(BusinessLocationModel.fromJson).toList();
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(BusinessLocationModel.fromJson)
+        .toList();
   }
 
   Future<List<ProductModel>> getLocationProducts(int businessLocationId) async {
-    final json = await _client.get('/business-locations/$businessLocationId/products');
+    final json = await _client.get(
+      '/business-locations/$businessLocationId/products',
+    );
     final data = json['data'];
     if (data is! List) return [];
-    return data.whereType<Map<String, dynamic>>().map(ProductModel.fromJson).toList();
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(ProductModel.fromJson)
+        .toList();
   }
 
   Future<StockAuditDetailModel> getAuditDetail({
@@ -50,10 +58,7 @@ class StockAuditRepository {
   }) async {
     final json = await _client.post(
       '/stock-audits/bulk',
-      body: {
-        'businessLocationId': businessLocationId,
-        'items': items,
-      },
+      body: {'businessLocationId': businessLocationId, 'items': items},
     );
     return BulkSaveResultModel.fromJson(json['data'] as Map<String, dynamic>);
   }

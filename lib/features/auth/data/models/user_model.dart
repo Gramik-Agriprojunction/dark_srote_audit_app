@@ -17,7 +17,9 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
       name: json['name']?.toString(),
       fullName: json['fullName']?.toString(),
       email: json['email']?.toString(),
@@ -28,12 +30,12 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'fullName': fullName,
-        'email': email,
-        'role': role?.toJson(),
-      };
+    'id': id,
+    'name': name,
+    'fullName': fullName,
+    'email': email,
+    'role': role?.toJson(),
+  };
 }
 
 class UserRoleModel {

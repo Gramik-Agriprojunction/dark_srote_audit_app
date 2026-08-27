@@ -5,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
-import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/app_header.dart';
+import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import 'providers/stock_audit_provider.dart';
@@ -58,7 +59,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
     await storage.saveSelectedStoreId(locationId);
-    await ref.read(stockAuditControllerProvider.notifier).selectLocation(locationId);
+    await ref
+        .read(stockAuditControllerProvider.notifier)
+        .selectLocation(locationId);
   }
 
   Future<void> _logout() async {
@@ -66,14 +69,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (mounted) context.go('/login');
   }
 
-  bool _hasBulkChanges(StockAuditState state) {
+  int _changedCount(StockAuditState state) {
+    var count = 0;
     for (final product in state.products) {
       for (final variant in product.variants) {
         if (state.emptyDraftVariantIds.contains(variant.id)) continue;
-        if (state.qtyDrafts.containsKey(variant.id)) return true;
+        if (state.qtyDrafts.containsKey(variant.id)) count++;
       }
     }
-    return false;
+    return count;
+  }
+
+  Future<void> _refresh() async {
+    ref.read(authControllerProvider.notifier).touchActivity();
+    final audit = ref.read(stockAuditControllerProvider);
+    final storage = ref.read(sessionStorageProvider);
+    final storeId =
+        audit.selectedLocationId ?? await storage.getSelectedStoreId();
+    await ref
+        .read(stockAuditControllerProvider.notifier)
+        .loadLocations(preferredStoreId: storeId);
   }
 
   @override
@@ -81,150 +96,190 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final auth = ref.watch(authControllerProvider);
     final audit = ref.watch(stockAuditControllerProvider);
     final userName = auth.user?.displayName ?? 'User';
+    final changedCount = _changedCount(audit);
+    final hasChanges = changedCount > 0;
+
+    final variantCount = audit.filteredProducts.fold<int>(
+      0,
+      (sum, product) => sum + product.variants.length,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           AppHeader(
-            title: 'Stock Audit',
+            title: 'StockShield',
             showBrandIcon: true,
             subtitle: 'Namaste, $userName',
             trailing: HeaderLogoutButton(onPressed: _logout),
+            bottom: AppCard(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              radius: 18,
+              shadow: AppColors.floatShadow,
+              child: BusinessLocationPicker(
+                locations: audit.locations,
+                selectedId: audit.selectedLocationId,
+                isLoading: audit.isLoadingLocations,
+                onChanged: _onLocationChanged,
+              ),
+            ),
           ),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () async {
-                ref.read(authControllerProvider.notifier).touchActivity();
-                final storage = ref.read(sessionStorageProvider);
-                final storeId = audit.selectedLocationId ?? await storage.getSelectedStoreId();
-                await ref
-                    .read(stockAuditControllerProvider.notifier)
-                    .loadLocations(preferredStoreId: storeId);
-              },
+              onRefresh: _refresh,
               child: ListView(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(18, 20, 18, 100),
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
                 children: [
                   if (audit.error != null) ...[
                     AlertBanner(message: audit.error!, isError: true),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                   ],
                   if (audit.successMessage != null) ...[
                     AlertBanner(message: audit.successMessage!, isError: false),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                   ],
-                  BusinessLocationPicker(
-                    locations: audit.locations,
-                    selectedId: audit.selectedLocationId,
-                    isLoading: audit.isLoadingLocations,
-                    onChanged: _onLocationChanged,
-                  ),
-                  if (audit.showProducts) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0A000000),
-                            blurRadius: 20,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+                  if (!audit.showProducts)
+                    AppCard(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: AppEmptyState(
+                        icon: Icons.storefront_rounded,
+                        title: audit.isLoadingLocations
+                            ? 'Locations load ho rahi hain'
+                            : 'Business location select karein',
+                        message:
+                            'Location choose karne ke baad store ke products yahan dikhenge.',
                       ),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Store Products',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                    )
+                  else ...[
+                    SectionHeading(
+                      title: 'Store Products',
+                      subtitle:
+                          'Qty update karke save karein. 0 qty bhi allowed hai.',
+                      trailing: audit.isLoadingProducts
+                          ? null
+                          : AppChip(
+                              label: '$variantCount',
+                              color: AppColors.primaryDark,
+                              background: AppColors.primarySoft,
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Select qty for required variants and submit. You can update qty to 0.',
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            decoration: InputDecoration(
-                              hintText: 'Search product / variant / SKU',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-                              prefixIcon: const Icon(Icons.search, size: 20),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onChanged: ref.read(stockAuditControllerProvider.notifier).setSearchQuery,
-                          ),
-                          const SizedBox(height: 12),
-                          if (audit.isLoadingProducts)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                            )
-                          else if (audit.filteredProducts.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Text(
-                                'No matching products found.',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                              ),
-                            )
-                          else
-                            ...audit.filteredProducts.expand((product) {
-                              return product.variants.map(
-                                (variant) => ProductVariantRow(
-                                  product: product,
-                                  variant: variant,
-                                  onOpenDamage: () {
-                                    ref.read(authControllerProvider.notifier).touchActivity();
-                                    context.push(
-                                      '/variant-audit?storeId=${audit.selectedLocationId}'
-                                      '&productId=${product.id}&variantId=${variant.id}',
-                                    );
-                                  },
-                                  onOpenComment: () {
-                                    ref.read(authControllerProvider.notifier).touchActivity();
-                                    showCommentSheet(
-                                      context: context,
-                                      ref: ref,
-                                      productId: product.id,
-                                      variantId: variant.id,
-                                      productName: product.name,
-                                      variantLabel: variant.variantName,
-                                      initialComment: variant.auditComment,
-                                    );
-                                  },
-                                ),
-                              );
-                            }),
-                          const SizedBox(height: 12),
-                          LoadingButton(
-                            label: audit.isSaving ? 'Saving...' : 'Save Stocks',
-                            isLoading: audit.isSaving,
-                            enabled: audit.selectedLocationId != null && _hasBulkChanges(audit),
-                            onPressed: audit.selectedLocationId != null && _hasBulkChanges(audit)
-                                ? () => ref
-                                    .read(stockAuditControllerProvider.notifier)
-                                    .saveAllChanged()
-                                : null,
-                          ),
-                        ],
-                      ),
                     ),
+                    const SizedBox(height: 14),
+                    AppSearchField(
+                      hintText: 'Search product, variant or SKU',
+                      onChanged: ref
+                          .read(stockAuditControllerProvider.notifier)
+                          .setSearchQuery,
+                    ),
+                    const SizedBox(height: 16),
+                    if (audit.isLoadingProducts)
+                      const Column(
+                        children: [
+                          ProductRowSkeleton(),
+                          ProductRowSkeleton(),
+                          ProductRowSkeleton(),
+                        ],
+                      )
+                    else if (audit.filteredProducts.isEmpty)
+                      AppCard(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: const AppEmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No matching products',
+                          message: 'Search clear karke dubara try karein.',
+                        ),
+                      )
+                    else
+                      ...audit.filteredProducts.expand((product) {
+                        return product.variants.map(
+                          (variant) => ProductVariantRow(
+                            key: ValueKey(variant.id),
+                            product: product,
+                            variant: variant,
+                            onOpenDamage: () {
+                              ref
+                                  .read(authControllerProvider.notifier)
+                                  .touchActivity();
+                              context.push(
+                                '/variant-audit?storeId=${audit.selectedLocationId}'
+                                '&productId=${product.id}&variantId=${variant.id}',
+                              );
+                            },
+                            onOpenComment: () {
+                              ref
+                                  .read(authControllerProvider.notifier)
+                                  .touchActivity();
+                              showCommentSheet(
+                                context: context,
+                                ref: ref,
+                                productId: product.id,
+                                variantId: variant.id,
+                                productName: product.name,
+                                variantLabel: variant.variantName,
+                                initialComment: variant.auditComment,
+                              );
+                            },
+                          ),
+                        );
+                      }),
                   ],
                 ],
               ),
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOut,
+            child: hasChanges
+                ? StickyActionBar(
+                    info: Row(
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$changedCount',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'variant pending save',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    child: LoadingButton(
+                      label: audit.isSaving ? 'Saving...' : 'Save Stocks',
+                      icon: Icons.cloud_upload_outlined,
+                      isLoading: audit.isSaving,
+                      onPressed: () => ref
+                          .read(stockAuditControllerProvider.notifier)
+                          .saveAllChanged(),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
           ),
           AppBottomNav(
             currentTab: AppTab.home,
