@@ -5,6 +5,7 @@ import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
 import '../data/models/transaction_model.dart';
+import '../data/models/variance_model.dart';
 
 final stockAuditRepositoryProvider = Provider<StockAuditRepository>((ref) {
   return StockAuditRepository(ref.watch(apiClientProvider));
@@ -117,5 +118,23 @@ class StockAuditRepository {
       },
     );
     return TransactionReportModel.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  Future<VarianceReportModel> getVariance({
+    required int businessLocationId,
+    String type = 'ALL',
+    int page = 1,
+    int limit = 10,
+  }) async {
+    final json = await _client.get(
+      '/variance',
+      query: {
+        'business_location_id': businessLocationId,
+        'type': type,
+        'page': page,
+        'limit': limit,
+      },
+    );
+    return VarianceReportModel.fromJson(json['data'] as Map<String, dynamic>);
   }
 }

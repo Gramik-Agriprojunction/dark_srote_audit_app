@@ -293,6 +293,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             },
             onStockTap: () => context.go('/my-products'),
             onTransactionsTap: () => context.go('/transactions'),
+            onVarianceTap: () => context.go('/variance'),
           ),
         ],
       ),

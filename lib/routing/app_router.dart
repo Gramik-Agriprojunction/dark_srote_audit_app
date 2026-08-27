@@ -7,6 +7,7 @@ import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
 import '../features/stock_audit/presentation/transactions_screen.dart';
+import '../features/stock_audit/presentation/variance_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 
@@ -52,6 +53,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/transactions',
         builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/variance',
+        builder: (context, state) => const VarianceScreen(),
       ),
       GoRoute(
         path: '/variant-audit',

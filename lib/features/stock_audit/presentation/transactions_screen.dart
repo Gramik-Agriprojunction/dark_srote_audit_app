@@ -177,6 +177,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             onHomeTap: () => context.go('/home'),
             onStockTap: () => context.go('/my-products'),
             onTransactionsTap: () {},
+            onVarianceTap: () => context.go('/variance'),
           ),
         ],
       ),
