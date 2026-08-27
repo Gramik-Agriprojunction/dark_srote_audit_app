@@ -3,19 +3,21 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 
-enum AppTab { home, myProducts }
+enum AppTab { home, stock, transactions }
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
     required this.currentTab,
     required this.onHomeTap,
-    required this.onMyProductsTap,
+    required this.onStockTap,
+    required this.onTransactionsTap,
   });
 
   final AppTab currentTab;
   final VoidCallback onHomeTap;
-  final VoidCallback onMyProductsTap;
+  final VoidCallback onStockTap;
+  final VoidCallback onTransactionsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,7 @@ class AppBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           child: Row(
             children: [
               Expanded(
@@ -47,11 +49,20 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'My Product',
+                  label: 'Stock',
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2_rounded,
-                  isActive: currentTab == AppTab.myProducts,
-                  onTap: onMyProductsTap,
+                  isActive: currentTab == AppTab.stock,
+                  onTap: onStockTap,
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
+                  label: 'Transaction',
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  isActive: currentTab == AppTab.transactions,
+                  onTap: onTransactionsTap,
                 ),
               ),
             ],
@@ -96,7 +107,7 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
               height: 32,
-              width: isActive ? 62 : 44,
+              width: isActive ? 56 : 40,
               decoration: BoxDecoration(
                 color: isActive ? AppColors.footerActiveBg : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
@@ -104,7 +115,7 @@ class _NavItem extends StatelessWidget {
               child: Center(
                 child: Icon(
                   isActive ? activeIcon : icon,
-                  size: 22,
+                  size: 21,
                   color: color,
                 ),
               ),
@@ -112,9 +123,11 @@ class _NavItem extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: color,
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                 letterSpacing: 0.1,
               ),

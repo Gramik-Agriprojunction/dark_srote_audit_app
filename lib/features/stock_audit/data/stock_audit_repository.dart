@@ -4,6 +4,7 @@ import '../../../core/network/api_client.dart';
 import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
+import '../data/models/transaction_model.dart';
 
 final stockAuditRepositoryProvider = Provider<StockAuditRepository>((ref) {
   return StockAuditRepository(ref.watch(apiClientProvider));
@@ -102,5 +103,19 @@ class StockAuditRepository {
       return data['wasUpdated'] == true;
     }
     return false;
+  }
+
+  Future<TransactionReportModel> getTransactions({
+    required int businessLocationId,
+    String? date,
+  }) async {
+    final json = await _client.get(
+      '/transactions',
+      query: {
+        'business_location_id': businessLocationId,
+        if (date != null && date.isNotEmpty) 'date': date,
+      },
+    );
+    return TransactionReportModel.fromJson(json['data'] as Map<String, dynamic>);
   }
 }

@@ -64,15 +64,12 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     final rows = state.pagedRows;
     final formatter = NumberFormat.decimalPattern('en_IN');
 
-    final short = state.filteredRows.where((r) => r.difference < 0).length;
-    final excess = state.filteredRows.where((r) => r.difference > 0).length;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           AppHeader(
-            title: 'My Product',
+            title: 'Stock',
             showBrandIcon: true,
             subtitle: 'Namaste, $userName',
             trailing: HeaderLogoutButton(onPressed: _logout),
@@ -102,48 +99,19 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                     AlertBanner(message: state.error!, isError: true),
                     const SizedBox(height: 14),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatTile(
-                          label: 'Mismatch',
-                          value: '${state.total}',
-                          icon: Icons.difference_outlined,
-                          color: AppColors.primaryDark,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatTile(
-                          label: 'Short',
-                          value: '$short',
-                          icon: Icons.trending_down_rounded,
-                          color: AppColors.outStock,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatTile(
-                          label: 'Excess',
-                          value: '$excess',
-                          icon: Icons.trending_up_rounded,
-                          color: AppColors.warning,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _StatsRow(state: state),
                   const SizedBox(height: 20),
                   const SectionHeading(
-                    title: 'SKU Reconciliation',
-                    subtitle:
-                        'CRM full report jaisa — sirf difference ≠ 0 wale SKU',
+                    title: 'Full SKU Reconciliation Report',
+                    subtitle: 'CRM jaisa — latest audit first',
                   ),
                   const SizedBox(height: 14),
-                  AppSearchField(
-                    hintText: 'Search product, SKU or darkstore',
-                    onChanged: ref
-                        .read(myProductsControllerProvider.notifier)
-                        .setSearch,
+                  _SearchField(
+                    onSearch: (query) {
+                      ref
+                          .read(myProductsControllerProvider.notifier)
+                          .setSearch(query);
+                    },
                   ),
                   const SizedBox(height: 16),
                   if (state.isLoading)
@@ -157,16 +125,23 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                   else if (rows.isEmpty)
                     AppCard(
                       padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: const AppEmptyState(
-                        icon: Icons.verified_outlined,
-                        title: 'Koi mismatch nahi mila',
-                        message:
-                            'Is location ke saare audited SKU system stock se match kar rahe hain.',
+                      child: AppEmptyState(
+                        icon: Icons.search_off_rounded,
+                        title: state.searchQuery.isNotEmpty
+                            ? 'Koi matching SKU nahi mila'
+                            : 'Koi audited SKU nahi mila',
+                        message: state.searchQuery.isNotEmpty
+                            ? '"${state.searchQuery}" se koi product match nahi hua.'
+                            : 'Is location par abhi tak koi stock audit nahi hua hai.',
                       ),
                     )
                   else ...[
-                    ...rows.map(
-                      (row) => _MismatchCard(row: row, formatter: formatter),
+                    ...rows.asMap().entries.map(
+                      (entry) => _ProductCard(
+                        key: ValueKey('${entry.value.sku}-${entry.key}'),
+                        row: entry.value,
+                        formatter: formatter,
+                      ),
                     ),
                     if (state.total > 0) ...[
                       const SizedBox(height: 4),
@@ -178,12 +153,139 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
             ),
           ),
           AppBottomNav(
-            currentTab: AppTab.myProducts,
+            currentTab: AppTab.stock,
             onHomeTap: () => context.go('/home'),
-            onMyProductsTap: () {},
+            onStockTap: () {},
+            onTransactionsTap: () => context.go('/transactions'),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SearchField extends StatefulWidget {
+  const _SearchField({required this.onSearch});
+
+  final ValueChanged<String> onSearch;
+
+  @override
+  State<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<_SearchField> {
+  final _controller = TextEditingController();
+  bool _hasText = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleChange(String value) {
+    final hasText = value.isNotEmpty;
+    if (hasText != _hasText) setState(() => _hasText = hasText);
+    widget.onSearch(value);
+  }
+
+  void _clear() {
+    _controller.clear();
+    _handleChange('');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      textInputAction: TextInputAction.search,
+      style: const TextStyle(
+        fontSize: 14.5,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: AppColors.fieldBg,
+        hintText: 'Search product, SKU or darkstore',
+        hintStyle: const TextStyle(color: AppColors.textMuted),
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          size: 20,
+          color: AppColors.textMuted,
+        ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 44),
+        suffixIcon: _hasText
+            ? IconButton(
+                icon: const Icon(Icons.cancel_rounded, size: 18),
+                color: AppColors.textMuted,
+                onPressed: _clear,
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(vertical: 13),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: AppColors.primaryMid, width: 1.4),
+        ),
+      ),
+      onChanged: _handleChange,
+    );
+  }
+}
+
+class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.state});
+
+  final MyProductsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _StatTile(
+            label: 'Total',
+            value: '${state.total}',
+            icon: Icons.inventory_2_outlined,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatTile(
+            label: 'Matched',
+            value: '${state.matchedCount}',
+            icon: Icons.check_circle_outline,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatTile(
+            label: 'Short',
+            value: '${state.shortCount}',
+            icon: Icons.trending_down_rounded,
+            color: AppColors.outStock,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _StatTile(
+            label: 'Excess',
+            value: '${state.excessCount}',
+            icon: Icons.trending_up_rounded,
+            color: AppColors.warning,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -204,35 +306,26 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-      radius: 18,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      radius: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(height: 10),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 6),
           Text(
             value,
             style: TextStyle(
-              fontSize: 21,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.6,
+              letterSpacing: -0.5,
               color: color,
             ),
           ),
-          const SizedBox(height: 1),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
@@ -293,25 +386,44 @@ class _ReportLocationFilter extends StatelessWidget {
   }
 }
 
-class _MismatchCard extends StatelessWidget {
-  const _MismatchCard({required this.row, required this.formatter});
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({super.key, required this.row, required this.formatter});
 
   final ProductMismatchRow row;
   final NumberFormat formatter;
 
+  Color _statusColor() {
+    switch (row.status) {
+      case ReconStatus.matched:
+        return AppColors.primary;
+      case ReconStatus.excess:
+        return AppColors.warning;
+      case ReconStatus.short:
+        return AppColors.outStock;
+    }
+  }
+
+  String _statusLabel() {
+    switch (row.status) {
+      case ReconStatus.matched:
+        return 'Matched';
+      case ReconStatus.excess:
+        return 'Excess';
+      case ReconStatus.short:
+        return 'Short';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isExcess = row.difference > 0;
-    final diffColor = isExcess ? AppColors.primaryDark : AppColors.outStock;
-    final damageColor = row.damageStock > 0
-        ? AppColors.outStock
-        : AppColors.textPrimary;
+    final statusColor = _statusColor();
     final comment = (row.comment ?? '').trim();
+    final hasDamage = row.damageStock > 0;
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      radius: 18,
+      padding: const EdgeInsets.all(12),
+      radius: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -325,125 +437,114 @@ class _MismatchCard extends StatelessWidget {
                     Text(
                       row.productName,
                       style: const TextStyle(
-                        fontSize: 14.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.2,
-                        height: 1.25,
+                        height: 1.2,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    if ((row.variantLabel ?? '').isNotEmpty ||
-                        (row.sku ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          if ((row.variantLabel ?? '').isNotEmpty)
-                            AppChip(
-                              label: row.variantLabel!,
-                              color: AppColors.textSecondary,
-                              background: AppColors.fieldBg,
-                            ),
-                          if ((row.sku ?? '').isNotEmpty)
-                            AppChip(
-                              label: row.sku!,
-                              color: AppColors.textMuted,
-                              background: AppColors.fieldBg,
-                              bold: false,
-                            ),
-                        ],
+                    if ((row.variantLabel ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        row.variantLabel!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              AppChip(
-                label: formatter.format(row.difference),
-                icon: isExcess
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                color: diffColor,
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _statusLabel(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.fieldBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetricCell(
+                _DataRow(
+                  cells: [
+                    _DataCell(
                         label: 'System Stock',
-                        value: formatter.format(row.systemStock),
-                      ),
-                    ),
-                    const _MetricDivider(),
-                    Expanded(
-                      child: _MetricCell(
+                        value: formatter.format(row.systemStock)),
+                    _DataCell(
                         label: 'Total Physical',
-                        value: formatter.format(row.totalPhysicalStock),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetricCell(
+                        value: formatter.format(row.totalPhysicalStock)),
+                    _DataCell(
                         label: 'Physical',
-                        value: formatter.format(row.physicalStock),
-                      ),
+                        value: formatter.format(row.physicalStock)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _DataRow(
+                  cells: [
+                    _DataCell(
+                      label: 'Damage',
+                      value: formatter.format(row.damageStock),
+                      valueColor: hasDamage ? AppColors.outStock : null,
                     ),
-                    const _MetricDivider(),
-                    Expanded(
-                      child: _MetricCell(
-                        label: 'Damage',
-                        value: formatter.format(row.damageStock),
-                        valueColor: damageColor,
-                      ),
+                    _DataCell(
+                      label: 'Comment',
+                      value: comment.isEmpty ? '—' : comment,
+                      valueColor:
+                          comment.isEmpty ? AppColors.textMuted : null,
+                      flex: 2,
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 10,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    color: statusColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: _MetricCell(
-                          label: 'Comment',
-                          value: comment.isEmpty ? '—' : comment,
-                          valueColor: comment.isEmpty
-                              ? AppColors.textMuted
-                              : AppColors.textPrimary,
-                          valueSize: 12.5,
-                          alignStart: true,
+                      Text(
+                        'DIFFERENCE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor.withValues(alpha: 0.7),
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 88,
-                        child: _MetricCell(
-                          label: 'Difference',
-                          value: formatter.format(row.difference),
-                          valueColor: diffColor,
+                      const SizedBox(width: 10),
+                      Text(
+                        formatter.format(row.difference),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: statusColor,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -453,22 +554,22 @@ class _MismatchCard extends StatelessWidget {
             ),
           ),
           if ((row.storeName ?? '').isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Row(
               children: [
                 const Icon(
                   Icons.storefront_outlined,
-                  size: 13,
+                  size: 12,
                   color: AppColors.textMuted,
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     row.storeName!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textMuted,
                     ),
@@ -483,57 +584,70 @@ class _MismatchCard extends StatelessWidget {
   }
 }
 
-class _MetricDivider extends StatelessWidget {
-  const _MetricDivider();
+class _DataRow extends StatelessWidget {
+  const _DataRow({required this.cells});
+
+  final List<_DataCell> cells;
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 26, color: AppColors.border);
+    return Row(
+      children: cells
+          .expand((cell) => [
+                if (cells.indexOf(cell) > 0)
+                  Container(
+                    width: 1,
+                    height: 28,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    color: AppColors.border,
+                  ),
+                Expanded(flex: cell.flex, child: cell),
+              ])
+          .toList(),
+    );
   }
 }
 
-class _MetricCell extends StatelessWidget {
-  const _MetricCell({
+class _DataCell extends StatelessWidget {
+  const _DataCell({
     required this.label,
     required this.value,
     this.valueColor,
-    this.valueSize = 15,
-    this.alignStart = false,
+    this.flex = 1,
   });
 
   final String label;
   final String value;
   final Color? valueColor;
-  final double valueSize;
-  final bool alignStart;
+  final int flex;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: alignStart
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           label.toUpperCase(),
           style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
+            fontSize: 8,
+            fontWeight: FontWeight.w700,
             color: AppColors.textMuted,
-            letterSpacing: 0.6,
+            letterSpacing: 0.4,
           ),
+          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 2),
         Text(
           value,
-          maxLines: alignStart ? 2 : 1,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: valueSize,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
             color: valueColor ?? AppColors.textPrimary,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -555,14 +669,14 @@ class _PaginationBar extends ConsumerWidget {
 
     return AppCard(
       padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-      radius: 18,
+      radius: 14,
       child: Row(
         children: [
           Expanded(
             child: Text(
               'Showing $start–$end of $total',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
               ),
@@ -575,11 +689,11 @@ class _PaginationBar extends ConsumerWidget {
                 : null,
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '${state.page} / $totalPages',
               style: const TextStyle(
-                fontSize: 12.5,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -609,16 +723,16 @@ class _PageButton extends StatelessWidget {
 
     return Material(
       color: enabled ? AppColors.primarySoft : AppColors.fieldBg,
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 32,
           child: Icon(
             icon,
-            size: 20,
+            size: 18,
             color: enabled ? AppColors.primaryDark : AppColors.textMuted,
           ),
         ),

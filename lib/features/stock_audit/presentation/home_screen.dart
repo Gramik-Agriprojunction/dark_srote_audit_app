@@ -291,7 +291,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 curve: Curves.easeOut,
               );
             },
-            onMyProductsTap: () => context.go('/my-products'),
+            onStockTap: () => context.go('/my-products'),
+            onTransactionsTap: () => context.go('/transactions'),
           ),
         ],
       ),

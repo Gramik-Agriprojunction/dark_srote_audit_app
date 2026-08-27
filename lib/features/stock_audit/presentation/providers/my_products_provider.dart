@@ -39,6 +39,12 @@ class MyProductsState {
   }
 
   int get total => filteredRows.length;
+  int get matchedCount =>
+      filteredRows.where((r) => r.status == ReconStatus.matched).length;
+  int get shortCount =>
+      filteredRows.where((r) => r.status == ReconStatus.short).length;
+  int get excessCount =>
+      filteredRows.where((r) => r.status == ReconStatus.excess).length;
 
   int get totalPages => total > 0 ? (total / limit).ceil() : 0;
 
@@ -123,16 +129,18 @@ class MyProductsController extends StateNotifier<MyProductsState> {
             if (variant.auditUpdatedAt == null) continue;
 
             final totalPhysicalStock = variant.auditQty;
-            // CRM Total Available Stock (on-hand with backlog)
+            // CRM "Total Available Stock" — current on-hand with backlog
             final systemStock = variant.availableStock;
             final damageStock = variant.damageQty;
             final physicalStock = (totalPhysicalStock - damageStock).clamp(
               0,
               totalPhysicalStock,
             );
-            // CRM: Difference = Total Physical − Total Available Stock
-            final difference = totalPhysicalStock - systemStock;
-            if (difference == 0) continue;
+            // CRM diff = physicalStock - lastAuditSystemStock (not current available)
+            final lastAuditBase = variant.lastAuditSystemStock ??
+                variant.systemOnHandQty;
+            final difference = physicalStock - lastAuditBase;
+            final status = ProductMismatchRow.statusFromDifference(difference);
 
             rows.add(
               ProductMismatchRow(
@@ -146,17 +154,16 @@ class MyProductsController extends StateNotifier<MyProductsState> {
                 damageStock: damageStock,
                 comment: _normalizeComment(variant.damageComment),
                 difference: difference,
+                status: status,
+                auditUpdatedAt: variant.auditUpdatedAt!,
               ),
             );
           }
         }
       }
 
-      rows.sort((a, b) {
-        final absCompare = b.difference.abs().compareTo(a.difference.abs());
-        if (absCompare != 0) return absCompare;
-        return a.productName.compareTo(b.productName);
-      });
+      // Sort by audit updated date descending (most recent first) - same as CRM
+      rows.sort((a, b) => b.auditUpdatedAt.compareTo(a.auditUpdatedAt));
 
       state = state.copyWith(allRows: rows, isLoading: false, page: 1);
     } on ApiException catch (e) {

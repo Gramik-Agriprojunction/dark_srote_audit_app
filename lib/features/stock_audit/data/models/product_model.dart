@@ -49,6 +49,7 @@ class ProductVariantModel {
     this.damageQty = 0,
     this.damageComment,
     this.systemOnHandQty = 0,
+    this.lastAuditSystemStock,
     this.currentStock = 0,
     this.availableStock = 0,
   });
@@ -64,6 +65,7 @@ class ProductVariantModel {
   final int damageQty;
   final String? damageComment;
   final int systemOnHandQty;
+  final int? lastAuditSystemStock;
   final int currentStock;
   final int availableStock;
 
@@ -74,6 +76,7 @@ class ProductVariantModel {
     int? damageQty,
     String? damageComment,
     int? systemOnHandQty,
+    int? lastAuditSystemStock,
   }) {
     return ProductVariantModel(
       id: id,
@@ -87,6 +90,7 @@ class ProductVariantModel {
       damageQty: damageQty ?? this.damageQty,
       damageComment: damageComment ?? this.damageComment,
       systemOnHandQty: systemOnHandQty ?? this.systemOnHandQty,
+      lastAuditSystemStock: lastAuditSystemStock ?? this.lastAuditSystemStock,
       currentStock: currentStock,
       availableStock: availableStock,
     );
@@ -122,6 +126,9 @@ class ProductVariantModel {
       systemOnHandQty: json['systemOnHandQty'] is int
           ? json['systemOnHandQty'] as int
           : int.tryParse('${json['systemOnHandQty']}') ?? 0,
+      lastAuditSystemStock: json['lastAuditSystemStock'] is int
+          ? json['lastAuditSystemStock'] as int
+          : int.tryParse('${json['lastAuditSystemStock']}'),
       currentStock: json['currentStock'] is int
           ? json['currentStock'] as int
           : int.tryParse('${json['currentStock']}') ?? 0,
