@@ -1,15 +1,24 @@
-/// Backend base URL — override for local dev:
-/// `flutter run --dart-define=API_BASE_URL=http://localhost:5000`
+import 'dart:io';
+
+/// Backend base URL — local dev default.
+/// Live override:
+/// `flutter run --dart-define=API_BASE_URL=https://lens-api.gramik.in`
 class AppConfig {
   AppConfig._();
 
   static const String liveBaseUrl = 'https://lens-api.gramik.in';
-  static const String localBaseUrl = 'http://localhost:5000';
+  static const int localPort = 5000;
+
+  /// Android emulators reach the host machine on 10.0.2.2, not localhost.
+  static String get localBaseUrl {
+    final host = Platform.isAndroid ? '10.0.2.2' : 'localhost';
+    return 'http://$host:$localPort';
+  }
 
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return liveBaseUrl;
+    return localBaseUrl;
   }
 
   /// Stock Audit Flutter app API (Dark Store only).
@@ -23,4 +32,18 @@ class AppConfig {
   static String get darkStoreApiBaseUrl => '$baseUrl$darkStoreApiPrefix';
 
   static const Duration inactivityTimeout = Duration(hours: 1);
+
+  /// Optional dev override — must match backend `MASTER_OTP` for 4-digit master login UX.
+  /// `flutter run --dart-define=MASTER_OTP=5574`
+  static const String masterOtp = String.fromEnvironment('MASTER_OTP');
+
+  static const int otpLength = 5;
+
+  /// Stock Audit testing — SMS OTP band; sirf master OTP se login.
+  static const bool skipSmsOtp = true;
+
+  static bool isMasterOtp(String otp) {
+    final value = otp.trim();
+    return masterOtp.isNotEmpty && value == masterOtp;
+  }
 }

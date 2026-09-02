@@ -8,6 +8,8 @@ import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
 import '../features/stock_audit/presentation/transactions_screen.dart';
 import '../features/stock_audit/presentation/variance_screen.dart';
+import '../features/dc/presentation/dc_detail_screen.dart';
+import '../features/dc/presentation/dc_list_screen.dart';
 import '../features/orders/presentation/order_detail_screen.dart';
 import '../features/orders/presentation/orders_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
@@ -67,6 +69,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/transactions',
         builder: (context, state) => const TransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/dc',
+        builder: (context, state) {
+          final tab = state.uri.queryParameters['tab'] ?? 'incoming';
+          return DcListScreen(initialTab: tab);
+        },
+      ),
+      GoRoute(
+        path: '/dc/:transferId',
+        builder: (context, state) {
+          final transferId =
+              int.tryParse(state.pathParameters['transferId'] ?? '') ?? 0;
+          if (transferId <= 0) return const DcListScreen();
+          final tab = state.uri.queryParameters['tab'] ?? 'incoming';
+          return DcDetailScreen(
+            transferId: transferId,
+            showSaveActions: tab != 'received',
+          );
+        },
       ),
       GoRoute(
         path: '/variance',

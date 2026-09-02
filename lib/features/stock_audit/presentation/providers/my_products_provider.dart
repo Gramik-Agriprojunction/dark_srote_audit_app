@@ -49,12 +49,17 @@ class MyProductsState {
 
   int get totalPages => total > 0 ? (total / limit).ceil() : 0;
 
-  List<ProductMismatchRow> get pagedRows {
+  bool get hasNextPage => page < totalPages;
+
+  /// Rows visible after scroll-pagination (page × limit chunks).
+  List<ProductMismatchRow> get visibleRows {
     if (total == 0) return const [];
-    final safePage = page.clamp(1, totalPages == 0 ? 1 : totalPages);
-    final start = (safePage - 1) * limit;
-    return filteredRows.skip(start).take(limit).toList();
+    final count = (page * limit).clamp(0, total);
+    return filteredRows.take(count).toList();
   }
+
+  int get visibleTo => (page * limit).clamp(0, total);
+  int get visibleFrom => total == 0 ? 0 : 1;
 
   MyProductsState copyWith({
     List<BusinessLocationModel>? locations,
@@ -196,11 +201,8 @@ class MyProductsController extends StateNotifier<MyProductsState> {
     state = state.copyWith(searchQuery: query, page: 1);
   }
 
-  void setPage(int page) {
-    state = state.copyWith(page: page);
-  }
-
-  void setLimit(int limit) {
-    state = state.copyWith(limit: limit, page: 1);
+  void loadMore() {
+    if (!state.hasNextPage) return;
+    state = state.copyWith(page: state.page + 1);
   }
 }

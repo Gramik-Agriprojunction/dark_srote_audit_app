@@ -25,7 +25,7 @@ class AuthRepository {
       '/verify-otp',
       body: {
         'mobile': mobile,
-        'otp': otp,
+        'otp': otp.trim(),
         'pnsToken': 'flutter',
         'deviceType': 'MOBILE',
       },

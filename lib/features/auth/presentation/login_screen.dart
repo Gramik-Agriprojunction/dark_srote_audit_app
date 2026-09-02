@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import 'providers/auth_provider.dart';
 import 'widgets/auth_theme.dart';
@@ -131,8 +132,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  bool get _otpReady {
+    final otp = _otpController.text.trim();
+    if (otp.isEmpty || _loading) return false;
+    if (otp.length == AppConfig.otpLength) return true;
+    if (AppConfig.isMasterOtp(otp)) return true;
+    return otp.length >= 4 && otp.length < AppConfig.otpLength;
+  }
+
   Future<void> _verifyOtp() async {
-    if (_otpController.text.length != 5 || _loading) return;
+    if (!_otpReady) return;
     setState(() {
       _error = null;
       _loading = true;
@@ -140,7 +149,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref
           .read(authControllerProvider.notifier)
-          .verifyOtp(mobile: _mobile, otp: _otpController.text);
+          .verifyOtp(mobile: _mobile, otp: _otpController.text.trim());
       if (!mounted) return;
       context.go('/home');
     } on ApiException catch (e) {
@@ -184,6 +193,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 error: _error,
                 resendSeconds: _resendSeconds,
                 expireSeconds: _expireSeconds,
+                canVerify: _otpReady,
                 onBack: _backToLogin,
                 onVerify: _verifyOtp,
                 onResend: () => _sendOtp(resend: true),
@@ -291,7 +301,9 @@ class _LoginView extends StatelessWidget {
                   Text('Apna Number Daalo', style: AuthTheme.title()),
                   const SizedBox(height: 4),
                   Text(
-                    'Number daalo, hum OTP bhej denge turant',
+                    AppConfig.skipSmsOtp
+                        ? 'Testing mode — master OTP se login karein'
+                        : 'Number daalo, hum OTP bhej denge turant',
                     style: AuthTheme.bodySm(),
                   ),
                   const SizedBox(height: 20),
@@ -361,7 +373,7 @@ class _LoginView extends StatelessWidget {
                   ],
                   const SizedBox(height: 18),
                   _PrimaryButton(
-                    label: 'OTP Bhejo  →',
+                    label: AppConfig.skipSmsOtp ? 'Aage Badho  →' : 'OTP Bhejo  →',
                     loading: loading,
                     enabled: enabled,
                     onPressed: onSend,
@@ -407,6 +419,7 @@ class _OtpView extends StatelessWidget {
     required this.error,
     required this.resendSeconds,
     required this.expireSeconds,
+    required this.canVerify,
     required this.onBack,
     required this.onVerify,
     required this.onResend,
@@ -418,6 +431,7 @@ class _OtpView extends StatelessWidget {
   final String? error;
   final int resendSeconds;
   final int expireSeconds;
+  final bool canVerify;
   final VoidCallback onBack;
   final VoidCallback onVerify;
   final VoidCallback onResend;
@@ -482,11 +496,22 @@ class _OtpView extends StatelessWidget {
           Text('OTP Daalo', style: AuthTheme.otpTitle()),
           const SizedBox(height: 6),
           Text(
-            'Tumhare number pe OTP bheja hai',
+            AppConfig.skipSmsOtp
+                ? 'Testing mode — SMS nahi bheja gaya'
+                : 'Tumhare number pe OTP bheja hai',
             style: AuthTheme.bodySm(
               Colors.white.withValues(alpha: 0.7),
             ),
           ),
+          if (AppConfig.skipSmsOtp) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Master OTP enter karke login karein',
+              style: AuthTheme.caption(
+                Colors.white.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
@@ -505,37 +530,39 @@ class _OtpView extends StatelessWidget {
           const SizedBox(height: 28),
           OtpPinInput(
             controller: controller,
+            length: AppConfig.otpLength,
             enabled: !loading,
             inverted: true,
             onCompleted: (_) => onVerify(),
           ),
           const SizedBox(height: 28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'OTP nahi aaya? ',
-                style: AuthTheme.bodySm(
-                  Colors.white.withValues(alpha: 0.6),
-                ),
-              ),
-              GestureDetector(
-                onTap: resendSeconds == 0 && !loading ? onResend : null,
-                child: Text(
-                  loading && resendSeconds == 0
-                      ? 'Bhej rahe hai...'
-                      : resendSeconds == 0
-                          ? 'Dubara Bhejo'
-                          : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
-                  style: AuthTheme.bodySm(Colors.white).copyWith(
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.underline,
+          if (!AppConfig.skipSmsOtp)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'OTP nahi aaya? ',
+                  style: AuthTheme.bodySm(
+                    Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
-              ),
-            ],
-          ),
-          if (expireSeconds > 0) ...[
+                GestureDetector(
+                  onTap: resendSeconds == 0 && !loading ? onResend : null,
+                  child: Text(
+                    loading && resendSeconds == 0
+                        ? 'Bhej rahe hai...'
+                        : resendSeconds == 0
+                            ? 'Dubara Bhejo'
+                            : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
+                    style: AuthTheme.bodySm(Colors.white).copyWith(
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (!AppConfig.skipSmsOtp && expireSeconds > 0) ...[
             const SizedBox(height: 10),
             Text(
               'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
@@ -553,9 +580,7 @@ class _OtpView extends StatelessWidget {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: controller.text.length == 5 && !loading
-                  ? onVerify
-                  : null,
+              onPressed: canVerify ? onVerify : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),

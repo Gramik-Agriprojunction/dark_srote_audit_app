@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,8 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
-import '../../../core/widgets/app_header.dart';
-import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/transaction_model.dart';
 import 'providers/transactions_provider.dart';
@@ -71,74 +71,97 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final selectedDate = state.selectedDate ?? DateTime.now();
     final dateLabel = DateFormat('d MMM yyyy').format(selectedDate);
     final formatter = NumberFormat.decimalPattern('en_IN');
+    final products = report?.products ?? const <TransactionProductRow>[];
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          AppHeader(
-            title: 'Transaction',
-            showBrandIcon: true,
+          ModuleHeader(
+            icon: Icons.swap_horiz_rounded,
+            title: 'Transactions',
             subtitle: 'Namaste, $userName',
-            trailing: HeaderLogoutButton(onPressed: _logout),
-            bottom: AppCard(
-              padding: const EdgeInsets.all(14),
-              radius: 18,
-              shadow: AppColors.floatShadow,
-              child: _DateFilterTile(
-                label: dateLabel,
-                onTap: () => _pickDate(selectedDate),
-              ),
+            actions: [ModuleLogoutAction(onTap: _logout)],
+            bottom: _DatePill(
+              label: dateLabel,
+              onTap: () => _pickDate(selectedDate),
             ),
           ),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () =>
-                  ref.read(transactionsControllerProvider.notifier).loadReport(),
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+              onRefresh: () => ref
+                  .read(transactionsControllerProvider.notifier)
+                  .loadReport(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-                children: [
-                  if (state.error != null) ...[
-                    AlertBanner(message: state.error!, isError: true),
-                    const SizedBox(height: 14),
-                  ],
-                  _SummaryRow(
-                    pickupOrders: report?.summary.pickupOrders ?? 0,
-                    rtoDeliveredOrders: report?.summary.rtoDeliveredOrders ?? 0,
-                    isLoading: state.isLoading,
-                  ),
-                  const SizedBox(height: 20),
-                  const SectionHeading(
-                    title: 'Product Movement',
-                    subtitle: 'Pickup & RTO delivered qty by SKU',
-                  ),
-                  const SizedBox(height: 14),
-                  if (state.isLoading)
-                    const Column(
-                      children: [
-                        ProductRowSkeleton(),
-                        ProductRowSkeleton(),
-                        ProductRowSkeleton(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: ModuleStatsRow(
+                      stats: [
+                        ModuleStat(
+                          icon: Icons.local_shipping_outlined,
+                          label: 'Pickup Orders',
+                          value: formatter.format(
+                            report?.summary.pickupOrders ?? 0,
+                          ),
+                          background: AppColors.primary,
+                          labelColor: const Color(0xFFFFE4D2),
+                        ),
+                        ModuleStat(
+                          icon: Icons.undo_rounded,
+                          label: 'RTO Delivered',
+                          value: formatter.format(
+                            report?.summary.rtoDeliveredOrders ?? 0,
+                          ),
+                          background: const Color(0xFFB45309),
+                          labelColor: const Color(0xFFFED7AA),
+                        ),
+                        ModuleStat(
+                          icon: Icons.category_outlined,
+                          label: 'SKU Moved',
+                          value: formatter.format(products.length),
+                          background: const Color(0xFF1D4ED8),
+                          labelColor: const Color(0xFFBFDBFE),
+                        ),
                       ],
+                    ),
+                  ),
+                  if (state.error != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                        child: AlertBanner(
+                          message: state.error!,
+                          isError: true,
+                        ),
+                      ),
+                    ),
+                  if (state.isLoading)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
                     )
                   else if (state.selectedStoreId == null)
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: const AppEmptyState(
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ModuleEmptyState(
                         icon: Icons.storefront_outlined,
                         title: 'Darkstore select karein',
                         message:
                             'Transactions dekhne ke liye pehle business location choose karein.',
                       ),
                     )
-                  else if ((report?.products ?? []).isEmpty)
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: AppEmptyState(
+                  else if (products.isEmpty)
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ModuleEmptyState(
                         icon: Icons.receipt_long_outlined,
                         title: 'Koi transaction nahi mila',
                         message:
@@ -146,255 +169,184 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       ),
                     )
                   else
-                    ...report!.products.map(
-                      (row) => _TransactionProductCard(
-                        row: row,
-                        formatter: formatter,
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _TransactionProductCard(
+                          row: products[index],
+                          formatter: formatter,
+                        ),
+                        childCount: products.length,
                       ),
                     ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
                 ],
               ),
             ),
           ),
-          AppBottomNav(
-            currentTab: AppTab.transactions,
-            onHomeTap: () => context.go('/home'),
-            onOrdersTap: () => context.go('/orders'),
-            onStockTap: () => context.go('/my-products'),
-            onTransactionsTap: () {},
-            onVarianceTap: () => context.go('/variance'),
-          ),
         ],
+      ),
+      bottomNavigationBar: AppBottomNav(
+        currentTab: AppTab.transactions,
+        onHomeTap: () => context.go('/home'),
+        onOrdersTap: () => context.go('/orders'),
+        onStockTap: () => context.go('/my-products'),
+        onTransactionsTap: () {},
+        onDcTap: () => context.go('/dc'),
+        onVarianceTap: () => context.go('/variance'),
       ),
     );
   }
 }
 
-class _DateFilterTile extends StatelessWidget {
-  const _DateFilterTile({required this.label, required this.onTap});
+class _DatePill extends StatelessWidget {
+  const _DatePill({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.fieldBg,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              size: 18,
-              color: AppColors.primaryDark,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 2),
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.2),
+          shape: StadiumBorder(
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    'DATE',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: AppColors.textMuted,
-                    ),
+                  const Icon(
+                    Icons.calendar_today_rounded,
+                    size: 14,
+                    color: Colors.white,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 7),
                   Text(
                     label,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      color: Colors.white,
+                      fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
                     ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Colors.white,
                   ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: AppColors.textMuted,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.pickupOrders,
-    required this.rtoDeliveredOrders,
-    required this.isLoading,
-  });
-
-  final int pickupOrders;
-  final int rtoDeliveredOrders;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Row(
-        children: [
-          Expanded(child: ProductRowSkeleton()),
-          SizedBox(width: 10),
-          Expanded(child: ProductRowSkeleton()),
-        ],
-      );
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: _SummaryTile(
-            label: 'Pickup Orders',
-            value: '$pickupOrders',
-            icon: Icons.local_shipping_outlined,
-            color: AppColors.primaryDark,
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _SummaryTile(
-            label: 'RTO Delivered',
-            value: '$rtoDeliveredOrders',
-            icon: Icons.undo_rounded,
-            color: AppColors.warning,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SummaryTile extends StatelessWidget {
-  const _SummaryTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      radius: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: color,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
 class _TransactionProductCard extends StatelessWidget {
-  const _TransactionProductCard({
-    required this.row,
-    required this.formatter,
-  });
+  const _TransactionProductCard({required this.row, required this.formatter});
 
   final TransactionProductRow row;
   final NumberFormat formatter;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      radius: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            row.productName,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            row.variantLabel,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.fieldBg,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+    final hasRto = row.rtoDeliveredQty > 0;
+    final statusColor = hasRto
+        ? const Color(0xFFB45309)
+        : const Color(0xFF1D4ED8);
+
+    return ModuleCard(
+      statusColor: statusColor,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: _QtyCell(
-                    label: 'Pickup Qty',
-                    value: formatter.format(row.pickupQty),
-                    color: AppColors.primaryDark,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        row.productName,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          color: ModuleTokens.strongText,
+                        ),
+                      ),
+                      if (row.variantLabel.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          row.variantLabel,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: ModuleTokens.mutedText,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: _QtyCell(
-                    label: 'RTO Qty',
-                    value: formatter.format(row.rtoDeliveredQty),
-                    color: AppColors.warning,
-                  ),
+                const SizedBox(width: 8),
+                ModuleStatusPill(
+                  label: hasRto ? 'RTO' : 'Pickup',
+                  color: statusColor,
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: ModuleTokens.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _QtyCell(
+                      label: 'Pickup Qty',
+                      value: formatter.format(row.pickupQty),
+                      color: const Color(0xFF1D4ED8),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 26,
+                    color: ModuleTokens.cardBorder,
+                  ),
+                  Expanded(
+                    child: _QtyCell(
+                      label: 'RTO Qty',
+                      value: formatter.format(row.rtoDeliveredQty),
+                      color: const Color(0xFFB45309),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -416,22 +368,23 @@ class _QtyCell extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label,
+          label.toUpperCase(),
           textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 10,
+            fontSize: 8,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.4,
-            color: AppColors.textMuted,
+            letterSpacing: 0.3,
+            color: ModuleTokens.faintText,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           value,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
             color: color,
           ),
         ),

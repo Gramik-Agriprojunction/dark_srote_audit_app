@@ -4,18 +4,24 @@ class OrderShippingAddressModel {
     this.fullName,
     this.city,
     this.address,
+    this.block,
+    this.state,
     this.phone,
     this.alternatePhone,
     this.pincode,
+    this.zip,
   });
 
   final String? name;
   final String? fullName;
   final String? city;
   final String? address;
+  final String? block;
+  final String? state;
   final String? phone;
   final String? alternatePhone;
   final String? pincode;
+  final String? zip;
 
   factory OrderShippingAddressModel.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const OrderShippingAddressModel();
@@ -24,17 +30,20 @@ class OrderShippingAddressModel {
       fullName: json['fullName']?.toString() ?? json['full_name']?.toString(),
       city: json['city']?.toString(),
       address: json['address']?.toString(),
+      block: json['block']?.toString(),
+      state: json['state']?.toString(),
       phone: json['phone']?.toString() ?? json['mobile']?.toString(),
       alternatePhone:
           json['alternate_phone']?.toString() ?? json['alternatePhone']?.toString(),
       pincode: json['pincode']?.toString(),
+      zip: json['zip']?.toString(),
     );
   }
 
   String get displayName => (name ?? fullName ?? '').trim();
 
   String get fullAddress {
-    return [address, pincode]
+    return [address, block, city, state, pincode ?? zip]
         .where((e) => (e ?? '').trim().isNotEmpty)
         .join(', ');
   }
@@ -55,6 +64,45 @@ class OrderDeliveryPartnerModel {
   }
 }
 
+class OrderComboProductModel {
+  const OrderComboProductModel({
+    this.productName,
+    this.variantName,
+    this.name,
+    this.sku,
+    this.quantity = 0,
+    this.price,
+    this.image,
+    this.variantId,
+  });
+
+  final String? productName;
+  final String? variantName;
+  final String? name;
+  final String? sku;
+  final int quantity;
+  final double? price;
+  final String? image;
+  final int? variantId;
+
+  factory OrderComboProductModel.fromJson(Map<String, dynamic> json) {
+    final priceRaw = json['price'];
+    return OrderComboProductModel(
+      productName: json['productName']?.toString(),
+      variantName: json['variantName']?.toString(),
+      name: json['name']?.toString(),
+      sku: json['sku']?.toString(),
+      quantity: int.tryParse('${json['quantity']}') ?? 0,
+      price: priceRaw == null ? null : double.tryParse('$priceRaw'),
+      image: json['image']?.toString(),
+      variantId: int.tryParse('${json['variantId']}'),
+    );
+  }
+
+  String get displayName => (productName ?? name ?? '').trim();
+  String get displayVariant => (variantName ?? sku ?? '').trim();
+}
+
 class OrderProductLineModel {
   const OrderProductLineModel({
     required this.name,
@@ -62,6 +110,9 @@ class OrderProductLineModel {
     this.price,
     this.thumbnailImg,
     this.variantSku,
+    this.variantName,
+    this.type,
+    this.comboProducts = const [],
   });
 
   final String name;
@@ -69,15 +120,29 @@ class OrderProductLineModel {
   final double? price;
   final String? thumbnailImg;
   final String? variantSku;
+  final String? variantName;
+  final String? type;
+  final List<OrderComboProductModel> comboProducts;
+
+  bool get isCombo => (type ?? '').toLowerCase() == 'combo';
 
   factory OrderProductLineModel.fromJson(Map<String, dynamic> json) {
     final priceRaw = json['price'];
+    final comboRaw = json['comboProducts'];
     return OrderProductLineModel(
       name: (json['name'] ?? '').toString(),
       quantity: int.tryParse('${json['quantity']}') ?? 0,
       price: priceRaw == null ? null : double.tryParse('$priceRaw'),
-      thumbnailImg: json['thumbnail_img']?.toString(),
+      thumbnailImg: json['thumbnail_img']?.toString() ?? json['image']?.toString(),
       variantSku: json['variant_sku']?.toString(),
+      variantName: json['variant_name']?.toString(),
+      type: json['type']?.toString(),
+      comboProducts: comboRaw is List
+          ? comboRaw
+              .whereType<Map<String, dynamic>>()
+              .map(OrderComboProductModel.fromJson)
+              .toList()
+          : const [],
     );
   }
 }
@@ -157,6 +222,9 @@ class OrderDetailModel {
     this.otp,
     this.deliverOtp,
     this.pickupOtp,
+    this.returnOtp,
+    this.rtoReturnOtp,
+    this.multiplePickupOtp,
     this.shippingAddress = const OrderShippingAddressModel(),
     this.deliveryPartner = const OrderDeliveryPartnerModel(),
     this.products = const [],
@@ -183,6 +251,9 @@ class OrderDetailModel {
   final String? otp;
   final String? deliverOtp;
   final String? pickupOtp;
+  final String? returnOtp;
+  final String? rtoReturnOtp;
+  final dynamic multiplePickupOtp;
   final OrderShippingAddressModel shippingAddress;
   final OrderDeliveryPartnerModel deliveryPartner;
   final List<OrderProductLineModel> products;
@@ -213,6 +284,9 @@ class OrderDetailModel {
       otp: json['otp']?.toString(),
       deliverOtp: json['deliver_otp']?.toString(),
       pickupOtp: json['pickup_otp']?.toString() ?? json['bulk_pickup_otp']?.toString(),
+      returnOtp: json['return_otp']?.toString(),
+      rtoReturnOtp: json['rto_return_otp']?.toString(),
+      multiplePickupOtp: json['multiple_pickup_otp'],
       shippingAddress: OrderShippingAddressModel.fromJson(
         json['shipping_address'] as Map<String, dynamic>?,
       ),

@@ -8,6 +8,7 @@ import '../../../../core/utils/audit_qty_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/widgets/loading_button.dart';
+import '../../../../core/widgets/module_ui.dart';
 import '../../data/models/product_model.dart';
 import '../providers/stock_audit_provider.dart';
 
@@ -136,16 +137,18 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
         border: Border.all(
-          color: _isRecent ? AppColors.auditRecentBorder : Colors.transparent,
+          color: _isRecent
+              ? AppColors.auditRecentBorder
+              : ModuleTokens.cardBorder,
           width: 1.2,
         ),
-        boxShadow: AppColors.cardShadow,
+        boxShadow: ModuleTokens.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

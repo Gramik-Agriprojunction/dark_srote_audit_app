@@ -7,8 +7,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
-import '../../../core/widgets/app_header.dart';
-import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/scroll_pagination_footer.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/variance_model.dart';
 import 'providers/variance_provider.dart';
@@ -21,12 +21,30 @@ class VarianceScreen extends ConsumerStatefulWidget {
 }
 
 class _VarianceScreenState extends ConsumerState<VarianceScreen> {
+  final _scrollController = ScrollController();
   bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 220) {
+      ref.read(varianceControllerProvider.notifier).loadMore();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
   }
 
   Future<void> _bootstrap() async {
@@ -55,60 +73,101 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
     final state = ref.watch(varianceControllerProvider);
     final userName = auth.user?.displayName ?? 'User';
     final formatter = NumberFormat.decimalPattern('en_IN');
+    final notifier = ref.read(varianceControllerProvider.notifier);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          AppHeader(
+          ModuleHeader(
+            icon: Icons.compare_arrows_rounded,
             title: 'Variance',
-            showBrandIcon: true,
             subtitle: 'Namaste, $userName',
-            trailing: HeaderLogoutButton(onPressed: _logout),
-            bottom: AppCard(
-              padding: const EdgeInsets.all(14),
-              radius: 18,
-              shadow: AppColors.floatShadow,
-              child: _TypeFilterRow(
-                selected: state.typeFilter,
-                onChanged: (filter) => ref
-                    .read(varianceControllerProvider.notifier)
-                    .setTypeFilter(filter),
-              ),
-            ),
+            actions: [ModuleLogoutAction(onTap: _logout)],
           ),
           Expanded(
             child: RefreshIndicator(
               color: AppColors.primary,
-              onRefresh: () =>
-                  ref.read(varianceControllerProvider.notifier).loadReport(),
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+              onRefresh: () => notifier.loadReport(),
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
-                children: [
-                  if (state.error != null) ...[
-                    AlertBanner(message: state.error!, isError: true),
-                    const SizedBox(height: 14),
-                  ],
-                  const SectionHeading(
-                    title: 'Backlog',
-                    subtitle: 'Minus red, plus green — CRM jaisa',
-                  ),
-                  const SizedBox(height: 14),
-                  if (state.isLoading)
-                    const Column(
-                      children: [
-                        ProductRowSkeleton(),
-                        ProductRowSkeleton(),
-                        ProductRowSkeleton(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: ModuleStatsRow(
+                      stats: [
+                        ModuleStat(
+                          icon: Icons.compare_arrows_rounded,
+                          label: 'Total Backlog',
+                          value: formatter.format(state.meta.total),
+                          background: AppColors.primary,
+                          labelColor: const Color(0xFFFFE4D2),
+                        ),
+                        ModuleStat(
+                          icon: Icons.visibility_outlined,
+                          label: 'Showing',
+                          value: formatter.format(state.rows.length),
+                          background: const Color(0xFF1D4ED8),
+                          labelColor: const Color(0xFFBFDBFE),
+                        ),
                       ],
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ModuleChipsRow(
+                      chips: [
+                        ModuleChip(
+                          label: 'All Backlog',
+                          icon: Icons.list_alt_rounded,
+                          tone: AppColors.primary,
+                          isActive: state.typeFilter == VarianceTypeFilter.all,
+                          onTap: () =>
+                              notifier.setTypeFilter(VarianceTypeFilter.all),
+                        ),
+                        ModuleChip(
+                          label: 'Minus',
+                          icon: Icons.trending_down_rounded,
+                          tone: const Color(0xFFB91C1C),
+                          isActive: state.typeFilter == VarianceTypeFilter.minus,
+                          onTap: () =>
+                              notifier.setTypeFilter(VarianceTypeFilter.minus),
+                        ),
+                        ModuleChip(
+                          label: 'Plus',
+                          icon: Icons.trending_up_rounded,
+                          tone: const Color(0xFF15803D),
+                          isActive: state.typeFilter == VarianceTypeFilter.plus,
+                          onTap: () =>
+                              notifier.setTypeFilter(VarianceTypeFilter.plus),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (state.error != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                        child: AlertBanner(
+                          message: state.error!,
+                          isError: true,
+                        ),
+                      ),
+                    ),
+                  if (state.isLoading && state.rows.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
                     )
                   else if (state.selectedStoreId == null)
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: const AppEmptyState(
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ModuleEmptyState(
                         icon: Icons.storefront_outlined,
                         title: 'Darkstore select karein',
                         message:
@@ -116,329 +175,196 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                       ),
                     )
                   else if (state.rows.isEmpty)
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: const AppEmptyState(
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: ModuleEmptyState(
                         icon: Icons.compare_arrows_rounded,
                         title: 'Koi backlog nahi mila',
                         message:
                             'Is location par abhi koi minus/plus backlog nahi hai.',
                       ),
                     )
-                  else ...[
-                    ...state.rows.map(
-                      (row) => _VarianceRowCard(row: row, formatter: formatter),
-                    ),
-                    if (state.meta.total > 0) ...[
-                      const SizedBox(height: 4),
-                      _PaginationBar(
-                        meta: state.meta,
-                        onPageChanged: (page) => ref
-                            .read(varianceControllerProvider.notifier)
-                            .setPage(page),
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _VarianceRowCard(
+                          row: state.rows[index],
+                          formatter: formatter,
+                        ),
+                        childCount: state.rows.length,
                       ),
-                    ],
-                  ],
+                    ),
+                  if (state.rows.isNotEmpty && state.meta.total > 0)
+                    SliverToBoxAdapter(
+                      child: ScrollPaginationFooter(
+                        isLoadingMore: state.isLoadingMore,
+                        hasNextPage: state.hasNextPage,
+                        from: state.rows.isEmpty ? 0 : 1,
+                        to: state.rows.length,
+                        total: state.meta.total,
+                        page: state.meta.page,
+                        totalPages: state.meta.totalPages,
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
                 ],
               ),
             ),
           ),
-          AppBottomNav(
-            currentTab: AppTab.variance,
-            onHomeTap: () => context.go('/home'),
-            onOrdersTap: () => context.go('/orders'),
-            onStockTap: () => context.go('/my-products'),
-            onTransactionsTap: () => context.go('/transactions'),
-            onVarianceTap: () {},
-          ),
         ],
       ),
-    );
-  }
-}
-
-class _TypeFilterRow extends StatelessWidget {
-  const _TypeFilterRow({
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final VarianceTypeFilter selected;
-  final ValueChanged<VarianceTypeFilter> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _FilterChip(
-            label: 'All Backlog',
-            isSelected: selected == VarianceTypeFilter.all,
-            onTap: () => onChanged(VarianceTypeFilter.all),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _FilterChip(
-            label: 'Minus',
-            isSelected: selected == VarianceTypeFilter.minus,
-            selectedColor: AppColors.outStock.withValues(alpha: 0.15),
-            onTap: () => onChanged(VarianceTypeFilter.minus),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _FilterChip(
-            label: 'Plus',
-            isSelected: selected == VarianceTypeFilter.plus,
-            selectedColor: AppColors.primary.withValues(alpha: 0.15),
-            onTap: () => onChanged(VarianceTypeFilter.plus),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.selectedColor,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color? selectedColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (selectedColor ?? AppColors.footerActiveBg)
-              : AppColors.fieldBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryMid : Colors.transparent,
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? AppColors.primaryDark : AppColors.textMuted,
-          ),
-        ),
+      bottomNavigationBar: AppBottomNav(
+        currentTab: AppTab.variance,
+        onHomeTap: () => context.go('/home'),
+        onOrdersTap: () => context.go('/orders'),
+        onStockTap: () => context.go('/my-products'),
+        onTransactionsTap: () => context.go('/transactions'),
+        onDcTap: () => context.go('/dc'),
+        onVarianceTap: () {},
       ),
     );
   }
 }
 
 class _VarianceRowCard extends StatelessWidget {
-  const _VarianceRowCard({
-    required this.row,
-    required this.formatter,
-  });
+  const _VarianceRowCard({required this.row, required this.formatter});
 
   final VarianceRowModel row;
   final NumberFormat formatter;
 
-  Color _bgColor() {
+  Color get _accent {
     switch (row.type) {
       case VarianceType.minus:
-        return const Color(0xFFFFECE8);
+        return const Color(0xFFB91C1C);
       case VarianceType.plus:
-        return const Color(0xFFE8F8EE);
+        return const Color(0xFF15803D);
       case VarianceType.equal:
-        return AppColors.fieldBg;
+        return ModuleTokens.faintText;
     }
   }
 
-  Color _accentColor() {
-    switch (row.type) {
-      case VarianceType.minus:
-        return AppColors.outStock;
-      case VarianceType.plus:
-        return AppColors.primary;
-      case VarianceType.equal:
-        return AppColors.textMuted;
-    }
-  }
-
-  String _backlogLabel() {
+  String get _backlogLabel {
+    if (row.type == VarianceType.equal) return formatter.format(row.backlog);
     final prefix = row.type == VarianceType.minus ? '-' : '+';
-    if (row.type == VarianceType.equal) {
-      return formatter.format(row.backlog);
-    }
     return '$prefix${formatter.format(row.backlog)}';
   }
 
+  String get _typeLabel {
+    switch (row.type) {
+      case VarianceType.minus:
+        return 'Minus';
+      case VarianceType.plus:
+        return 'Plus';
+      case VarianceType.equal:
+        return 'Equal';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final accent = _accentColor();
+    final accent = _accent;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: _bgColor(),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ModuleCard(
+      statusColor: accent,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        row.productName,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          color: ModuleTokens.strongText,
+                        ),
+                      ),
+                      if (row.variantLabel.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          row.variantLabel,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: ModuleTokens.mutedText,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ModuleStatusPill(label: _typeLabel, color: accent),
+              ],
+            ),
+            const SizedBox(height: 10),
             Container(
-              width: 5,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                color: accent,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(14),
-                ),
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'BACKLOG',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: accent.withValues(alpha: 0.75),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _backlogLabel,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      color: accent,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                row.productName,
-                                style: const TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                row.variantLabel,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            _backlogLabel(),
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: accent,
-                            ),
-                          ),
-                        ),
-                      ],
+            if (row.storeName.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.storefront_outlined,
+                    size: 12,
+                    color: ModuleTokens.faintText,
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      row.storeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: ModuleTokens.faintText,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.storefront_outlined,
-                          size: 14,
-                          color: AppColors.textMuted,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            row.storeName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              color: AppColors.textMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PaginationBar extends StatelessWidget {
-  const _PaginationBar({
-    required this.meta,
-    required this.onPageChanged,
-  });
-
-  final PaginationMeta meta;
-  final ValueChanged<int> onPageChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = meta.total == 0 ? 0 : ((meta.page - 1) * meta.limit) + 1;
-    final end = (meta.page * meta.limit).clamp(0, meta.total);
-
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Showing $start–$end of ${meta.total}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: meta.page > 1 ? () => onPageChanged(meta.page - 1) : null,
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-          Text(
-            '${meta.page}/${meta.totalPages == 0 ? 1 : meta.totalPages}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          IconButton(
-            onPressed: meta.page < meta.totalPages
-                ? () => onPageChanged(meta.page + 1)
-                : null,
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
       ),
     );
   }

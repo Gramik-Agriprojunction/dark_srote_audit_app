@@ -8,8 +8,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/alert_banner.dart';
-import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_ui.dart';
+import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/stock_audit_detail_model.dart';
@@ -155,15 +155,13 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          AppHeader(
-            centerTitle: true,
+          ModuleHeader(
+            icon: Icons.fact_check_rounded,
             title: 'Audit Detail',
             subtitle:
                 detail?.variantSku ??
                 (_loading ? 'Loading...' : 'Variant audit'),
-            leading: HeaderBackButton(
-              onPressed: () => context.go('/home?storeId=${widget.storeId}'),
-            ),
+            onBack: () => context.go('/home?storeId=${widget.storeId}'),
           ),
           Expanded(
             child: ListView(
