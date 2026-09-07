@@ -418,6 +418,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               topPadding: navTop,
               backgroundColor: status.color,
               code: code,
+              showCopyIcon: true,
               statusLabel: status.label,
               statusIcon: statusIcon(order.orderStatus),
               amount: formatMoney(order.grandTotal),
@@ -465,6 +466,7 @@ class _FixedNavBar extends StatelessWidget {
     this.statusLabel,
     this.statusIcon,
     this.amount,
+    this.showCopyIcon = false,
     this.positioned = true,
   });
 
@@ -474,6 +476,7 @@ class _FixedNavBar extends StatelessWidget {
   final String? statusLabel;
   final IconData? statusIcon;
   final String? amount;
+  final bool showCopyIcon;
   final double compactOpacity;
   final double statusNavOpacity;
   final VoidCallback onBack;
@@ -497,16 +500,26 @@ class _FixedNavBar extends StatelessWidget {
                 _HeroBackButton(onTap: onBack),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    code,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: 0.15,
-                    ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          code,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
+                      ),
+                      if (showCopyIcon) ...[
+                        const SizedBox(width: 4),
+                        _CopyCodeButton(text: code),
+                      ],
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -572,6 +585,43 @@ class _FixedNavBar extends StatelessWidget {
 
     if (!positioned) return bar;
     return Positioned(top: 0, left: 0, right: 0, child: bar);
+  }
+}
+
+class _CopyCodeButton extends StatelessWidget {
+  const _CopyCodeButton({required this.text});
+
+  final String text;
+
+  Future<void> _copy(BuildContext context) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Order code copied'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _copy(context),
+        child: const Padding(
+          padding: EdgeInsets.all(4),
+          child: Icon(Icons.content_copy_rounded, size: 14, color: Colors.white),
+        ),
+      ),
+    );
   }
 }
 

@@ -104,8 +104,9 @@ int timelineStepIndex(OrderDetailModel order) {
     if (k == 'DELIVERED') return 1;
     return 0;
   }
+  // Match Darkstore RN stepOf: MANIFESTED stays on Pending (0).
   if (k == 'DELIVERED' || k == 'RTO') return 2;
-  if (const {'INTRANSIT', 'PICKUP', 'MANIFESTED'}.contains(k)) return 1;
+  if (const {'INTRANSIT', 'PICKUP'}.contains(k)) return 1;
   if (k == 'PICKUPCANCELLED') return 1;
   return 0;
 }
