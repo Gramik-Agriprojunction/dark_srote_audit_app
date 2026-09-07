@@ -82,10 +82,10 @@ class DarkStoreApiClient {
 
   Map<String, dynamic> _unwrap(Map<String, dynamic>? json) {
     if (json == null) {
-      throw ApiException('Empty response from server');
+      throwApiException('Empty response from server');
     }
     if (json['status'] == false || json['success'] == false) {
-      throw ApiException(
+      throwApiException(
         (json['message'] ?? json['msg'] ?? 'Something went wrong').toString(),
       );
     }
@@ -97,7 +97,7 @@ class DarkStoreApiClient {
     if (data is Map<String, dynamic>) {
       final message = (data['message'] ?? data['msg'] ?? 'Something went wrong')
           .toString();
-      return ApiException(message, statusCode: e.response?.statusCode);
+      throwApiException(message, statusCode: e.response?.statusCode);
     }
     if (e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout) {

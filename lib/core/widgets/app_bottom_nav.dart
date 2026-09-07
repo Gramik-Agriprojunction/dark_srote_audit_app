@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 
-enum AppTab { home, orders, stock, transactions, dc, variance }
+enum AppTab { audit, orders, stock, transactions, dc, variance }
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
@@ -46,15 +46,6 @@ class AppBottomNav extends StatelessWidget {
             children: [
               Expanded(
                 child: _NavItem(
-                  label: 'Orders',
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  isActive: currentTab == AppTab.orders,
-                  onTap: onOrdersTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
                   label: 'Stock',
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2_rounded,
@@ -64,17 +55,16 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Home',
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home_rounded,
-                  isActive: currentTab == AppTab.home,
-                  onTap: onHomeTap,
-                  isCenter: true,
+                  label: 'Orders',
+                  icon: Icons.receipt_long_outlined,
+                  activeIcon: Icons.receipt_long_rounded,
+                  isActive: currentTab == AppTab.orders,
+                  onTap: onOrdersTap,
                 ),
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Trans',
+                  label: 'Transaction',
                   icon: Icons.swap_horiz_outlined,
                   activeIcon: Icons.swap_horiz_rounded,
                   isActive: currentTab == AppTab.transactions,
@@ -83,11 +73,11 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'DC',
-                  icon: Icons.local_shipping_outlined,
-                  activeIcon: Icons.local_shipping_rounded,
-                  isActive: currentTab == AppTab.dc,
-                  onTap: onDcTap,
+                  label: 'Audit',
+                  icon: Icons.fact_check_outlined,
+                  activeIcon: Icons.fact_check_rounded,
+                  isActive: currentTab == AppTab.audit,
+                  onTap: onHomeTap,
                 ),
               ),
               Expanded(
@@ -97,6 +87,15 @@ class AppBottomNav extends StatelessWidget {
                   activeIcon: Icons.compare_arrows_rounded,
                   isActive: currentTab == AppTab.variance,
                   onTap: onVarianceTap,
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
+                  label: 'DC',
+                  icon: Icons.local_shipping_outlined,
+                  activeIcon: Icons.local_shipping_rounded,
+                  isActive: currentTab == AppTab.dc,
+                  onTap: onDcTap,
                 ),
               ),
             ],

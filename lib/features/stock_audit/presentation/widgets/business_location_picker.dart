@@ -204,7 +204,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
       title: 'Business Location',
       subtitle: 'Apna dark store select karein',
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
@@ -213,7 +213,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
               onChanged: (value) => setState(() => _query = value),
             ),
           ),
-          Flexible(
+          Expanded(
             child: options.isEmpty
                 ? const AppEmptyState(
                     icon: Icons.location_off_outlined,

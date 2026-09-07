@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_assets.dart';
 import '../constants/app_colors.dart';
+import 'app_brand_header.dart';
+import 'app_ui.dart';
 
 /// Shared design language lifted from the Orders screen so every module
 /// (Home, Stock, Transactions, Variance) reads the same.
@@ -30,14 +32,17 @@ class ModuleTokens {
   ];
 }
 
-/// Compact orange header sheet with icon, title, actions and optional search.
+/// Compact orange header sheet with Gramik brand, actions and optional search.
 class ModuleHeader extends StatelessWidget {
   const ModuleHeader({
     super.key,
-    required this.icon,
-    required this.title,
+    this.pageLabel,
     this.subtitle,
     this.onBack,
+    this.onLogout,
+    this.notificationCount = 0,
+    this.onNotificationTap,
+    this.showNotifications = true,
     this.actions = const [],
     this.searchController,
     this.searchHint,
@@ -47,12 +52,18 @@ class ModuleHeader extends StatelessWidget {
     this.bottom,
   });
 
-  final IconData icon;
-  final String title;
+  /// Screen-specific line under the brand tagline (e.g. Orders, Stock).
+  final String? pageLabel;
   final String? subtitle;
 
-  /// When set, the leading circle becomes a back button instead of [icon].
+  /// When set, the leading circle becomes a back button instead of the brand icon.
   final VoidCallback? onBack;
+  final Future<void> Function()? onLogout;
+  final int notificationCount;
+  final VoidCallback? onNotificationTap;
+  final bool showNotifications;
+
+  /// Extra header actions shown before user menu and notifications.
   final List<Widget> actions;
 
   /// Provide all four search params together to render the search pill.
@@ -66,6 +77,24 @@ class ModuleHeader extends StatelessWidget {
   final Widget? bottom;
 
   bool get _hasSearch => searchController != null && onSearchChanged != null;
+
+  List<Widget> get _trailingActions {
+    final items = <Widget>[...actions];
+    if (onLogout != null) {
+      items.add(ModuleUserMenuAction(onLogout: onLogout!));
+    }
+    if (showNotifications) {
+      items.add(
+        ModuleHeaderAction(
+          icon: Icons.notifications_none_rounded,
+          badgeCount: notificationCount,
+          tooltip: 'Notifications',
+          onTap: onNotificationTap ?? () {},
+        ),
+      );
+    }
+    return items;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +119,7 @@ class ModuleHeader extends StatelessWidget {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (onBack != null)
                   ModuleHeaderAction(
@@ -98,46 +128,16 @@ class ModuleHeader extends StatelessWidget {
                     onTap: onBack!,
                   )
                 else
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, color: Colors.white, size: 20),
-                  ),
+                  const AppBrandIcon(),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (subtitle != null)
-                        Text(
-                          subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.75),
-                          ),
-                        ),
-                    ],
+                  child: AppBrandMark(
+                    showIcon: false,
+                    pageLabel: pageLabel,
+                    subtitle: subtitle,
                   ),
                 ),
-                for (final action in actions) ...[
+                for (final action in _trailingActions) ...[
                   const SizedBox(width: 8),
                   action,
                 ],
@@ -280,6 +280,87 @@ class ModuleHeaderAction extends StatelessWidget {
   }
 }
 
+Future<bool> confirmModuleLogout(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Logout'),
+      content: const Text('Kya aap logout karna chahte hain?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
+}
+
+/// User icon that opens a menu with Logout (confirmation before sign-out).
+class ModuleUserMenuAction extends StatelessWidget {
+  const ModuleUserMenuAction({super.key, required this.onLogout});
+
+  final Future<void> Function() onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 44),
+      color: Colors.white,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) async {
+        if (value != 'logout') return;
+        HapticFeedback.selectionClick();
+        final confirmed = await confirmModuleLogout(context);
+        if (!context.mounted || !confirmed) return;
+        await onLogout();
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(
+          value: 'logout',
+          height: 44,
+          child: Row(
+            children: [
+              Icon(Icons.logout_rounded, size: 18, color: Color(0xFFDC2626)),
+              SizedBox(width: 10),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: ModuleTokens.strongText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.15),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: const SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            Icons.person_outline_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Logout action using the Darkstore logout glyph.
 class ModuleLogoutAction extends StatelessWidget {
   const ModuleLogoutAction({super.key, required this.onTap});
@@ -325,6 +406,8 @@ class ModuleStat {
     required this.value,
     required this.background,
     required this.labelColor,
+    this.isActive = false,
+    this.onTap,
   });
 
   final IconData icon;
@@ -332,17 +415,41 @@ class ModuleStat {
   final String value;
   final Color background;
   final Color labelColor;
+  final bool isActive;
+  final VoidCallback? onTap;
 }
 
 /// Horizontally scrolling row of solid colour stat cards.
+/// Up to three stats expand equally to fill the row width; more use horizontal scroll.
 class ModuleStatsRow extends StatelessWidget {
   const ModuleStatsRow({super.key, required this.stats});
 
   final List<ModuleStat> stats;
 
+  static const _maxExpandedCount = 3;
+
   @override
   Widget build(BuildContext context) {
     if (stats.isEmpty) return const SizedBox.shrink();
+
+    if (stats.length <= _maxExpandedCount) {
+      return SizedBox(
+        height: 78,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              for (var i = 0; i < stats.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: _ModuleStatCard(stat: stats[i], expanded: true),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
     return SizedBox(
       height: 78,
@@ -358,23 +465,27 @@ class ModuleStatsRow extends StatelessWidget {
 }
 
 class _ModuleStatCard extends StatelessWidget {
-  const _ModuleStatCard({required this.stat});
+  const _ModuleStatCard({required this.stat, this.expanded = false});
 
   final ModuleStat stat;
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 140),
+    final card = Container(
+      width: expanded ? double.infinity : null,
+      constraints: expanded ? null : const BoxConstraints(minWidth: 140),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: stat.background,
         borderRadius: BorderRadius.circular(11),
         boxShadow: ModuleTokens.statShadow,
+        border: stat.isActive
+            ? Border.all(color: Colors.white, width: 2)
+            : null,
       ),
       child: Row(
-        // Horizontal scroll gives unbounded width, so the card must shrink-wrap.
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Container(
             width: 32,
@@ -386,42 +497,77 @@ class _ModuleStatCard extends StatelessWidget {
             child: Icon(stat.icon, color: Colors.white, size: 17),
           ),
           const SizedBox(width: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 130),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  stat.label.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: stat.labelColor,
-                    fontSize: 8.5,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  stat.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    height: 1.2,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+          if (expanded)
+            Expanded(
+              child: _ModuleStatText(stat: stat),
+            )
+          else
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: _ModuleStatText(stat: stat),
             ),
-          ),
+          if (stat.isActive) ...[
+            const SizedBox(width: 6),
+            const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+          ],
         ],
       ),
+    );
+
+    if (stat.onTap == null) return card;
+
+    return Material(
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          stat.onTap!();
+        },
+        child: card,
+      ),
+    );
+  }
+}
+
+class _ModuleStatText extends StatelessWidget {
+  const _ModuleStatText({required this.stat});
+
+  final ModuleStat stat;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          stat.label.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: stat.labelColor,
+            fontSize: 8.5,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          stat.value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -508,6 +654,140 @@ class ModuleChipsRow extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+/// Shimmer placeholders matching [ModuleStatsRow] while counts load.
+class ModuleStatsRowSkeleton extends StatelessWidget {
+  const ModuleStatsRowSkeleton({super.key, this.count = 2});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= ModuleStatsRow._maxExpandedCount) {
+      return SizedBox(
+        height: 78,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              for (var i = 0; i < count; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(child: _skeletonCard()),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 78,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(10),
+        itemCount: count,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) => SizedBox(width: 148, child: _skeletonCard()),
+      ),
+    );
+  }
+
+  Widget _skeletonCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ModuleTokens.cardBorder),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AppSkeleton(height: 10, width: 72),
+          SizedBox(height: 8),
+          AppSkeleton(height: 18, width: 44),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shimmer placeholder matching [ModuleCard] list rows.
+class ModuleCardSkeleton extends StatelessWidget {
+  const ModuleCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
+          border: Border.all(color: ModuleTokens.cardBorder),
+          boxShadow: ModuleTokens.cardShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
+          child: Stack(
+            children: [
+              const Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: AppSkeleton(height: 92, width: 4, radius: 0),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppSkeleton(height: 14, width: 160),
+                        ),
+                        SizedBox(width: 10),
+                        AppSkeleton(height: 20, width: 56, radius: 999),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    AppSkeleton(height: 44, radius: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Native-style list loading — stats + cards instead of a lone spinner.
+class ModuleListLoadingBody extends StatelessWidget {
+  const ModuleListLoadingBody({
+    super.key,
+    this.showStats = true,
+    this.itemCount = 4,
+  });
+
+  final bool showStats;
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showStats) const ModuleStatsRowSkeleton(),
+        for (var i = 0; i < itemCount; i++) const ModuleCardSkeleton(),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }

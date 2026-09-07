@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/network/api_auth_bridge.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/storage/session_storage.dart';
 import '../../../../core/utils/role_helper.dart';
@@ -52,6 +53,7 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 class AuthController extends StateNotifier<AuthState> {
   AuthController(this._repository, this._storage)
     : super(const AuthState(status: AuthStatus.unknown)) {
+    ApiAuthBridge.register(logout);
     _restoreSession();
   }
 

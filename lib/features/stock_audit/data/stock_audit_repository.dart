@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/utils/json_parse.dart';
 import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
@@ -51,7 +52,7 @@ class StockAuditRepository {
         'variant_id': variantId,
       },
     );
-    return StockAuditDetailModel.fromJson(json['data'] as Map<String, dynamic>);
+    return StockAuditDetailModel.fromJson(requireJsonMap(json['data']));
   }
 
   Future<BulkSaveResultModel> saveBulk({
@@ -62,7 +63,7 @@ class StockAuditRepository {
       '/stock-audits/bulk',
       body: {'businessLocationId': businessLocationId, 'items': items},
     );
-    return BulkSaveResultModel.fromJson(json['data'] as Map<String, dynamic>);
+    return BulkSaveResultModel.fromJson(requireJsonMap(json['data']));
   }
 
   Future<void> saveComment({
@@ -117,7 +118,7 @@ class StockAuditRepository {
         if (date != null && date.isNotEmpty) 'date': date,
       },
     );
-    return TransactionReportModel.fromJson(json['data'] as Map<String, dynamic>);
+    return TransactionReportModel.fromJson(requireJsonMap(json['data']));
   }
 
   Future<VarianceReportModel> getVariance({
@@ -135,6 +136,6 @@ class StockAuditRepository {
         'limit': limit,
       },
     );
-    return VarianceReportModel.fromJson(json['data'] as Map<String, dynamic>);
+    return VarianceReportModel.fromJson(requireJsonMap(json['data']));
   }
 }

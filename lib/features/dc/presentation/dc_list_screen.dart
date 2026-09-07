@@ -84,10 +84,9 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.local_shipping_rounded,
-            title: 'DC Transfers',
+            pageLabel: 'DC Transfers',
             subtitle: 'Namaste, $userName',
-            actions: [ModuleLogoutAction(onTap: _logout)],
+            onLogout: _logout,
             bottom: state.warehouse?.code != null
                 ? Align(
                     alignment: Alignment.centerLeft,
@@ -179,13 +178,8 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
                       ),
                     ),
                   if (state.isLoading && state.transfers.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    const SliverToBoxAdapter(
+                      child: ModuleListLoadingBody(),
                     )
                   else if (state.transfers.isEmpty)
                     const SliverFillRemaining(
@@ -234,7 +228,7 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.dc,
-        onHomeTap: () => context.go('/home'),
+        onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
         onTransactionsTap: () => context.go('/transactions'),

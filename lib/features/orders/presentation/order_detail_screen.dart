@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/alert_banner.dart';
+import '../../../core/widgets/module_ui.dart';
 import '../data/models/order_model.dart';
+import '../services/thermal_printer_service.dart';
 import 'providers/order_detail_provider.dart';
 import 'utils/order_detail_helpers.dart';
 import 'utils/order_status_helper.dart';
+import 'widgets/bluetooth_printer_sheet.dart';
 import 'widgets/cancel_order_overlay.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -25,23 +29,29 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   final _scrollController = ScrollController();
   double _scrollOffset = 0;
+  bool _printBusy = false;
 
   static const _stickyThreshold = 64.0;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      setState(() => _scrollOffset = _scrollController.offset);
-    });
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(orderDetailControllerProvider(widget.orderId).notifier).load();
     });
   }
 
+  void _onScroll() {
+    if (!mounted) return;
+    setState(() => _scrollOffset = _scrollController.offset);
+  }
+
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
@@ -108,6 +118,65 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
+  Future<void> _printReceipt(OrderDetailModel order) async {
+    if (_printBusy) return;
+    setState(() => _printBusy = true);
+    try {
+      final controller =
+          ref.read(orderDetailControllerProvider(widget.orderId).notifier);
+      final ok = await controller.markReadyToPick();
+      if (!mounted || !ok) return;
+
+      try {
+        await ThermalPrinterService.printOrderReceipt(order);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Receipt printed')),
+        );
+      } on PrinterException catch (e) {
+        if (!mounted) return;
+        if (e.shouldOpenPicker) {
+          await _openPrinterPicker(order);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.userMessage)),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _printBusy = false);
+    }
+  }
+
+  Future<void> _openPrinterPicker(OrderDetailModel order) async {
+    await BluetoothPrinterSheet.show(
+      context,
+      onSelect: (device) => _onPrinterSelected(order, device),
+    );
+  }
+
+  Future<void> _onPrinterSelected(
+    OrderDetailModel order,
+    BluetoothInfo device,
+  ) async {
+    await ThermalPrinterService.connectPrinter(
+      address: device.macAdress,
+      name: device.name,
+    );
+    await ThermalPrinterService.printOrderReceipt(
+      order,
+      explicitAddress: device.macAdress,
+    );
+    if (!mounted) return;
+    await ref
+        .read(orderDetailControllerProvider(widget.orderId).notifier)
+        .load(refresh: true);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Receipt printed')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(orderDetailControllerProvider(widget.orderId));
@@ -136,6 +205,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               code: 'Order Details',
               compactOpacity: 0,
               statusNavOpacity: 0,
+              positioned: false,
               onBack: () => context.pop(),
             ),
             Expanded(
@@ -365,20 +435,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   showPrintReceipt: showPrintReceipt,
                   showCancel: showCancel,
                   statusColor: status.color,
-                  loading: state.isActionLoading,
-                  onPrintReceipt: () async {
-                    final ok = await ref
-                        .read(orderDetailControllerProvider(widget.orderId).notifier)
-                        .markReadyToPick();
-                    if (!mounted || !ok) return;
-                    final message = ref
-                            .read(orderDetailControllerProvider(widget.orderId))
-                            .successMessage ??
-                        'Order marked ready to pick';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(message)),
-                    );
-                  },
+                  loading: state.isActionLoading || _printBusy,
+                  onPrintReceipt: () => _printReceipt(order),
                   onCancel: () => _openCancelOverlay(order),
                   onBack: () => context.pop(),
                 ),
@@ -407,6 +465,7 @@ class _FixedNavBar extends StatelessWidget {
     this.statusLabel,
     this.statusIcon,
     this.amount,
+    this.positioned = true,
   });
 
   final double topPadding;
@@ -418,94 +477,101 @@ class _FixedNavBar extends StatelessWidget {
   final double compactOpacity;
   final double statusNavOpacity;
   final VoidCallback onBack;
+  final bool positioned;
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-        ),
-        padding: EdgeInsets.fromLTRB(14, topPadding, 14, 8),
-        child: SizedBox(
-          height: 36,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Row(
-                children: [
-                  _HeroBackButton(onTap: onBack),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      code,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
-                  ),
-                  if (statusLabel != null && statusIcon != null)
-                    Opacity(
-                      opacity: statusNavOpacity,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.22),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(statusIcon, size: 10, color: Colors.white),
-                            const SizedBox(width: 3),
-                            Text(
-                              statusLabel!,
-                              style: const TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              if (amount != null)
-                Positioned(
-                  right: 0,
-                  child: Opacity(
-                    opacity: compactOpacity,
-                    child: Text(
-                      amount!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+    final bar = Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+      ),
+      padding: EdgeInsets.fromLTRB(14, topPadding, 14, 8),
+      child: SizedBox(
+        height: 36,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Row(
+              children: [
+                _HeroBackButton(onTap: onBack),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    code,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.15,
                     ),
                   ),
                 ),
-            ],
-          ),
+                const SizedBox(width: 8),
+                ModuleHeaderAction(
+                  icon: Icons.notifications_none_rounded,
+                  tooltip: 'Notifications',
+                  onTap: () {},
+                ),
+                if (statusLabel != null && statusIcon != null) ...[
+                  const SizedBox(width: 8),
+                  Opacity(
+                    opacity: statusNavOpacity,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(statusIcon, size: 10, color: Colors.white),
+                          const SizedBox(width: 3),
+                          Text(
+                            statusLabel!,
+                            style: const TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (amount != null)
+              Positioned(
+                right: 0,
+                child: Opacity(
+                  opacity: compactOpacity,
+                  child: Text(
+                    amount!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
+
+    if (!positioned) return bar;
+    return Positioned(top: 0, left: 0, right: 0, child: bar);
   }
 }
 

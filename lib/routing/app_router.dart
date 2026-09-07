@@ -40,7 +40,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (auth.status == AuthStatus.unauthenticated && !loggingIn) {
         return '/login';
       }
-      if (auth.status == AuthStatus.authenticated && loggingIn) return '/home';
+      if (auth.status == AuthStatus.authenticated && loggingIn) return '/audit';
       return null;
     },
     routes: [
@@ -49,7 +49,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/home',
+        redirect: (context, state) => '/audit${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
+      ),
+      GoRoute(
+        path: '/audit',
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: '/orders',
         builder: (context, state) => const OrdersScreen(),

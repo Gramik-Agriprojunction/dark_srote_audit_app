@@ -80,10 +80,9 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.compare_arrows_rounded,
-            title: 'Variance',
+            pageLabel: 'Variance',
             subtitle: 'Namaste, $userName',
-            actions: [ModuleLogoutAction(onTap: _logout)],
+            onLogout: _logout,
           ),
           Expanded(
             child: RefreshIndicator(
@@ -156,13 +155,8 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                       ),
                     ),
                   if (state.isLoading && state.rows.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    const SliverToBoxAdapter(
+                      child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.selectedStoreId == null)
                     const SliverFillRemaining(
@@ -215,7 +209,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.variance,
-        onHomeTap: () => context.go('/home'),
+        onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
         onTransactionsTap: () => context.go('/transactions'),

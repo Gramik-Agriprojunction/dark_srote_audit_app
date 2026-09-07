@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/app_brand_header.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import 'providers/auth_provider.dart';
@@ -151,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authControllerProvider.notifier)
           .verifyOtp(mobile: _mobile, otp: _otpController.text.trim());
       if (!mounted) return;
-      context.go('/home');
+      context.go('/audit');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -237,51 +238,7 @@ class _LoginView extends StatelessWidget {
             width: double.infinity,
             color: AuthTheme.primary,
             padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
-            child: Column(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: ColorFiltered(
-                    colorFilter: const ColorFilter.mode(
-                      AuthTheme.primary,
-                      BlendMode.srcIn,
-                    ),
-                    child: Image.asset(
-                      AppAssets.shopIcon,
-                      width: 36,
-                      height: 36,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                RichText(
-                  text: TextSpan(
-                    style: AuthTheme.brandName(),
-                    children: [
-                      const TextSpan(text: 'Gramik '),
-                      TextSpan(
-                        text: 'Darkstore',
-                        style: AuthTheme.brandNameBold(),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Stock Audit • Dark Store',
-                  style: AuthTheme.caption(
-                    Colors.white.withValues(alpha: 0.5),
-                  ).copyWith(fontSize: 12),
-                ),
-              ],
-            ),
+            child: const AppBrandMark(size: AppBrandMarkSize.hero),
           ),
           Transform.translate(
             offset: const Offset(0, -28),

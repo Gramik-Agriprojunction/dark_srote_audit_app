@@ -76,16 +76,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return count;
   }
 
-  int _auditedCount(StockAuditState state) {
-    var count = 0;
-    for (final product in state.products) {
-      for (final variant in product.variants) {
-        if (variant.auditUpdatedAt != null) count++;
-      }
-    }
-    return count;
-  }
-
   Future<void> _refresh() async {
     ref.read(authControllerProvider.notifier).touchActivity();
     final audit = ref.read(stockAuditControllerProvider);
@@ -106,15 +96,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasChanges = changedCount > 0;
     final notifier = ref.read(stockAuditControllerProvider.notifier);
 
-    final totalVariants = audit.products.fold<int>(
-      0,
-      (sum, product) => sum + product.variants.length,
-    );
-    final visibleVariants = audit.filteredProducts.fold<int>(
-      0,
-      (sum, product) => sum + product.variants.length,
-    );
-
     if (_searchController.text != audit.searchQuery) {
       _searchController.value = _searchController.value.copyWith(
         text: audit.searchQuery,
@@ -122,15 +103,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    ref.listen<StockAuditState>(stockAuditControllerProvider, (previous, next) {
+      final message = next.successMessage;
+      if (message == null || message == previous?.successMessage) return;
+      if (!context.mounted) return;
+      AppSnackBar.showSuccess(context, message);
+      ref.read(stockAuditControllerProvider.notifier).clearSuccessMessage();
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.storefront_rounded,
-            title: 'Gramik Darkstore',
-            subtitle: 'Namaste, $userName',
-            actions: [ModuleLogoutAction(onTap: _logout)],
+            pageLabel: 'Namaste, $userName',
+            onLogout: _logout,
             searchController: audit.showProducts ? _searchController : null,
             searchHint: 'Product ya SKU search karo...',
             searchValue: audit.searchQuery,
@@ -149,38 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 slivers: [
                   if (audit.showProducts)
                     SliverToBoxAdapter(
-                      child: ModuleStatsRow(
-                        stats: [
-                          ModuleStat(
-                            icon: Icons.inventory_2_rounded,
-                            label: 'Total SKU',
-                            value: '$totalVariants',
-                            background: AppColors.primary,
-                            labelColor: const Color(0xFFFFE4D2),
-                          ),
-                          ModuleStat(
-                            icon: Icons.task_alt_rounded,
-                            label: 'Audited',
-                            value: '${_auditedCount(audit)}',
-                            background: const Color(0xFF15803D),
-                            labelColor: const Color(0xFFBBF7D0),
-                          ),
-                          ModuleStat(
-                            icon: Icons.pending_actions_rounded,
-                            label: 'Pending Save',
-                            value: '$changedCount',
-                            background: const Color(0xFFB45309),
-                            labelColor: const Color(0xFFFED7AA),
-                          ),
-                          ModuleStat(
-                            icon: Icons.filter_alt_outlined,
-                            label: 'Showing',
-                            value: '$visibleVariants',
-                            background: const Color(0xFF1D4ED8),
-                            labelColor: const Color(0xFFBFDBFE),
-                          ),
-                        ],
-                      ),
+                      child: _statsRow(audit, notifier),
                     ),
                   if (audit.error != null)
                     SliverToBoxAdapter(
@@ -189,16 +145,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: AlertBanner(
                           message: audit.error!,
                           isError: true,
-                        ),
-                      ),
-                    ),
-                  if (audit.successMessage != null)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                        child: AlertBanner(
-                          message: audit.successMessage!,
-                          isError: false,
                         ),
                       ),
                     ),
@@ -216,21 +162,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   else if (audit.isLoadingProducts)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < 5; i++) const ProductRowSkeleton(),
+                          const SizedBox(height: 12),
+                        ],
                       ),
                     )
                   else if (audit.filteredProducts.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.search_off_rounded,
-                        title: 'No matching products',
-                        message: 'Search clear karke dubara try karein.',
+                        title: audit.searchQuery.isNotEmpty
+                            ? 'No matching products'
+                            : _emptyTitle(audit.auditStatusFilter),
+                        message: audit.searchQuery.isNotEmpty
+                            ? 'Search clear karke dubara try karein.'
+                            : _emptyMessage(audit.auditStatusFilter),
                       ),
                     )
                   else
@@ -323,7 +273,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       bottomNavigationBar: AppBottomNav(
-        currentTab: AppTab.home,
+        currentTab: AppTab.audit,
         onHomeTap: () {
           ref.read(authControllerProvider.notifier).touchActivity();
           _scrollController.animateTo(
@@ -339,5 +289,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onVarianceTap: () => context.go('/variance'),
       ),
     );
+  }
+
+  Widget _statsRow(StockAuditState audit, StockAuditController notifier) {
+    final filter = audit.auditStatusFilter;
+    return ModuleStatsRow(
+      stats: [
+        ModuleStat(
+          icon: Icons.inventory_2_rounded,
+          label: 'Total SKU',
+          value: '${audit.totalVariantCount}',
+          background: AppColors.primary,
+          labelColor: const Color(0xFFFFE4D2),
+          isActive: filter == AuditStatusFilter.all,
+          onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.all),
+        ),
+        ModuleStat(
+          icon: Icons.task_alt_rounded,
+          label: 'Audited',
+          value: '${audit.auditedVariantCount}',
+          background: const Color(0xFF15803D),
+          labelColor: const Color(0xFFBBF7D0),
+          isActive: filter == AuditStatusFilter.audited,
+          onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.audited),
+        ),
+        ModuleStat(
+          icon: Icons.pending_actions_rounded,
+          label: 'Pending',
+          value: '${audit.pendingVariantCount}',
+          background: const Color(0xFFB45309),
+          labelColor: const Color(0xFFFED7AA),
+          isActive: filter == AuditStatusFilter.pending,
+          onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.pending),
+        ),
+      ],
+    );
+  }
+
+  String _emptyTitle(AuditStatusFilter filter) {
+    switch (filter) {
+      case AuditStatusFilter.audited:
+        return 'Koi audited SKU nahi mila';
+      case AuditStatusFilter.pending:
+        return 'Koi pending SKU nahi mila';
+      case AuditStatusFilter.all:
+        return 'Koi product nahi mila';
+    }
+  }
+
+  String _emptyMessage(AuditStatusFilter filter) {
+    switch (filter) {
+      case AuditStatusFilter.audited:
+        return 'Is filter par abhi koi audited variant nahi hai.';
+      case AuditStatusFilter.pending:
+        return 'Sab variants audit ho chuke hain.';
+      case AuditStatusFilter.all:
+        return 'Is location par koi product nahi mila.';
+    }
   }
 }

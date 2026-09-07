@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parse.dart';
+
 class StockAuditDetailModel {
   const StockAuditDetailModel({
     required this.productId,
@@ -31,12 +33,8 @@ class StockAuditDetailModel {
     if (raw != null) updatedAt = DateTime.tryParse(raw.toString());
 
     return StockAuditDetailModel(
-      productId: json['productId'] is int
-          ? json['productId'] as int
-          : int.parse('${json['productId']}'),
-      variantId: json['variantId'] is int
-          ? json['variantId'] as int
-          : int.parse('${json['variantId']}'),
+      productId: jsonInt(json['productId']),
+      variantId: jsonInt(json['variantId']),
       productName: (json['productName'] ?? 'Product').toString(),
       variantLabel: (json['variantLabel'] ?? json['variantSku'] ?? 'Variant')
           .toString(),

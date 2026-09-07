@@ -57,9 +57,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       lastDate: DateTime.now(),
       helpText: 'Select date',
     );
-    if (picked != null) {
-      await ref.read(transactionsControllerProvider.notifier).setDate(picked);
-    }
+    if (!mounted || picked == null) return;
+    await ref.read(transactionsControllerProvider.notifier).setDate(picked);
   }
 
   @override
@@ -78,10 +77,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.swap_horiz_rounded,
-            title: 'Transactions',
+            pageLabel: 'Transactions',
             subtitle: 'Namaste, $userName',
-            actions: [ModuleLogoutAction(onTap: _logout)],
+            onLogout: _logout,
             bottom: _DatePill(
               label: dateLabel,
               onTap: () => _pickDate(selectedDate),
@@ -140,13 +138,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       ),
                     ),
                   if (state.isLoading)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    const SliverToBoxAdapter(
+                      child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.selectedStoreId == null)
                     const SliverFillRemaining(
@@ -187,7 +180,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.transactions,
-        onHomeTap: () => context.go('/home'),
+        onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
         onTransactionsTap: () {},

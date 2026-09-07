@@ -126,6 +126,8 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     }
   }
 
+  bool get _hasVariance => AuditQtyHelper.hasVariance(widget.variant);
+
   @override
   Widget build(BuildContext context) {
     final pcsQty = AuditQtyHelper.displayPcsQty(widget.variant);
@@ -181,8 +183,11 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                       children: [
                         AppChip(
                           label: widget.variant.variantName,
-                          color: AppColors.textSecondary,
+                          color: _hasVariance
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
                           background: AppColors.fieldBg,
+                          bold: _hasVariance,
                         ),
                         AppChip(
                           label: '$pcsQty Pcs',

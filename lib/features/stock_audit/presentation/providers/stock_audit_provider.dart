@@ -6,12 +6,15 @@ import '../../data/models/product_model.dart';
 import '../../data/stock_audit_repository.dart';
 import '../utils/resolve_store_id.dart';
 
+enum AuditStatusFilter { all, audited, pending }
+
 class StockAuditState {
   const StockAuditState({
     this.locations = const [],
     this.selectedLocationId,
     this.products = const [],
     this.searchQuery = '',
+    this.auditStatusFilter = AuditStatusFilter.all,
     this.isLoadingLocations = false,
     this.isLoadingProducts = false,
     this.isSaving = false,
@@ -25,6 +28,7 @@ class StockAuditState {
   final int? selectedLocationId;
   final List<ProductModel> products;
   final String searchQuery;
+  final AuditStatusFilter auditStatusFilter;
   final bool isLoadingLocations;
   final bool isLoadingProducts;
   final bool isSaving;
@@ -35,7 +39,7 @@ class StockAuditState {
 
   bool get showProducts => selectedLocationId != null;
 
-  List<ProductModel> get filteredProducts {
+  List<ProductModel> get searchFilteredProducts {
     final term = searchQuery.trim().toLowerCase();
     if (term.isEmpty) return products;
 
@@ -58,18 +62,56 @@ class StockAuditState {
         .toList();
   }
 
+  List<ProductModel> get filteredProducts {
+    return searchFilteredProducts
+        .map((product) {
+          final variants = product.variants.where((variant) {
+            switch (auditStatusFilter) {
+              case AuditStatusFilter.all:
+                return true;
+              case AuditStatusFilter.audited:
+                return variant.auditUpdatedAt != null;
+              case AuditStatusFilter.pending:
+                return variant.auditUpdatedAt == null;
+            }
+          }).toList();
+          if (variants.isEmpty) return null;
+          return product.copyWith(variants: variants);
+        })
+        .whereType<ProductModel>()
+        .toList();
+  }
+
+  int get totalVariantCount => products.fold<int>(
+        0,
+        (sum, product) => sum + product.variants.length,
+      );
+
+  int get auditedVariantCount => products.fold<int>(
+        0,
+        (sum, product) =>
+            sum +
+            product.variants
+                .where((variant) => variant.auditUpdatedAt != null)
+                .length,
+      );
+
+  int get pendingVariantCount => totalVariantCount - auditedVariantCount;
+
   StockAuditState copyWith({
     List<BusinessLocationModel>? locations,
     int? selectedLocationId,
     bool clearSelectedLocation = false,
     List<ProductModel>? products,
     String? searchQuery,
+    AuditStatusFilter? auditStatusFilter,
     bool? isLoadingLocations,
     bool? isLoadingProducts,
     bool? isSaving,
     String? error,
     String? successMessage,
     bool clearMessages = false,
+    bool clearSuccessMessage = false,
     Map<int, int>? qtyDrafts,
     Set<int>? emptyDraftVariantIds,
     bool clearDrafts = false,
@@ -81,11 +123,12 @@ class StockAuditState {
           : (selectedLocationId ?? this.selectedLocationId),
       products: products ?? this.products,
       searchQuery: searchQuery ?? this.searchQuery,
+      auditStatusFilter: auditStatusFilter ?? this.auditStatusFilter,
       isLoadingLocations: isLoadingLocations ?? this.isLoadingLocations,
       isLoadingProducts: isLoadingProducts ?? this.isLoadingProducts,
       isSaving: isSaving ?? this.isSaving,
       error: clearMessages ? null : (error ?? this.error),
-      successMessage: clearMessages
+      successMessage: clearMessages || clearSuccessMessage
           ? null
           : (successMessage ?? this.successMessage),
       qtyDrafts: clearDrafts ? const {} : (qtyDrafts ?? this.qtyDrafts),
@@ -130,6 +173,7 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       selectedLocationId: locationId,
       products: const [],
       searchQuery: '',
+      auditStatusFilter: AuditStatusFilter.all,
       clearDrafts: true,
       clearMessages: true,
     );
@@ -160,6 +204,11 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     state = state.copyWith(searchQuery: query);
   }
 
+  void setAuditStatusFilter(AuditStatusFilter filter) {
+    if (state.auditStatusFilter == filter) return;
+    state = state.copyWith(auditStatusFilter: filter);
+  }
+
   void setQtyDraft(int variantId, int? qty, {bool emptyInput = false}) {
     final drafts = Map<int, int>.from(state.qtyDrafts);
     final emptyIds = Set<int>.from(state.emptyDraftVariantIds);
@@ -187,6 +236,10 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     final emptyIds = Set<int>.from(state.emptyDraftVariantIds)
       ..remove(variantId);
     state = state.copyWith(qtyDrafts: drafts, emptyDraftVariantIds: emptyIds);
+  }
+
+  void clearSuccessMessage() {
+    state = state.copyWith(clearSuccessMessage: true);
   }
 
   ProductVariantModel? findVariant(int variantId) {

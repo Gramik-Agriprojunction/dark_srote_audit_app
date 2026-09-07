@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parse.dart';
+
 class ProductModel {
   const ProductModel({
     required this.id,
@@ -23,7 +25,7 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final variantsRaw = json['variants'];
     return ProductModel(
-      id: json['id'] is int ? json['id'] as int : int.parse('${json['id']}'),
+      id: jsonInt(json['id']),
       name: (json['name'] ?? 'Unnamed product').toString(),
       image: json['image']?.toString(),
       variants: variantsRaw is List
@@ -50,6 +52,8 @@ class ProductVariantModel {
     this.damageComment,
     this.systemOnHandQty = 0,
     this.lastAuditSystemStock,
+    this.backlog = 0,
+    this.inventoryType = 'EQUAL',
     this.currentStock = 0,
     this.availableStock = 0,
   });
@@ -66,6 +70,8 @@ class ProductVariantModel {
   final String? damageComment;
   final int systemOnHandQty;
   final int? lastAuditSystemStock;
+  final int backlog;
+  final String inventoryType;
   final int currentStock;
   final int availableStock;
 
@@ -104,10 +110,8 @@ class ProductVariantModel {
     }
 
     return ProductVariantModel(
-      id: json['id'] is int ? json['id'] as int : int.parse('${json['id']}'),
-      productId: json['productId'] is int
-          ? json['productId'] as int
-          : int.parse('${json['productId']}'),
+      id: jsonInt(json['id']),
+      productId: jsonInt(json['productId']),
       sku: (json['sku'] ?? '').toString(),
       label: (json['label'] ?? json['variantName'] ?? json['sku'] ?? 'Variant')
           .toString(),
@@ -129,6 +133,10 @@ class ProductVariantModel {
       lastAuditSystemStock: json['lastAuditSystemStock'] is int
           ? json['lastAuditSystemStock'] as int
           : int.tryParse('${json['lastAuditSystemStock']}'),
+      backlog: json['backlog'] is int
+          ? json['backlog'] as int
+          : int.tryParse('${json['backlog']}') ?? 0,
+      inventoryType: (json['inventoryType'] ?? json['type'] ?? 'EQUAL').toString(),
       currentStock: json['currentStock'] is int
           ? json['currentStock'] as int
           : int.tryParse('${json['currentStock']}') ?? 0,
@@ -161,15 +169,9 @@ class BulkSaveItemModel {
     if (raw != null) updatedAt = DateTime.tryParse(raw.toString());
 
     return BulkSaveItemModel(
-      productId: json['productId'] is int
-          ? json['productId'] as int
-          : int.parse('${json['productId']}'),
-      variantId: json['variantId'] is int
-          ? json['variantId'] as int
-          : int.parse('${json['variantId']}'),
-      qty: json['qty'] is int
-          ? json['qty'] as int
-          : int.parse('${json['qty']}'),
+      productId: jsonInt(json['productId']),
+      variantId: jsonInt(json['variantId']),
+      qty: jsonInt(json['qty']),
       updatedAt: updatedAt,
     );
   }

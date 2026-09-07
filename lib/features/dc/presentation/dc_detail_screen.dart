@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/dc_transfer_model.dart';
 import 'providers/dc_provider.dart';
 
@@ -26,17 +27,21 @@ class DcDetailScreen extends ConsumerWidget {
     final state = ref.watch(dcControllerProvider);
     final transfer = state.transferById(transferId);
     final formatter = NumberFormat.decimalPattern('en_IN');
-    final top = MediaQuery.paddingOf(context).top;
+
+    Future<void> logout() async {
+      await ref.read(authControllerProvider.notifier).logout();
+      if (context.mounted) context.go('/login');
+    }
 
     if (transfer == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _DetailHeader(
-              topPadding: top,
-              title: 'DC Detail',
+            ModuleHeader(
+              pageLabel: 'DC Detail',
               onBack: () => context.pop(),
+              onLogout: logout,
             ),
             const Expanded(
               child: ModuleEmptyState(
@@ -58,13 +63,13 @@ class DcDetailScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _DetailHeader(
-              topPadding: top,
-              title: transfer.reference.isNotEmpty
+            ModuleHeader(
+              pageLabel: transfer.reference.isNotEmpty
                   ? transfer.reference
                   : 'Transfer #${transfer.transferId}',
               subtitle: transfer.from?.warehouse,
               onBack: () => context.pop(),
+              onLogout: logout,
             ),
             Expanded(
               child: ListView(
@@ -129,68 +134,6 @@ class DcDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({
-    required this.topPadding,
-    required this.title,
-    required this.onBack,
-    this.subtitle,
-  });
-
-  final double topPadding;
-  final String title;
-  final String? subtitle;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.fromLTRB(8, topPadding + 8, 8, 12),
-      child: Row(
-        children: [
-          ModuleHeaderAction(
-            icon: Icons.arrow_back_ios_new_rounded,
-            onTap: onBack,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (subtitle != null && subtitle!.isNotEmpty)
-                  Text(
-                    subtitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProductCard extends ConsumerStatefulWidget {
   const _ProductCard({
     required this.transferId,
@@ -240,7 +183,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
   Future<void> _save() async {
     if (!_canSave) return;
-    final qty = int.parse(_qtyController.text.trim());
+    final qty = int.tryParse(_qtyController.text.trim());
+    if (qty == null) return;
     final inboundPickingId = widget.inboundPickingId!;
 
     setState(() {

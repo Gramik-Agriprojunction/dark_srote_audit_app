@@ -36,7 +36,6 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
   bool _loading = true;
   bool _submitting = false;
   String? _error;
-  String? _success;
 
   final _damageQtyController = TextEditingController();
   final _damageCommentController = TextEditingController();
@@ -106,7 +105,6 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
         _error = detail.auditQty > 0
             ? 'Damage qty cannot exceed audit quantity (${detail.auditQty} pcs)'
             : 'Please update audit quantity before adding damage';
-        _success = null;
       });
       return;
     }
@@ -114,7 +112,6 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
     setState(() {
       _submitting = true;
       _error = null;
-      _success = null;
     });
 
     try {
@@ -131,13 +128,13 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
           );
 
       if (!mounted) return;
-      setState(() {
-        _submitting = false;
-        _success = wasUpdated ? 'Successfully updated.' : 'Successfully saved.';
-      });
+      setState(() => _submitting = false);
+      final message =
+          wasUpdated ? 'Successfully updated.' : 'Successfully saved.';
+      AppSnackBar.showSuccess(context, message);
 
-      await Future<void>.delayed(const Duration(milliseconds: 1400));
-      if (mounted) context.go('/home?storeId=${widget.storeId}');
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (mounted) context.go('/audit?storeId=${widget.storeId}');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -145,6 +142,11 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
         _error = e.message;
       });
     }
+  }
+
+  Future<void> _logout() async {
+    await ref.read(authControllerProvider.notifier).logout();
+    if (mounted) context.go('/login');
   }
 
   @override
@@ -156,12 +158,12 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.fact_check_rounded,
-            title: 'Audit Detail',
+            pageLabel: 'Audit Detail',
             subtitle:
                 detail?.variantSku ??
                 (_loading ? 'Loading...' : 'Variant audit'),
-            onBack: () => context.go('/home?storeId=${widget.storeId}'),
+            onBack: () => context.go('/audit?storeId=${widget.storeId}'),
+            onLogout: _logout,
           ),
           Expanded(
             child: ListView(
@@ -172,10 +174,6 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
               children: [
                 if (_error != null) ...[
                   AlertBanner(message: _error!, isError: true),
-                  const SizedBox(height: 14),
-                ],
-                if (_success != null) ...[
-                  AlertBanner(message: _success!, isError: false),
                   const SizedBox(height: 14),
                 ],
                 if (_loading)

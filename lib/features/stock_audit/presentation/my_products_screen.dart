@@ -91,10 +91,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.inventory_2_rounded,
-            title: 'Stock',
+            pageLabel: 'Stock',
             subtitle: 'Namaste, $userName',
-            actions: [ModuleLogoutAction(onTap: _logout)],
+            onLogout: _logout,
             searchController: _searchController,
             searchHint: 'Product ya SKU search karo...',
             searchValue: state.searchQuery,
@@ -111,7 +110,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                   parent: BouncingScrollPhysics(),
                 ),
                 slivers: [
-                  SliverToBoxAdapter(child: _statsRow(state, formatter)),
+                  SliverToBoxAdapter(
+                    child: _statsRow(state, formatter, notifier),
+                  ),
                   if (state.error != null)
                     SliverToBoxAdapter(
                       child: Padding(
@@ -123,13 +124,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                       ),
                     ),
                   if (state.isLoading && rows.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    const SliverToBoxAdapter(
+                      child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (rows.isEmpty)
                     SliverFillRemaining(
@@ -138,10 +134,10 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                         icon: Icons.inventory_2_outlined,
                         title: state.searchQuery.isNotEmpty
                             ? 'Koi matching SKU nahi mila'
-                            : 'Koi audited SKU nahi mila',
+                            : _emptyTitle(state.statusFilter),
                         message: state.searchQuery.isNotEmpty
                             ? '"${state.searchQuery}" se koi product match nahi hua.'
-                            : 'Is location par abhi tak koi stock audit nahi hua hai.',
+                            : _emptyMessage(state.statusFilter),
                       ),
                     )
                   else
@@ -176,7 +172,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.stock,
-        onHomeTap: () => context.go('/home'),
+        onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () {},
         onTransactionsTap: () => context.go('/transactions'),
@@ -186,15 +182,22 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     );
   }
 
-  Widget _statsRow(MyProductsState state, NumberFormat formatter) {
+  Widget _statsRow(
+    MyProductsState state,
+    NumberFormat formatter,
+    MyProductsController notifier,
+  ) {
+    final filter = state.statusFilter;
     return ModuleStatsRow(
       stats: [
         ModuleStat(
           icon: Icons.inventory_2_rounded,
           label: 'Total SKU',
-          value: formatter.format(state.total),
+          value: formatter.format(state.totalSkuCount),
           background: AppColors.primary,
           labelColor: const Color(0xFFFFE4D2),
+          isActive: filter == StockStatusFilter.all,
+          onTap: () => notifier.setStatusFilter(StockStatusFilter.all),
         ),
         ModuleStat(
           icon: Icons.check_circle_outline_rounded,
@@ -202,6 +205,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
           value: formatter.format(state.matchedCount),
           background: const Color(0xFF15803D),
           labelColor: const Color(0xFFBBF7D0),
+          isActive: filter == StockStatusFilter.matched,
+          onTap: () => notifier.setStatusFilter(StockStatusFilter.matched),
         ),
         ModuleStat(
           icon: Icons.trending_down_rounded,
@@ -209,6 +214,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
           value: formatter.format(state.shortCount),
           background: const Color(0xFFB91C1C),
           labelColor: const Color(0xFFFECACA),
+          isActive: filter == StockStatusFilter.short,
+          onTap: () => notifier.setStatusFilter(StockStatusFilter.short),
         ),
         ModuleStat(
           icon: Icons.trending_up_rounded,
@@ -216,9 +223,37 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
           value: formatter.format(state.excessCount),
           background: const Color(0xFFB45309),
           labelColor: const Color(0xFFFED7AA),
+          isActive: filter == StockStatusFilter.excess,
+          onTap: () => notifier.setStatusFilter(StockStatusFilter.excess),
         ),
       ],
     );
+  }
+
+  String _emptyTitle(StockStatusFilter filter) {
+    switch (filter) {
+      case StockStatusFilter.matched:
+        return 'Koi matched SKU nahi mila';
+      case StockStatusFilter.short:
+        return 'Koi short SKU nahi mila';
+      case StockStatusFilter.excess:
+        return 'Koi excess SKU nahi mila';
+      case StockStatusFilter.all:
+        return 'Koi audited SKU nahi mila';
+    }
+  }
+
+  String _emptyMessage(StockStatusFilter filter) {
+    switch (filter) {
+      case StockStatusFilter.matched:
+        return 'Is filter par koi matched stock audit nahi hai.';
+      case StockStatusFilter.short:
+        return 'Is filter par koi short stock audit nahi hai.';
+      case StockStatusFilter.excess:
+        return 'Is filter par koi excess stock audit nahi hai.';
+      case StockStatusFilter.all:
+        return 'Is location par abhi tak koi stock audit nahi hua hai.';
+    }
   }
 }
 

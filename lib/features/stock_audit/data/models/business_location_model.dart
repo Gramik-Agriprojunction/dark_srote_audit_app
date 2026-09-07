@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parse.dart';
+
 class BusinessLocationModel {
   const BusinessLocationModel({
     required this.id,
@@ -11,7 +13,7 @@ class BusinessLocationModel {
 
   factory BusinessLocationModel.fromJson(Map<String, dynamic> json) {
     return BusinessLocationModel(
-      id: json['id'] is int ? json['id'] as int : int.parse('${json['id']}'),
+      id: jsonInt(json['id']),
       label: (json['label'] ?? json['name'] ?? 'Location').toString(),
       name: json['name']?.toString(),
     );

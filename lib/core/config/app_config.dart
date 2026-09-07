@@ -1,12 +1,12 @@
 import 'dart:io';
 
-/// Backend base URL — local dev default.
-/// Live override:
+/// Backend base URL — override with:
 /// `flutter run --dart-define=API_BASE_URL=https://lens-api.gramik.in`
 class AppConfig {
   AppConfig._();
 
   static const String liveBaseUrl = 'https://lens-api.gramik.in';
+  static const String uatBaseUrl = 'https://uat-crm-backend.gramik.in';
   static const int localPort = 5000;
 
   /// Android emulators reach the host machine on 10.0.2.2, not localhost.

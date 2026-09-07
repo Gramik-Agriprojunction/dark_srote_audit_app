@@ -4,16 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stock_audit/features/auth/presentation/login_screen.dart';
 
 void main() {
-  testWidgets('shows StockShield branded login screen', (tester) async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('shows Gramik Darkstore login screen', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: LoginScreen())),
     );
+    await tester.pumpAndSettle();
 
-    expect(find.text('Welcome Back! 👋'), findsOneWidget);
-    expect(find.text('StockShield'), findsOneWidget);
-    expect(find.text('Smart Inventory • Accurate Stock'), findsOneWidget);
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Apna Number Daalo'), findsOneWidget);
+    expect(find.text('Stock Audit • Dark Store'), findsOneWidget);
     expect(find.text('Mobile Number'), findsOneWidget);
-    expect(find.text('Send OTP'), findsOneWidget);
-    expect(find.text('Why StockShield?'), findsOneWidget);
   });
 }

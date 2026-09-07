@@ -558,7 +558,7 @@ class AppSheet extends StatelessWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             const SizedBox(height: 10),
             Container(
@@ -615,5 +615,63 @@ class AppSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Native-style floating toast/snackbar for save confirmations and errors.
+class AppSnackBar {
+  AppSnackBar._();
+
+  static void showSuccess(BuildContext context, String message) {
+    _show(context, message, isError: false);
+  }
+
+  static void showError(BuildContext context, String message) {
+    _show(context, message, isError: true);
+  }
+
+  static void _show(
+    BuildContext context,
+    String message, {
+    required bool isError,
+  }) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor:
+              isError ? const Color(0xFFB91C1C) : const Color(0xFF15803D),
+          elevation: 6,
+          duration: const Duration(seconds: 2),
+          margin: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 72),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
   }
 }

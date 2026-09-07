@@ -60,6 +60,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     await ref.read(ordersControllerProvider.notifier).refresh();
   }
 
+  Future<void> _logout() async {
+    await ref.read(authControllerProvider.notifier).logout();
+    if (mounted) context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ordersControllerProvider);
@@ -77,19 +82,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            icon: Icons.receipt_long_rounded,
-            title: 'Orders',
-            actions: [
-              ModuleHeaderAction(
-                icon: Icons.person_outline_rounded,
-                onTap: () {},
-              ),
-              ModuleHeaderAction(
-                icon: Icons.notifications_none_rounded,
-                badgeCount: state.stats.notificationCount,
-                onTap: () {},
-              ),
-            ],
+            pageLabel: 'Orders',
+            onLogout: _logout,
+            notificationCount: state.stats.notificationCount,
             searchController: _searchController,
             searchHint: 'Order search karo...',
             searchValue: state.search,
@@ -158,13 +153,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     ),
                   if ((state.isLoading || state.isRefreshing) &&
                       state.orders.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
+                    const SliverToBoxAdapter(
+                      child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.orders.isEmpty)
                     const SliverFillRemaining(
@@ -218,7 +208,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.orders,
-        onHomeTap: () => context.go('/home'),
+        onHomeTap: () => context.go('/audit'),
         onOrdersTap: () {},
         onStockTap: () => context.go('/my-products'),
         onTransactionsTap: () => context.go('/transactions'),

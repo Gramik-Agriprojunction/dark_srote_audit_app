@@ -6,8 +6,7 @@ import '../storage/session_storage.dart';
 import 'api_exception.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final storage = ref.watch(sessionStorageProvider);
-  return ApiClient(storage);
+  return ApiClient(ref.watch(sessionStorageProvider));
 });
 
 class ApiClient {
@@ -69,13 +68,13 @@ class ApiClient {
 
   Map<String, dynamic> _unwrap(Map<String, dynamic>? json) {
     if (json == null) {
-      throw ApiException('Empty response from server');
+      throwApiException('Empty response from server');
     }
     final success = json['success'] != false;
     final message = (json['message'] ?? json['msg'] ?? 'Something went wrong')
         .toString();
     if (!success) {
-      throw ApiException(message);
+      throwApiException(message);
     }
     return json;
   }
@@ -85,7 +84,7 @@ class ApiClient {
     if (data is Map<String, dynamic>) {
       final message = (data['message'] ?? data['msg'] ?? 'Something went wrong')
           .toString();
-      return ApiException(message, statusCode: e.response?.statusCode);
+      throwApiException(message, statusCode: e.response?.statusCode);
     }
     if (e.type == DioExceptionType.connectionError ||
         e.type == DioExceptionType.connectionTimeout) {
