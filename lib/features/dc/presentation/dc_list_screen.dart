@@ -74,7 +74,6 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(dcControllerProvider);
-    final userName = auth.user?.displayName ?? 'User';
     final formatter = NumberFormat.decimalPattern('en_IN');
     final summary = state.summary;
     final visibleTransfers = _visibleTransfers(state.transfers);
@@ -85,7 +84,7 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
         children: [
           ModuleHeader(
             pageLabel: 'DC Transfers',
-            subtitle: 'Namaste, $userName',
+            subtitle: auth.headerGreeting,
             onLogout: _logout,
             bottom: state.warehouse?.code != null
                 ? Align(

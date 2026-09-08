@@ -17,6 +17,7 @@ class SessionStorage {
   static const _tokenKey = 'gramik_access_token';
   static const _userKey = 'gramik_user';
   static const _storeIdKey = 'gramik_mobile_store_id';
+  static const _storeLabelKey = 'gramik_mobile_store_label';
   static const _lastActivityKey = 'gramik_last_activity_ms';
 
   Future<String?> getAccessToken() async => _prefs.getString(_tokenKey);
@@ -44,6 +45,7 @@ class SessionStorage {
     await _prefs.remove(_tokenKey);
     await _prefs.remove(_userKey);
     await _prefs.remove(_storeIdKey);
+    await _prefs.remove(_storeLabelKey);
     await _prefs.remove(_lastActivityKey);
   }
 
@@ -53,12 +55,23 @@ class SessionStorage {
     return int.tryParse(value);
   }
 
-  Future<void> saveSelectedStoreId(int? storeId) async {
+  Future<String?> getSelectedStoreLabel() async {
+    final value = _prefs.getString(_storeLabelKey);
+    if (value == null || value.trim().isEmpty) return null;
+    return value.trim();
+  }
+
+  Future<void> saveSelectedStoreId(int? storeId, {String? label}) async {
     if (storeId == null) {
       await _prefs.remove(_storeIdKey);
+      await _prefs.remove(_storeLabelKey);
       return;
     }
     await _prefs.setString(_storeIdKey, storeId.toString());
+    final trimmed = label?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      await _prefs.setString(_storeLabelKey, trimmed);
+    }
   }
 
   Future<void> touchActivity() async {

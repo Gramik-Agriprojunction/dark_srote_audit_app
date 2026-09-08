@@ -73,7 +73,6 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(myProductsControllerProvider);
-    final userName = auth.user?.displayName ?? 'User';
     final rows = state.visibleRows;
     final formatter = NumberFormat.decimalPattern('en_IN');
 
@@ -92,7 +91,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
         children: [
           ModuleHeader(
             pageLabel: 'Stock',
-            subtitle: 'Namaste, $userName',
+            subtitle: auth.headerGreeting,
             onLogout: _logout,
             searchController: _searchController,
             searchHint: 'Product ya SKU search karo...',

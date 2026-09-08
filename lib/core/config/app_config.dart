@@ -18,7 +18,7 @@ class AppConfig {
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return localBaseUrl;
+    return liveBaseUrl;
   }
 
   /// Stock Audit Flutter app API (Dark Store only).
@@ -30,8 +30,6 @@ class AppConfig {
   static const String darkStoreApiPrefix = '/api/v1';
 
   static String get darkStoreApiBaseUrl => '$baseUrl$darkStoreApiPrefix';
-
-  static const Duration inactivityTimeout = Duration(hours: 1);
 
   /// Optional dev override — must match backend `MASTER_OTP` for 4-digit master login UX.
   /// `flutter run --dart-define=MASTER_OTP=5574`

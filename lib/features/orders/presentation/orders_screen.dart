@@ -83,6 +83,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         children: [
           ModuleHeader(
             pageLabel: 'Orders',
+            subtitle: ref.watch(authControllerProvider).headerGreeting,
             onLogout: _logout,
             notificationCount: state.stats.notificationCount,
             searchController: _searchController,

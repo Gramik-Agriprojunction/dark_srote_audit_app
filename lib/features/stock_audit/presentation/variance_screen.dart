@@ -71,7 +71,6 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(varianceControllerProvider);
-    final userName = auth.user?.displayName ?? 'User';
     final formatter = NumberFormat.decimalPattern('en_IN');
     final notifier = ref.read(varianceControllerProvider.notifier);
 
@@ -81,7 +80,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
         children: [
           ModuleHeader(
             pageLabel: 'Variance',
-            subtitle: 'Namaste, $userName',
+            subtitle: auth.headerGreeting,
             onLogout: _logout,
           ),
           Expanded(

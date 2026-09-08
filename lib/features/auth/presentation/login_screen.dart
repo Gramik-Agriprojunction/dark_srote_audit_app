@@ -152,7 +152,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authControllerProvider.notifier)
           .verifyOtp(mobile: _mobile, otp: _otpController.text.trim());
       if (!mounted) return;
-      context.go('/dashboard');
+      final auth = ref.read(authControllerProvider);
+      if (auth.status != AuthStatus.authenticated) {
+        setState(() {
+          _loading = false;
+          _error = auth.error ?? 'Login failed';
+        });
+        return;
+      }
+      context.go(
+        auth.needsWarehouseSelection ? '/select-warehouse' : '/dashboard',
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

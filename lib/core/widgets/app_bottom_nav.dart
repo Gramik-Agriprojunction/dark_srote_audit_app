@@ -42,7 +42,7 @@ class AppBottomNav extends StatelessWidget {
             children: [
               Expanded(
                 child: _NavItem(
-                  label: 'Dash',
+                  label: 'Home',
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard_rounded,
                   isActive: currentTab == AppTab.dashboard,

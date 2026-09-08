@@ -47,9 +47,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref
         .read(stockAuditControllerProvider.notifier)
         .loadLocations(preferredStoreId: preferredStoreId);
-    final selectedId = ref.read(stockAuditControllerProvider).selectedLocationId;
+    final selectedId =
+        ref.read(stockAuditControllerProvider).selectedLocationId;
     if (selectedId != null) {
-      await storage.saveSelectedStoreId(selectedId);
+      final loc = ref
+          .read(stockAuditControllerProvider)
+          .locations
+          .where((l) => l.id == selectedId)
+          .firstOrNull;
+      final label = (loc?.name ?? loc?.label ?? '').trim();
+      await ref.read(authControllerProvider.notifier).setSelectedStoreId(
+            selectedId,
+            label: label.isEmpty ? null : label,
+          );
     }
   }
 
@@ -91,10 +101,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final audit = ref.watch(stockAuditControllerProvider);
-    final userName = auth.user?.displayName ?? 'User';
     final changedCount = _changedCount(audit);
     final hasChanges = changedCount > 0;
     final notifier = ref.read(stockAuditControllerProvider.notifier);
+    final selectedLoc = audit.locations
+        .where((l) => l.id == audit.selectedLocationId)
+        .firstOrNull;
+    final storeSubtitle = (selectedLoc?.name ??
+            selectedLoc?.label ??
+            auth.selectedStoreLabel ??
+            '')
+        .trim();
 
     if (_searchController.text != audit.searchQuery) {
       _searchController.value = _searchController.value.copyWith(
@@ -116,7 +133,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Namaste, $userName',
+            pageLabel: auth.headerGreeting,
+            subtitle: storeSubtitle.isEmpty ? null : storeSubtitle,
             onLogout: _logout,
             searchController: audit.showProducts ? _searchController : null,
             searchHint: 'Product ya SKU search karo...',

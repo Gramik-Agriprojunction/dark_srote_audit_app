@@ -67,7 +67,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final status = ref.read(authControllerProvider).status;
     if (status == AuthStatus.unknown) return;
     _navigated = true;
-    context.go(status == AuthStatus.authenticated ? '/dashboard' : '/login');
+    if (status != AuthStatus.authenticated) {
+      context.go('/login');
+      return;
+    }
+    final auth = ref.read(authControllerProvider);
+    context.go(
+      auth.needsWarehouseSelection ? '/select-warehouse' : '/dashboard',
+    );
   }
 
   Animation<double> _fade(double begin, double end) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/profile_model.dart';
@@ -50,6 +51,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final phone = (p.phone ?? '').trim();
     final retailerId = (p.retailerId ?? '').trim();
     final address = p.displayAddress;
+    final isSuperAdmin = RoleHelper.isSuperAdminRole(
+      ref.watch(authControllerProvider).user?.role?.name,
+    );
+    final selectedStore =
+        (ref.watch(authControllerProvider).selectedStoreLabel ?? '').trim();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -101,7 +107,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             name: name.isEmpty ? 'Retailer' : name,
                             phone: phone.isEmpty ? '--' : phone,
                             retailerId: retailerId,
-                            address: address,
+                            address: selectedStore.isNotEmpty
+                                ? selectedStore
+                                : address,
                             totalOrders: p.totalOrders,
                             delivered: p.delivered,
                             pending: p.pending,
@@ -173,6 +181,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 value: '',
                                 onTap: () => context.go('/dc'),
                               ),
+                              if (isSuperAdmin) ...[
+                                const _RowDivider(),
+                                _InfoRow(
+                                  icon: Icons.store_mall_directory_rounded,
+                                  iconBg: const Color(0xFFFFF7ED),
+                                  iconColor: Color(0xFFEA580C),
+                                  label: 'Change Warehouse',
+                                  value: '',
+                                  onTap: () async {
+                                    await ref
+                                        .read(authControllerProvider.notifier)
+                                        .clearSelectedStore();
+                                    if (context.mounted) {
+                                      context.go('/select-warehouse');
+                                    }
+                                  },
+                                ),
+                              ],
                             ],
                           ),
                         ],

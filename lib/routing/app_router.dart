@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/auth/presentation/select_warehouse_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
@@ -33,16 +34,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authNotifier,
     redirect: (context, state) {
       final auth = authNotifier.value;
-      final loggingIn = state.matchedLocation == '/login';
+      final loc = state.matchedLocation;
+      final loggingIn = loc == '/login';
+      final selectingWarehouse = loc == '/select-warehouse';
 
       // Splash decides where to go itself, once the session has been restored.
-      if (state.matchedLocation == '/splash') return null;
+      if (loc == '/splash') return null;
 
       if (auth.status == AuthStatus.unknown) return null;
       if (auth.status == AuthStatus.unauthenticated && !loggingIn) {
         return '/login';
       }
-      if (auth.status == AuthStatus.authenticated && loggingIn) return '/dashboard';
+      if (auth.status == AuthStatus.authenticated) {
+        if (loggingIn) {
+          return auth.needsWarehouseSelection
+              ? '/select-warehouse'
+              : '/dashboard';
+        }
+        if (auth.needsWarehouseSelection && !selectingWarehouse) {
+          return '/select-warehouse';
+        }
+        if (!auth.needsWarehouseSelection && selectingWarehouse) {
+          return '/dashboard';
+        }
+      }
       return null;
     },
     routes: [
@@ -52,8 +67,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
+        path: '/select-warehouse',
+        builder: (context, state) => const SelectWarehouseScreen(),
+      ),
+      GoRoute(
         path: '/home',
-        redirect: (context, state) => '/dashboard${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
+        redirect: (context, state) =>
+            '/dashboard${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
       ),
       GoRoute(
         path: '/dashboard',
@@ -74,7 +94,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/orders/:orderId',
         builder: (context, state) {
-          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
+          final orderId =
+              int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
           if (orderId <= 0) return const OrdersScreen();
           return OrderDetailScreen(orderId: orderId);
         },

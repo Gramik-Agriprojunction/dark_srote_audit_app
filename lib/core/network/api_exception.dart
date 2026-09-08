@@ -13,12 +13,22 @@ class ApiException implements Exception {
 }
 
 bool isUnauthorizedApiMessage(String message, {int? statusCode}) {
-  if (statusCode == 401 || statusCode == 403) return true;
+  // Only hard auth failures should force logout. Role/permission 403s
+  // (e.g. SuperAdmin hitting a Darkstore-only profile) must not clear session.
+  if (statusCode == 401) return true;
+  if (statusCode == 403) {
+    final normalized = message.trim().toLowerCase();
+    return normalized.contains('invalid token') ||
+        normalized.contains('token expired') ||
+        normalized.contains('jwt expired') ||
+        normalized.contains('not authenticated') ||
+        normalized == 'unauthorized' ||
+        normalized.contains('authentication required');
+  }
   final normalized = message.trim().toLowerCase();
   return normalized.contains('invalid token') ||
       normalized.contains('token expired') ||
       normalized.contains('jwt expired') ||
-      normalized.contains('unauthorized') ||
       normalized.contains('not authenticated');
 }
 

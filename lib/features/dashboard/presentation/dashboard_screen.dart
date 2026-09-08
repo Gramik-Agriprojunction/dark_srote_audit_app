@@ -50,9 +50,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           ModuleHeader(
             pageLabel: data?.header.greeting ?? 'Dashboard',
-            subtitle: (data?.header.storeCode ?? '').isEmpty
-                ? null
-                : data!.header.storeCode,
+            subtitle: () {
+              final storeName = (data?.header.storeName ?? '').trim();
+              final storeCode = (data?.header.storeCode ?? '').trim();
+              if (storeName.isNotEmpty && storeCode.isNotEmpty) {
+                return '$storeName ($storeCode)';
+              }
+              if (storeName.isNotEmpty) return storeName;
+              if (storeCode.isNotEmpty) return storeCode;
+              return null;
+            }(),
             onLogout: _logout,
             searchController: _searchController,
             searchHint: 'Product ya SKU search karo...',
@@ -652,7 +659,7 @@ class _QuickActionsRow extends StatelessWidget {
     final actions = <({IconData icon, String label, String route, Color bg, Color fg})>[
       (
         icon: Icons.add_box_rounded,
-        label: 'Add Stock',
+        label: 'Stocks',
         route: '/my-products',
         bg: const Color(0xFFFFF5F0),
         fg: AppColors.primary,

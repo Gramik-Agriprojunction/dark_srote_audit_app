@@ -65,7 +65,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(transactionsControllerProvider);
-    final userName = auth.user?.displayName ?? 'User';
     final report = state.report;
     final selectedDate = state.selectedDate ?? DateTime.now();
     final dateLabel = DateFormat('d MMM yyyy').format(selectedDate);
@@ -78,7 +77,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         children: [
           ModuleHeader(
             pageLabel: 'Transactions',
-            subtitle: 'Namaste, $userName',
+            subtitle: auth.headerGreeting,
             onLogout: _logout,
             bottom: _DatePill(
               label: dateLabel,
