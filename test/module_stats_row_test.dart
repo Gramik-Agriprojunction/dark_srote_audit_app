@@ -43,6 +43,10 @@ void main() {
 
     expect(find.text('PICKUP ORDERS'), findsOneWidget);
     expect(find.text('RTO DELIVERED'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+
     expect(find.text('SKU MOVED'), findsOneWidget);
     expect(find.textContaining('...'), findsNothing);
   });

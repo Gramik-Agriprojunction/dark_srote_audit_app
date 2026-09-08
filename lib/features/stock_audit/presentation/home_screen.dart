@@ -274,6 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.audit,
+        onDashboardTap: () => context.go('/dashboard'),
         onHomeTap: () {
           ref.read(authControllerProvider.notifier).touchActivity();
           _scrollController.animateTo(
@@ -284,9 +285,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
-        onTransactionsTap: () => context.go('/transactions'),
-        onDcTap: () => context.go('/dc'),
-        onVarianceTap: () => context.go('/variance'),
       ),
     );
   }

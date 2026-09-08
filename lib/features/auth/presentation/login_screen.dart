@@ -152,7 +152,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authControllerProvider.notifier)
           .verifyOtp(mobile: _mobile, otp: _otpController.text.trim());
       if (!mounted) return;
-      context.go('/audit');
+      context.go('/dashboard');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

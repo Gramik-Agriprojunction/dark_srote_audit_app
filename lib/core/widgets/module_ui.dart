@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../constants/app_assets.dart';
 import '../constants/app_colors.dart';
@@ -78,10 +79,17 @@ class ModuleHeader extends StatelessWidget {
 
   bool get _hasSearch => searchController != null && onSearchChanged != null;
 
-  List<Widget> get _trailingActions {
+  List<Widget> _trailingActions(BuildContext context) {
     final items = <Widget>[...actions];
+    // Darkstore zip: person icon opens Profile screen (not a logout popup).
     if (onLogout != null) {
-      items.add(ModuleUserMenuAction(onLogout: onLogout!));
+      items.add(
+        ModuleHeaderAction(
+          icon: Icons.person_rounded,
+          tooltip: 'Profile',
+          onTap: () => context.push('/profile'),
+        ),
+      );
     }
     if (showNotifications) {
       items.add(
@@ -137,7 +145,7 @@ class ModuleHeader extends StatelessWidget {
                     subtitle: subtitle,
                   ),
                 ),
-                for (final action in _trailingActions) ...[
+                for (final action in _trailingActions(context)) ...[
                   const SizedBox(width: 8),
                   action,
                 ],
@@ -419,37 +427,16 @@ class ModuleStat {
   final VoidCallback? onTap;
 }
 
-/// Horizontally scrolling row of solid colour stat cards.
-/// Up to three stats expand equally to fill the row width; more use horizontal scroll.
+/// Horizontally scrolling row of solid colour stat cards (Darkstore Orders style).
+/// Cards keep a min width and scroll instead of shrinking/truncating labels.
 class ModuleStatsRow extends StatelessWidget {
   const ModuleStatsRow({super.key, required this.stats});
 
   final List<ModuleStat> stats;
 
-  static const _maxExpandedCount = 3;
-
   @override
   Widget build(BuildContext context) {
     if (stats.isEmpty) return const SizedBox.shrink();
-
-    if (stats.length <= _maxExpandedCount) {
-      return SizedBox(
-        height: 78,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              for (var i = 0; i < stats.length; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _ModuleStatCard(stat: stats[i], expanded: true),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
 
     return SizedBox(
       height: 78,
@@ -465,16 +452,14 @@ class ModuleStatsRow extends StatelessWidget {
 }
 
 class _ModuleStatCard extends StatelessWidget {
-  const _ModuleStatCard({required this.stat, this.expanded = false});
+  const _ModuleStatCard({required this.stat});
 
   final ModuleStat stat;
-  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
     final card = Container(
-      width: expanded ? double.infinity : null,
-      constraints: expanded ? null : const BoxConstraints(minWidth: 140),
+      constraints: const BoxConstraints(minWidth: 140),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: stat.background,
@@ -485,7 +470,7 @@ class _ModuleStatCard extends StatelessWidget {
             : null,
       ),
       child: Row(
-        mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             width: 32,
@@ -497,15 +482,7 @@ class _ModuleStatCard extends StatelessWidget {
             child: Icon(stat.icon, color: Colors.white, size: 17),
           ),
           const SizedBox(width: 10),
-          if (expanded)
-            Expanded(
-              child: _ModuleStatText(stat: stat),
-            )
-          else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 130),
-              child: _ModuleStatText(stat: stat),
-            ),
+          _ModuleStatText(stat: stat),
           if (stat.isActive) ...[
             const SizedBox(width: 6),
             const Icon(Icons.check_rounded, color: Colors.white, size: 16),
@@ -546,7 +523,7 @@ class _ModuleStatText extends StatelessWidget {
         Text(
           stat.label.toUpperCase(),
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          softWrap: false,
           style: TextStyle(
             color: stat.labelColor,
             fontSize: 8.5,
@@ -559,7 +536,7 @@ class _ModuleStatText extends StatelessWidget {
         Text(
           stat.value,
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          softWrap: false,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 15,
@@ -666,23 +643,6 @@ class ModuleStatsRowSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (count <= ModuleStatsRow._maxExpandedCount) {
-      return SizedBox(
-        height: 78,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              for (var i = 0; i < count; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(child: _skeletonCard()),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
-
     return SizedBox(
       height: 78,
       child: ListView.separated(

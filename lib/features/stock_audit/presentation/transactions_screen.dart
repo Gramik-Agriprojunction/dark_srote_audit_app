@@ -180,12 +180,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.transactions,
+        onDashboardTap: () => context.go('/dashboard'),
         onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
-        onTransactionsTap: () {},
-        onDcTap: () => context.go('/dc'),
-        onVarianceTap: () => context.go('/variance'),
       ),
     );
   }

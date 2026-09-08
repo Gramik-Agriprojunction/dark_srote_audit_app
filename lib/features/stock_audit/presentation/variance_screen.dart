@@ -209,12 +209,10 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.variance,
+        onDashboardTap: () => context.go('/dashboard'),
         onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
-        onTransactionsTap: () => context.go('/transactions'),
-        onDcTap: () => context.go('/dc'),
-        onVarianceTap: () {},
       ),
     );
   }

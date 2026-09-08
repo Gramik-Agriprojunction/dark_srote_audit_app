@@ -208,12 +208,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.orders,
+        onDashboardTap: () => context.go('/dashboard'),
         onHomeTap: () => context.go('/audit'),
         onOrdersTap: () {},
         onStockTap: () => context.go('/my-products'),
-        onTransactionsTap: () => context.go('/transactions'),
-        onDcTap: () => context.go('/dc'),
-        onVarianceTap: () => context.go('/variance'),
       ),
     );
   }

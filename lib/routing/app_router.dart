@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/dashboard/presentation/dashboard_screen.dart';
 import '../features/stock_audit/presentation/home_screen.dart';
 import '../features/stock_audit/presentation/my_products_screen.dart';
 import '../features/stock_audit/presentation/transactions_screen.dart';
@@ -12,6 +13,7 @@ import '../features/dc/presentation/dc_detail_screen.dart';
 import '../features/dc/presentation/dc_list_screen.dart';
 import '../features/orders/presentation/order_detail_screen.dart';
 import '../features/orders/presentation/orders_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 
@@ -40,7 +42,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (auth.status == AuthStatus.unauthenticated && !loggingIn) {
         return '/login';
       }
-      if (auth.status == AuthStatus.authenticated && loggingIn) return '/audit';
+      if (auth.status == AuthStatus.authenticated && loggingIn) return '/dashboard';
       return null;
     },
     routes: [
@@ -51,7 +53,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/home',
-        redirect: (context, state) => '/audit${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
+        redirect: (context, state) => '/dashboard${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
+      ),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
         path: '/audit',
@@ -60,6 +66,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/orders',
         builder: (context, state) => const OrdersScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
         path: '/orders/:orderId',

@@ -18,7 +18,7 @@ class AppConfig {
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
-    return liveBaseUrl;
+    return localBaseUrl;
   }
 
   /// Stock Audit Flutter app API (Dark Store only).

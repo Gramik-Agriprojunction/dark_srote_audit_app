@@ -3,27 +3,23 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_colors.dart';
 
-enum AppTab { audit, orders, stock, transactions, dc, variance }
+enum AppTab { dashboard, audit, orders, stock, transactions, dc, variance }
 
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
     required this.currentTab,
+    required this.onDashboardTap,
     required this.onHomeTap,
     required this.onOrdersTap,
     required this.onStockTap,
-    required this.onTransactionsTap,
-    required this.onDcTap,
-    required this.onVarianceTap,
   });
 
   final AppTab currentTab;
+  final VoidCallback onDashboardTap;
   final VoidCallback onHomeTap;
   final VoidCallback onOrdersTap;
   final VoidCallback onStockTap;
-  final VoidCallback onTransactionsTap;
-  final VoidCallback onDcTap;
-  final VoidCallback onVarianceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +42,15 @@ class AppBottomNav extends StatelessWidget {
             children: [
               Expanded(
                 child: _NavItem(
+                  label: 'Dash',
+                  icon: Icons.dashboard_outlined,
+                  activeIcon: Icons.dashboard_rounded,
+                  isActive: currentTab == AppTab.dashboard,
+                  onTap: onDashboardTap,
+                ),
+              ),
+              Expanded(
+                child: _NavItem(
                   label: 'Stock',
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2_rounded,
@@ -64,38 +69,11 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Transaction',
-                  icon: Icons.swap_horiz_outlined,
-                  activeIcon: Icons.swap_horiz_rounded,
-                  isActive: currentTab == AppTab.transactions,
-                  onTap: onTransactionsTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
                   label: 'Audit',
                   icon: Icons.fact_check_outlined,
                   activeIcon: Icons.fact_check_rounded,
                   isActive: currentTab == AppTab.audit,
                   onTap: onHomeTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  label: 'Variance',
-                  icon: Icons.compare_arrows_outlined,
-                  activeIcon: Icons.compare_arrows_rounded,
-                  isActive: currentTab == AppTab.variance,
-                  onTap: onVarianceTap,
-                ),
-              ),
-              Expanded(
-                child: _NavItem(
-                  label: 'DC',
-                  icon: Icons.local_shipping_outlined,
-                  activeIcon: Icons.local_shipping_rounded,
-                  isActive: currentTab == AppTab.dc,
-                  onTap: onDcTap,
                 ),
               ),
             ],
@@ -113,7 +91,6 @@ class _NavItem extends StatelessWidget {
     required this.activeIcon,
     required this.isActive,
     required this.onTap,
-    this.isCenter = false,
   });
 
   final String label;
@@ -121,52 +98,31 @@ class _NavItem extends StatelessWidget {
   final IconData activeIcon;
   final bool isActive;
   final VoidCallback onTap;
-  final bool isCenter;
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primaryDark : AppColors.textMuted;
-    final iconSize = isCenter ? 24.0 : 22.0;
-    final activeWidth = isCenter ? 52.0 : 48.0;
-
+    final color = isActive ? AppColors.primary : const Color(0xFF94A3B8);
     return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();
         onTap();
       },
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              height: isCenter ? 38 : 36,
-              width: isActive ? activeWidth : (isCenter ? 36 : 34),
-              decoration: BoxDecoration(
-                color: isActive ? AppColors.footerActiveBg : Colors.transparent,
-                borderRadius: BorderRadius.circular(isCenter ? 18 : 16),
-              ),
-              child: Center(
-                child: Icon(
-                  isActive ? activeIcon : icon,
-                  size: iconSize,
-                  color: color,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
+            Icon(isActive ? activeIcon : icon, size: 20, color: color),
+            const SizedBox(height: 2),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: color,
                 fontSize: 9.5,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: 0.1,
+                color: color,
               ),
             ),
           ],

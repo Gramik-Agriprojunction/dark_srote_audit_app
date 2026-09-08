@@ -228,12 +228,10 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
       ),
       bottomNavigationBar: AppBottomNav(
         currentTab: AppTab.dc,
+        onDashboardTap: () => context.go('/dashboard'),
         onHomeTap: () => context.go('/audit'),
         onOrdersTap: () => context.go('/orders'),
         onStockTap: () => context.go('/my-products'),
-        onTransactionsTap: () => context.go('/transactions'),
-        onDcTap: () {},
-        onVarianceTap: () => context.go('/variance'),
       ),
     );
   }
