@@ -49,7 +49,7 @@ class AppBrandMark extends StatelessWidget {
           ),
         ),
         SizedBox(height: _hero ? 4 : 2),
-        Text('Stock Audit • Dark Store', style: taglineStyle),
+        Text('Dark Store', style: taglineStyle),
         if (pageLabel != null && pageLabel!.trim().isNotEmpty) ...[
           SizedBox(height: _hero ? 6 : 3),
           Text(

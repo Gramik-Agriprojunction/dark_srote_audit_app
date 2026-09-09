@@ -14,7 +14,7 @@ void main() {
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Apna Number Daalo'), findsOneWidget);
-    expect(find.text('Stock Audit • Dark Store'), findsOneWidget);
+    expect(find.text('Dark Store'), findsOneWidget);
     expect(find.text('Mobile Number'), findsOneWidget);
   });
 }

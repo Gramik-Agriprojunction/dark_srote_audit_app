@@ -578,7 +578,7 @@ class _LoginBrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Stock Audit • Dark Store',
+          'Dark Store',
           style: AuthTheme.caption(subtitleColor).copyWith(fontSize: 13),
         ),
       ],

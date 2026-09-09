@@ -4,12 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../data/models/product_model.dart';
 import '../providers/stock_audit_provider.dart';
 
-/// Audit product tile — matches dark mock (image, chips, stepper, orange Save).
+/// Audit product tile — theme-aware (Default / Dark).
 class ProductVariantRow extends ConsumerStatefulWidget {
   const ProductVariantRow({
     super.key,
@@ -137,6 +138,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appThemeModeProvider);
     final pcsQty = AuditQtyHelper.displayPcsQty(widget.variant);
     final updatedLabel = DateFormatter.formatAuditUpdatedAt(
       widget.variant.auditUpdatedAt,
@@ -150,9 +152,10 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF14141C),
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2A2A36)),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,10 +173,10 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         height: 1.25,
                       ),
                     ),
@@ -183,10 +186,10 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                         category,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFFA1A1AA),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -197,24 +200,26 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                       children: [
                         _Pill(
                           label: widget.variant.variantName,
-                          fg: Colors.white,
-                          bg: const Color(0xFF2A2A36),
+                          fg: AppColors.textPrimary,
+                          bg: AppColors.fieldBg,
                         ),
                         _Pill(
                           label: '$pcsQty Pcs',
-                          fg: Colors.white,
+                          fg: pcsQty > 0
+                              ? AppColors.successText
+                              : AppColors.errorText,
                           bg: pcsQty > 0
-                              ? const Color(0xFF166534)
-                              : const Color(0xFF7F1D1D),
+                              ? AppColors.successBg
+                              : AppColors.errorBg,
                           icon: pcsQty > 0
                               ? Icons.check_circle_rounded
                               : Icons.remove_circle_outline_rounded,
                         ),
                         if (hasComment)
-                          const _Pill(
+                          _Pill(
                             label: 'Note',
-                            fg: Color(0xFFFBBF24),
-                            bg: Color(0xFF3D2E14),
+                            fg: AppColors.warning,
+                            bg: AppColors.auditRecentBg,
                             icon: Icons.sticky_note_2_outlined,
                           ),
                       ],
@@ -223,17 +228,17 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.access_time_rounded,
                             size: 12,
-                            color: Color(0xFF71717A),
+                            color: AppColors.textMuted,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'Updated $updatedLabel',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF71717A),
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -270,9 +275,9 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     return Container(
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E28),
+        color: AppColors.fieldBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A36)),
+        border: Border.all(color: AppColors.borderInput),
       ),
       child: Row(
         children: [
@@ -283,18 +288,18 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
               cursorColor: AppColors.primary,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 isDense: true,
                 filled: false,
                 hintText: '0',
                 hintStyle: TextStyle(
-                  color: Colors.white70,
+                  color: AppColors.textMuted,
                   fontWeight: FontWeight.w800,
                   fontSize: 17,
                 ),
@@ -464,12 +469,12 @@ class _RowMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
-      color: const Color(0xFF1C1C24),
+      color: AppColors.surface,
       offset: const Offset(0, 34),
-      icon: const Icon(
+      icon: Icon(
         Icons.more_vert_rounded,
         size: 22,
-        color: Color(0xFFA1A1AA),
+        color: AppColors.textSecondary,
       ),
       onSelected: (value) {
         HapticFeedback.selectionClick();
@@ -487,10 +492,10 @@ class _RowMenuButton extends StatelessWidget {
                 size: 18,
                 color: AppColors.warning,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
                 'Update Damage Qty',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -505,8 +510,11 @@ class _RowMenuButton extends StatelessWidget {
                 size: 18,
                 color: AppColors.primary,
               ),
-              SizedBox(width: 10),
-              Text('Comment', style: TextStyle(color: Colors.white)),
+              const SizedBox(width: 10),
+              Text(
+                'Comment',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ],
           ),
         ),
@@ -526,8 +534,9 @@ class _ProductThumb extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: imageUrl != null && imageUrl!.isNotEmpty
@@ -548,13 +557,13 @@ class _FallbackImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: Color(0xFFF4F4F5),
+    return ColoredBox(
+      color: AppColors.fieldBg,
       child: Center(
         child: Icon(
           Icons.inventory_2_outlined,
           size: 22,
-          color: Color(0xFF71717A),
+          color: AppColors.textMuted,
         ),
       ),
     );
