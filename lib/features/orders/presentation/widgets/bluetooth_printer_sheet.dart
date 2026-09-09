@@ -112,8 +112,8 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.72,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       padding: EdgeInsets.fromLTRB(16, 10, 16, bottom + 16),
@@ -128,28 +128,28 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Bluetooth Printer',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
               IconButton(
                 onPressed: _processing ? null : () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                icon: Icon(Icons.close_rounded, color: AppColors.textSecondary),
               ),
             ],
           ),
-          const Text(
+          Text(
             'Select a paired thermal printer. Pair the printer in Android Bluetooth settings if it does not appear.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.35),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.35),
           ),
           if (_saved != null) ...[
             const SizedBox(height: 10),
@@ -185,10 +185,10 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
               ),
             ),
           ],
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Expanded(
             child: _processing
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -196,13 +196,13 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
                         SizedBox(height: 10),
                         Text(
                           'Connecting and printing…',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF334155)),
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
                   )
                 : _scanning
-                    ? const Center(
+                    ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -210,16 +210,16 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
                             SizedBox(height: 10),
                             Text(
                               'Searching printers…',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             ),
                           ],
                         ),
                       )
                     : _devices.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               'No printers found.',
-                              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                             ),
                           )
                         : ListView.separated(
@@ -236,7 +236,7 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
                                     color: const Color(0xFFFFF7ED),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.print_outlined,
                                     color: AppColors.primary,
                                     size: 18,
@@ -255,9 +255,9 @@ class _BluetoothPrinterSheetState extends State<BluetoothPrinterSheet> {
                                   item.macAdress,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: Color(0xFF94A3B8),
+                                    color: AppColors.textMuted,
                                   ),
                                 ),
                                 trailing: const Icon(

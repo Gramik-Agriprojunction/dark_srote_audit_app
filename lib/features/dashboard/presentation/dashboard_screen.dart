@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -41,11 +42,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appThemeModeProvider);
     final state = ref.watch(dashboardControllerProvider);
     final data = state.data;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F5FA),
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           ModuleHeader(
@@ -79,7 +81,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: state.isLoading && data == null
                   ? ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: const [
+                      children: [
                         SizedBox(height: 140),
                         Center(
                           child: CircularProgressIndicator(
@@ -140,27 +142,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _AuditProgressCard(progress: data.auditProgress),
                           const SizedBox(height: 10),
                           _SummaryGrid(summary: data.summary),
-                          const SizedBox(height: 16),
-                          const Text(
+                          SizedBox(height: 16),
+                          Text(
                             'Quick Actions',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF334155),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           const _QuickActionsRow(),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Row(
                             children: [
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Recent Orders',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF334155),
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -223,9 +225,9 @@ class _MismatchCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F2),
+        color: AppColors.errorBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        border: Border.all(color: AppColors.errorBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,10 +251,10 @@ class _MismatchCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${alert.count} Product Mismatch Found',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFB91C1C),
+                    color: AppColors.errorText,
                   ),
                 ),
               ),
@@ -262,9 +264,9 @@ class _MismatchCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '${first.displayName} me ${first.difference} units ka mismatch paya gaya hai. Please verify physical count and approve.',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF9F1239),
+                color: AppColors.errorText,
                 height: 1.35,
               ),
             ),
@@ -273,8 +275,9 @@ class _MismatchCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
+                color: AppColors.cardBg,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.errorBorder),
               ),
               child: Row(
                 children: [
@@ -288,28 +291,28 @@ class _MismatchCard extends StatelessWidget {
                               imageUrl: first.image!.trim(),
                               fit: BoxFit.cover,
                               placeholder: (_, _) => Container(
-                                color: const Color(0xFFF1F5F9),
-                                child: const Icon(
+                                color: AppColors.background,
+                                child: Icon(
                                   Icons.inventory_2_outlined,
                                   size: 20,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                               errorWidget: (_, _, _) => Container(
-                                color: const Color(0xFFF1F5F9),
-                                child: const Icon(
+                                color: AppColors.background,
+                                child: Icon(
                                   Icons.inventory_2_outlined,
                                   size: 20,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             )
                           : Container(
-                              color: const Color(0xFFF1F5F9),
-                              child: const Icon(
+                              color: AppColors.background,
+                              child: Icon(
                                 Icons.inventory_2_outlined,
                                 size: 20,
-                                color: Color(0xFF94A3B8),
+                                color: AppColors.textMuted,
                               ),
                             ),
                     ),
@@ -323,10 +326,10 @@ class _MismatchCard extends StatelessWidget {
                           first.productName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         if ((first.variantLabel ?? '').trim().isNotEmpty)
@@ -334,9 +337,9 @@ class _MismatchCard extends StatelessWidget {
                             first.variantLabel!.trim(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         const SizedBox(height: 6),
@@ -389,14 +392,14 @@ class _MismatchCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
           ),
           Text(
             value,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: valueColor ?? const Color(0xFF0F172A),
+              color: valueColor ?? AppColors.textPrimary,
             ),
           ),
         ],
@@ -431,9 +434,9 @@ class _AuditProgressCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,23 +447,23 @@ class _AuditProgressCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: AppColors.successBg,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.task_alt_rounded,
                   size: 18,
-                  color: Color(0xFF16A34A),
+                  color: AppColors.successText,
                 ),
               ),
-              const SizedBox(width: 10),
-              const Expanded(
+              SizedBox(width: 10),
+              Expanded(
                 child: Text(
                   "Today's Audit",
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -477,7 +480,7 @@ class _AuditProgressCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${progress.auditedToday} of ${progress.totalSkus} SKU audited',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
           ClipRRect(
@@ -485,7 +488,7 @@ class _AuditProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 8,
-              backgroundColor: const Color(0xFFE2E8F0),
+              backgroundColor: AppColors.border,
               color: const Color(0xFF16A34A),
             ),
           ),
@@ -509,7 +512,7 @@ class _SummaryGrid extends StatelessWidget {
         Expanded(
           child: _SummaryTile(
             icon: Icons.receipt_long_rounded,
-            iconBg: const Color(0xFFFFF5F0),
+            iconBg: AppColors.softOrange,
             iconColor: AppColors.primary,
             title: 'Orders',
             lines: [
@@ -526,8 +529,8 @@ class _SummaryGrid extends StatelessWidget {
         Expanded(
           child: _SummaryTile(
             icon: Icons.inventory_2_rounded,
-            iconBg: const Color(0xFFEFF6FF),
-            iconColor: Color(0xFF2563EB),
+            iconBg: AppColors.softBlue,
+            iconColor: const Color(0xFF2563EB),
             title: 'Stock',
             lines: [
               _SummaryLine('${summary.stockTotalSkus} Total SKU'),
@@ -545,8 +548,8 @@ class _SummaryGrid extends StatelessWidget {
         Expanded(
           child: _SummaryTile(
             icon: Icons.local_shipping_rounded,
-            iconBg: const Color(0xFFECFDF5),
-            iconColor: Color(0xFF059669),
+            iconBg: AppColors.softGreen,
+            iconColor: const Color(0xFF059669),
             title: 'DC',
             lines: [
               _SummaryLine(
@@ -593,7 +596,7 @@ class _SummaryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: AppColors.cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -603,7 +606,7 @@ class _SummaryTile extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,10 +625,10 @@ class _SummaryTile extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -639,7 +642,7 @@ class _SummaryTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
-                      color: line.color ?? const Color(0xFF475569),
+                      color: line.color ?? AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -661,29 +664,29 @@ class _QuickActionsRow extends StatelessWidget {
         icon: Icons.add_box_rounded,
         label: 'Stocks',
         route: '/my-products',
-        bg: const Color(0xFFFFF5F0),
+        bg: AppColors.softOrange,
         fg: AppColors.primary,
       ),
       (
         icon: Icons.receipt_long_rounded,
         label: 'View Orders',
         route: '/orders',
-        bg: const Color(0xFFF5F3FF),
-        fg: Color(0xFF7C3AED),
+        bg: AppColors.softPurple,
+        fg: const Color(0xFF7C3AED),
       ),
       (
         icon: Icons.fact_check_rounded,
         label: 'Start Audit',
         route: '/audit',
-        bg: const Color(0xFFECFDF5),
-        fg: Color(0xFF16A34A),
+        bg: AppColors.softGreen,
+        fg: const Color(0xFF16A34A),
       ),
       (
         icon: Icons.local_shipping_rounded,
         label: 'DC Transfers',
         route: '/dc',
-        bg: const Color(0xFFEFF6FF),
-        fg: Color(0xFF0284C7),
+        bg: AppColors.softBlue,
+        fg: const Color(0xFF0284C7),
       ),
     ];
 
@@ -693,7 +696,7 @@ class _QuickActionsRow extends StatelessWidget {
           if (i > 0) const SizedBox(width: 8),
           Expanded(
             child: Material(
-              color: Colors.white,
+              color: AppColors.cardBg,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: () => context.go(actions[i].route),
@@ -702,7 +705,7 @@ class _QuickActionsRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     children: [
@@ -724,10 +727,10 @@ class _QuickActionsRow extends StatelessWidget {
                         actions[i].label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF334155),
+                          color: AppColors.textSecondary,
                           height: 1.2,
                         ),
                       ),
@@ -758,7 +761,7 @@ class _RecentOrderTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () => context.push('/orders/${order.id}'),
@@ -768,7 +771,7 @@ class _RecentOrderTile extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
@@ -784,10 +787,10 @@ class _RecentOrderTile extends StatelessWidget {
                             fit: BoxFit.cover,
                           )
                         : Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Icon(
+                            color: AppColors.background,
+                            child: Icon(
                               Icons.inventory_2_outlined,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted,
                             ),
                           ),
                   ),
@@ -799,27 +802,27 @@ class _RecentOrderTile extends StatelessWidget {
                     children: [
                       Text(
                         order.code.isEmpty ? '#${order.id}' : order.code,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       Text(
                         subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: Color(0xFF64748B),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       if ((order.createdAt ?? '').isNotEmpty)
                         Text(
                           formatOrderDate(order.createdAt!),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10.5,
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textMuted,
                           ),
                         ),
                       const SizedBox(height: 4),
@@ -849,10 +852,10 @@ class _RecentOrderTile extends StatelessWidget {
                 ),
                 Text(
                   formatMoney(order.grandTotal),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],

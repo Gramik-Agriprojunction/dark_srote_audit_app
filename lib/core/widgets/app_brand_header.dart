@@ -117,14 +117,14 @@ class AppBrandIcon extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AuthTheme.primary,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: ColorFiltered(
         colorFilter: const ColorFilter.mode(
-          AuthTheme.primary,
+          Colors.white,
           BlendMode.srcIn,
         ),
         child: Image.asset(

@@ -83,20 +83,21 @@ class LoadingButton extends StatelessWidget {
           height: height,
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
           decoration: BoxDecoration(
-            color: active ? AppColors.primarySoft : AppColors.fieldBg,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(radius),
             border: Border.all(
-              color: active ? AppColors.primarySoftBorder : AppColors.border,
+              color: active ? AppColors.primary : AppColors.borderInput,
+              width: 1.4,
             ),
           ),
           child: Center(
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 15,
                     height: 15,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.2,
-                      color: AppColors.primaryDark,
+                      color: AppColors.primary,
                     ),
                   )
                 : Text(
@@ -105,7 +106,7 @@ class LoadingButton extends StatelessWidget {
                       fontSize: compact ? 13 : 15,
                       fontWeight: FontWeight.w700,
                       color: active
-                          ? AppColors.primaryDark
+                          ? AppColors.primary
                           : AppColors.textMuted,
                     ),
                   ),
@@ -124,7 +125,7 @@ class LoadingButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(radius),
           gradient: active
-              ? const LinearGradient(
+              ? LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [AppColors.primaryMid, AppColors.primaryDark],

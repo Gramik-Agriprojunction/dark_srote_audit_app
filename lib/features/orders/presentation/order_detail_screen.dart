@@ -7,6 +7,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../data/models/order_model.dart';
@@ -179,6 +180,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when theme mode changes (AppColors are not InheritedWidget).
+    ref.watch(appThemeModeProvider);
     final state = ref.watch(orderDetailControllerProvider(widget.orderId));
     final order = state.order;
     final top = MediaQuery.paddingOf(context).top;
@@ -186,7 +189,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final navTop = top + 12;
 
     if (state.isLoading && order == null) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: kDetailScreenBg,
         body: Center(
           child: CircularProgressIndicator(color: AppColors.primary),
@@ -201,7 +204,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           children: [
             _FixedNavBar(
               topPadding: navTop,
-              backgroundColor: const Color(0xFF64748B),
+              backgroundColor: AppColors.textSecondary,
               code: 'Order Details',
               compactOpacity: 0,
               statusNavOpacity: 0,
@@ -247,13 +250,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final code = order.code.isNotEmpty ? order.code : '#${order.id}';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: status.color),
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.headerBg,
+      ),
       child: Scaffold(
         backgroundColor: kDetailScreenBg,
         body: Stack(
           children: [
             RefreshIndicator(
-              color: status.color,
+              color: AppColors.primary,
               onRefresh: () => ref
                   .read(orderDetailControllerProvider(widget.orderId).notifier)
                   .load(refresh: true),
@@ -268,7 +273,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ),
                 children: [
                   _HeroExpand(
-                    backgroundColor: status.color,
+                    backgroundColor: AppColors.headerBg,
                     opacity: _heroFadeOpacity,
                     date: formatOrderDate(order.createdAt),
                     amount: formatMoney(order.grandTotal),
@@ -310,7 +315,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           statusColor: status.color,
                           icon: Icons.account_tree_outlined,
                           title: 'Order Progress',
-                          child: _TimelineBlock(order: order, statusColor: status.color),
+                          child: _TimelineBlock(
+                            order: order,
+                            statusColor: AppColors.primary,
+                          ),
                         ),
                         _DetailSectionCard(
                           statusColor: status.color,
@@ -356,7 +364,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                             title: 'Delivery Partner',
                             child: _DeliveryPartnerBlock(
                               partner: order.deliveryPartner,
-                              statusColor: status.color,
+                              statusColor: AppColors.primary,
                               onCall: () => _callPhone(order.deliveryPartner.phone),
                               onWhatsApp: () => _openWhatsApp(order.deliveryPartner.phone),
                             ),
@@ -370,7 +378,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               children: [
                                 for (var i = 0; i < otpList.length; i++) ...[
                                   if (i > 0)
-                                    const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                                    Divider(height: 16, color: AppColors.background),
                                   _OtpRow(entry: otpList[i]),
                                 ],
                               ],
@@ -406,7 +414,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                               ],
                             ),
                           ),
-                          child: _PaymentSummaryBlock(order: order, statusColor: status.color),
+                          child: _PaymentSummaryBlock(
+                            order: order,
+                            statusColor: AppColors.primary,
+                          ),
                         ),
                       ],
                     ),
@@ -416,7 +427,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ),
             _FixedNavBar(
               topPadding: navTop,
-              backgroundColor: status.color,
+              backgroundColor: AppColors.headerBg,
               code: code,
               showCopyIcon: true,
               statusLabel: status.label,
@@ -435,7 +446,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   bottomInset: bottom,
                   showPrintReceipt: showPrintReceipt,
                   showCancel: showCancel,
-                  statusColor: status.color,
+                  statusColor: AppColors.primary,
                   loading: state.isActionLoading || _printBusy,
                   onPrintReceipt: () => _printReceipt(order),
                   onCancel: () => _openCancelOverlay(order),
@@ -830,9 +841,9 @@ class _DetailSectionCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: statusTint(statusColor, 0.18)),
+          border: Border.all(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -841,9 +852,9 @@ class _DetailSectionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(12, 9, 12, 8),
               decoration: BoxDecoration(
-                color: statusTint(statusColor, 0.12),
+                color: AppColors.primarySoft,
                 border: Border(
-                  bottom: BorderSide(color: statusTint(statusColor, 0.2)),
+                  bottom: BorderSide(color: AppColors.primarySoftBorder),
                 ),
               ),
               child: Row(
@@ -852,10 +863,12 @@ class _DetailSectionCard extends StatelessWidget {
                     width: 26,
                     height: 26,
                     decoration: BoxDecoration(
-                      color: statusTint(statusColor, 0.2),
+                      color: AppColors.isDark
+                          ? AppColors.fieldBg
+                          : AppColors.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(icon, size: 12, color: statusColor),
+                    child: Icon(icon, size: 12, color: AppColors.primary),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -863,7 +876,7 @@ class _DetailSectionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
-                      color: statusLight(statusColor),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (trailing != null) ...[
@@ -906,9 +919,9 @@ class _OrderMetaCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE8EEF4)),
+          border: Border.all(color: AppColors.border),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -930,7 +943,7 @@ class _OrderMetaCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: mark.toLowerCase() == 'disputed'
                             ? const Color(0x38F87171)
-                            : const Color(0xFFE2E8F0),
+                            : AppColors.border,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -941,17 +954,17 @@ class _OrderMetaCard extends StatelessWidget {
                         color: style.text,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'MARK STATUS',
                             style: TextStyle(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textMuted,
                               letterSpacing: 0.35,
                             ),
                           ),
@@ -977,7 +990,7 @@ class _OrderMetaCard extends StatelessWidget {
                     if (schedule.isNotEmpty)
                       _MetaDateLine(
                         icon: Icons.calendar_today_outlined,
-                        iconBg: const Color(0xFFEFF6FF),
+                        iconBg: AppColors.softBlue,
                         iconColor: const Color(0xFF2563EB),
                         text: 'Order scheduled for ',
                         strong: schedule,
@@ -986,12 +999,12 @@ class _OrderMetaCard extends StatelessWidget {
                       Container(
                         height: 1,
                         margin: const EdgeInsets.only(left: 38, top: 8, bottom: 8),
-                        color: const Color(0xFFEEF2F7),
+                        color: AppColors.border,
                       ),
                     if (delivery.isNotEmpty)
                       _MetaDateLine(
                         icon: Icons.local_shipping_outlined,
-                        iconBg: const Color(0xFFF0FDFA),
+                        iconBg: AppColors.softTeal,
                         iconColor: const Color(0xFF0D9488),
                         text: 'Order to be delivered on ',
                         strong: delivery,
@@ -1038,18 +1051,18 @@ class _MetaDateLine extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
-                color: Color(0xFF64748B),
+                color: AppColors.textSecondary,
                 height: 1.35,
               ),
               children: [
                 TextSpan(text: text),
                 TextSpan(
                   text: strong,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -1077,9 +1090,9 @@ class _TimelineBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFC),
+        color: AppColors.fieldBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEEF2F7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -1095,7 +1108,7 @@ class _TimelineBlock extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: (i <= cur || failedAt >= i)
                             ? (failedAt == i ? const Color(0xFFEF4444) : statusColor)
-                            : const Color(0xFFE8EDF2),
+                            : AppColors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -1117,20 +1130,20 @@ class _TimelineBlock extends StatelessWidget {
               margin: const EdgeInsets.only(top: 10),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
+                color: AppColors.errorBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(color: AppColors.errorBorder),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cancel_outlined, size: 11, color: Color(0xFFB91C1C)),
+                  Icon(Icons.cancel_outlined, size: 11, color: AppColors.errorText),
                   const SizedBox(width: 5),
                   Text(
                     'Order ${orderDetailStatus(order).label.toLowerCase()}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10.5,
-                      color: Color(0xFFB91C1C),
+                      color: AppColors.errorText,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1172,7 +1185,7 @@ class _StepNode extends StatelessWidget {
         ? const Color(0xFFEF4444)
         : showCheck || done
             ? statusColor
-            : const Color(0xFFE2E8F0);
+            : AppColors.border;
 
     var label = step;
     if (isFailed && orderStatus.toUpperCase() == 'RTO') label = 'Returned';
@@ -1188,7 +1201,7 @@ class _StepNode extends StatelessWidget {
               color: dotColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: done || isFailed ? dotColor : const Color(0xFFE2E8F0),
+                color: done || isFailed ? dotColor : AppColors.border,
               ),
             ),
             child: Icon(
@@ -1198,7 +1211,7 @@ class _StepNode extends StatelessWidget {
                       ? Icons.check
                       : stepIcon(step),
               size: 11,
-              color: done || isFailed ? Colors.white : const Color(0xFF94A3B8),
+              color: done || isFailed ? Colors.white : AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 5),
@@ -1212,7 +1225,7 @@ class _StepNode extends StatelessWidget {
                   ? const Color(0xFFDC2626)
                   : done
                       ? statusColor
-                      : const Color(0xFF94A3B8),
+                      : AppColors.textMuted,
             ),
           ),
         ],
@@ -1266,19 +1279,19 @@ class _CustomerBlock extends StatelessWidget {
                     name.isEmpty ? '--' : name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.call_outlined, size: 10, color: Color(0xFF94A3B8)),
+                      Icon(Icons.call_outlined, size: 10, color: AppColors.textMuted),
                       const SizedBox(width: 3),
                       Text(
                         maskPhone(phone),
-                        style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                        style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -1301,9 +1314,9 @@ class _CustomerBlock extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppColors.fieldBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE8EEF4)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1321,10 +1334,10 @@ class _CustomerBlock extends StatelessWidget {
                 Expanded(
                   child: Text(
                     addr,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       height: 1.4,
-                      color: Color(0xFF475569),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -1396,19 +1409,19 @@ class _DeliveryPartnerBlock extends StatelessWidget {
             children: [
               Text(
                 partner.name ?? 'Delivery partner',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary,
                 ),
               ),
               Row(
                 children: [
-                  const Icon(Icons.call_outlined, size: 10, color: Color(0xFF94A3B8)),
+                  Icon(Icons.call_outlined, size: 10, color: AppColors.textMuted),
                   const SizedBox(width: 3),
                   Text(
                     maskPhone(phone),
-                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -1443,9 +1456,9 @@ class _OtpRow extends StatelessWidget {
         vertical: compact ? 5 : 8,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFBFC),
+        color: AppColors.fieldBg,
         borderRadius: BorderRadius.circular(compact ? 9 : 11),
-        border: Border.all(color: const Color(0xFFEEF2F7)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -1465,7 +1478,7 @@ class _OtpRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: compact ? 10.5 : 11.5,
                 fontWeight: FontWeight.w600,
-                color: statusDark(entry.color),
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -1513,12 +1526,12 @@ class _ProductItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: product.isCombo ? const Color(0xFFFFFCF7) : const Color(0xFFFAFBFC),
+        color: product.isCombo ? AppColors.auditRecentBg : AppColors.fieldBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: product.isCombo
-              ? const Color(0x47F59E0B)
-              : const Color(0xFFEEF2F7),
+              ? AppColors.auditRecentBorder
+              : AppColors.border,
         ),
       ),
       child: Column(
@@ -1533,9 +1546,9 @@ class _ProductItem extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.cardBg,
                       borderRadius: BorderRadius.circular(11),
-                      border: Border.all(color: const Color(0xFFE8EEF4)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: product.thumbnailImg != null && product.thumbnailImg!.isNotEmpty
@@ -1543,7 +1556,7 @@ class _ProductItem extends StatelessWidget {
                             imageUrl: product.thumbnailImg!,
                             fit: BoxFit.cover,
                           )
-                        : const Icon(Icons.inventory_2_outlined, size: 17, color: Color(0xFFCBD5E1)),
+                        : Icon(Icons.inventory_2_outlined, size: 17, color: AppColors.textMuted),
                   ),
                   if (product.quantity > 1)
                     Positioned(
@@ -1555,7 +1568,7 @@ class _ProductItem extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: kItemsAccent,
                           borderRadius: BorderRadius.circular(9),
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(color: AppColors.cardBg, width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -1579,10 +1592,10 @@ class _ProductItem extends StatelessWidget {
                       product.name.isEmpty ? '--' : product.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1E293B),
+                        color: AppColors.textPrimary,
                         height: 1.3,
                       ),
                     ),
@@ -1596,7 +1609,7 @@ class _ProductItem extends StatelessWidget {
                         if (product.price != null)
                           Text(
                             '${formatMoney(product.price!)} each',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                           ),
                       ],
                     ),
@@ -1608,16 +1621,16 @@ class _ProductItem extends StatelessWidget {
                 children: [
                   Text(
                     lineTotal == null ? '--' : formatMoney(lineTotal),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   if (product.quantity > 1)
                     Text(
                       '${product.quantity} pcs',
-                      style: const TextStyle(fontSize: 9, color: Color(0xFF94A3B8)),
+                      style: TextStyle(fontSize: 9, color: AppColors.textMuted),
                     ),
                 ],
               ),
@@ -1698,7 +1711,7 @@ class _ComboLine extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 5),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(9),
         border: Border.all(color: statusTint(kItemsAccent, 0.14)),
       ),
@@ -1708,14 +1721,14 @@ class _ComboLine extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppColors.fieldBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFEEF2F7)),
+              border: Border.all(color: AppColors.border),
             ),
             clipBehavior: Clip.antiAlias,
             child: combo.image != null && combo.image!.isNotEmpty
                 ? CachedNetworkImage(imageUrl: combo.image!, fit: BoxFit.cover)
-                : const Icon(Icons.inventory_2_outlined, size: 14, color: Color(0xFFCBD5E1)),
+                : Icon(Icons.inventory_2_outlined, size: 14, color: AppColors.textMuted),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1726,10 +1739,10 @@ class _ComboLine extends StatelessWidget {
                   combo.displayName.isEmpty ? '--' : combo.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Wrap(
@@ -1739,20 +1752,22 @@ class _ComboLine extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF7ED),
+                          color: AppColors.auditRecentBg,
                           borderRadius: BorderRadius.circular(5),
                         ),
                         child: Text(
                           combo.displayVariant,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFFC2410C),
+                            color: AppColors.isDark
+                                ? const Color(0xFFFDBA74)
+                                : const Color(0xFFC2410C),
                           ),
                         ),
                       ),
                     if (qty > 0)
-                      Text('×$qty', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                      Text('×$qty', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                   ],
                 ),
               ],
@@ -1761,10 +1776,10 @@ class _ComboLine extends StatelessWidget {
           if (line != null)
             Text(
               formatMoney(line),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary,
               ),
             ),
         ],
@@ -1792,7 +1807,7 @@ class _PaymentSummaryBlock extends StatelessWidget {
           ),
         if (order.shippingCost > 0)
           _BillLine(label: 'Shipping', value: formatMoney(order.shippingCost)),
-        const Divider(height: 12, color: Color(0xFFE2E8F0)),
+        Divider(height: 12, color: AppColors.border),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
@@ -1816,7 +1831,7 @@ class _PaymentSummaryBlock extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: statusLight(statusColor),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const Spacer(),
@@ -1825,7 +1840,7 @@ class _PaymentSummaryBlock extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: statusDark(statusColor),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -1852,14 +1867,14 @@ class _BillLine extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+          Text(label, style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
           const Spacer(),
           Text(
             value,
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
-              color: accent ?? const Color(0xFF334155),
+              color: accent ?? AppColors.textSecondary,
             ),
           ),
         ],
@@ -1880,15 +1895,15 @@ class _RefRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+          Text(label, style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
           const Spacer(),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
-                color: Color(0xFF475569),
+                color: AppColors.textSecondary,
                 fontFamily: 'monospace',
               ),
             ),
@@ -1929,9 +1944,9 @@ class _BottomActionBar extends StatelessWidget {
         16,
         bottomInset > 0 ? bottomInset : 8,
       ),
-      decoration: const BoxDecoration(
-        color: Color(0xF5FFFFFF),
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: showPrintReceipt
           ? _BottomButton(

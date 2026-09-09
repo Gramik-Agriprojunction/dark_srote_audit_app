@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 import '../../data/models/order_model.dart';
 import '../utils/order_status_helper.dart';
 
@@ -34,9 +36,9 @@ class OrderCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE8ECF1)),
+          border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
               color: Color(0x0F0F172A),
@@ -82,19 +84,19 @@ class OrderCard extends StatelessWidget {
                                       order.code.isNotEmpty ? order.code : '#${order.id}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF0F172A),
+                                        color: AppColors.textPrimary,
                                       ),
                                     ),
                                   ),
                                   Text(
                                     formatMoney(order.grandTotal),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF0F172A),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -104,10 +106,10 @@ class OrderCard extends StatelessWidget {
                                 locShort.isEmpty ? '--' : locShort,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w500,
-                                  color: Color(0xFF475569),
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -117,9 +119,9 @@ class OrderCard extends StatelessWidget {
                                     : formatOrderDate(order.createdAt),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             ],
@@ -161,7 +163,7 @@ class OrderCard extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: expanded
                                       ? status.color
-                                      : const Color(0xFFF1F5F9),
+                                      : AppColors.background,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -171,7 +173,7 @@ class OrderCard extends StatelessWidget {
                                   size: 18,
                                   color: expanded
                                       ? Colors.white
-                                      : const Color(0xFF64748B),
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                             ],
@@ -185,7 +187,7 @@ class OrderCard extends StatelessWidget {
                       children: [
                         for (var i = 0; i < order.products.length; i++) ...[
                           if (i > 0)
-                            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                            Divider(height: 1, color: AppColors.border),
                           _ProductRow(product: order.products[i]),
                         ],
                       ],
@@ -215,25 +217,25 @@ class _Thumb extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: AppColors.fieldBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: AppColors.border),
           ),
           clipBehavior: Clip.antiAlias,
           child: imageUrl != null && imageUrl!.isNotEmpty
               ? CachedNetworkImage(
                   imageUrl: imageUrl!,
                   fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => const Icon(
+                  errorWidget: (_, _, _) => Icon(
                     Icons.inventory_2_outlined,
                     size: 20,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textMuted,
                   ),
                 )
-              : const Icon(
+              : Icon(
                   Icons.inventory_2_outlined,
                   size: 20,
-                  color: Color(0xFF94A3B8),
+                  color: AppColors.textMuted,
                 ),
         ),
         if (badgeCount != null)
@@ -311,9 +313,9 @@ class _ProductRow extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppColors.fieldBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppColors.border),
             ),
             clipBehavior: Clip.antiAlias,
             child: product.thumbnailImg != null && product.thumbnailImg!.isNotEmpty
@@ -341,19 +343,19 @@ class _ProductRow extends StatelessWidget {
                   product.name.isEmpty ? '--' : product.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF1E293B),
+                    color: AppColors.textPrimary,
                     height: 1.3,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   'Qty ${product.quantity}${product.price != null ? ' · ${formatMoney(product.price!)}' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10.5,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],
@@ -361,10 +363,10 @@ class _ProductRow extends StatelessWidget {
           ),
           Text(
             lineTotal == null ? '--' : formatMoney(lineTotal),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary,
             ),
           ),
         ],

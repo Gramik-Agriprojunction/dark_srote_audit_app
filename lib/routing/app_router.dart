@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/constants/app_colors.dart';
+import '../core/theme/theme_aware.dart';
+import '../core/theme/theme_mode_provider.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/select_warehouse_screen.dart';
@@ -18,20 +21,33 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 
+/// Forces the page to rebuild/remount when theme flips (needed because
+/// [AppColors] are static getters and stacked routes from `push` stay mounted).
+Widget _themePage(Widget page) => ThemeAware(builder: (_, __) => page);
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = ValueNotifier<AuthState>(
     ref.read(authControllerProvider),
+  );
+  final themeNotifier = ValueNotifier<AppThemeMode>(
+    ref.read(appThemeModeProvider),
   );
 
   ref.listen<AuthState>(authControllerProvider, (_, next) {
     authNotifier.value = next;
   });
+  ref.listen<AppThemeMode>(appThemeModeProvider, (_, next) {
+    themeNotifier.value = next;
+  });
 
-  ref.onDispose(authNotifier.dispose);
+  ref.onDispose(() {
+    authNotifier.dispose();
+    themeNotifier.dispose();
+  });
 
   return GoRouter(
     initialLocation: '/splash',
-    refreshListenable: authNotifier,
+    refreshListenable: Listenable.merge([authNotifier, themeNotifier]),
     redirect: (context, state) {
       final auth = authNotifier.value;
       final loc = state.matchedLocation;
@@ -63,12 +79,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        builder: (context, state) => const SplashScreen(),
+        builder: (context, state) => _themePage(const SplashScreen()),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => _themePage(const LoginScreen()),
+      ),
       GoRoute(
         path: '/select-warehouse',
-        builder: (context, state) => const SelectWarehouseScreen(),
+        builder: (context, state) =>
+            _themePage(const SelectWarehouseScreen()),
       ),
       GoRoute(
         path: '/home',
@@ -77,42 +97,42 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/dashboard',
-        builder: (context, state) => const DashboardScreen(),
+        builder: (context, state) => _themePage(const DashboardScreen()),
       ),
       GoRoute(
         path: '/audit',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => _themePage(const HomeScreen()),
       ),
       GoRoute(
         path: '/orders',
-        builder: (context, state) => const OrdersScreen(),
+        builder: (context, state) => _themePage(const OrdersScreen()),
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
+        builder: (context, state) => _themePage(const ProfileScreen()),
       ),
       GoRoute(
         path: '/orders/:orderId',
         builder: (context, state) {
           final orderId =
               int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
-          if (orderId <= 0) return const OrdersScreen();
-          return OrderDetailScreen(orderId: orderId);
+          if (orderId <= 0) return _themePage(const OrdersScreen());
+          return _themePage(OrderDetailScreen(orderId: orderId));
         },
       ),
       GoRoute(
         path: '/my-products',
-        builder: (context, state) => const MyProductsScreen(),
+        builder: (context, state) => _themePage(const MyProductsScreen()),
       ),
       GoRoute(
         path: '/transactions',
-        builder: (context, state) => const TransactionsScreen(),
+        builder: (context, state) => _themePage(const TransactionsScreen()),
       ),
       GoRoute(
         path: '/dc',
         builder: (context, state) {
           final tab = state.uri.queryParameters['tab'] ?? 'incoming';
-          return DcListScreen(initialTab: tab);
+          return _themePage(DcListScreen(initialTab: tab));
         },
       ),
       GoRoute(
@@ -120,17 +140,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final transferId =
               int.tryParse(state.pathParameters['transferId'] ?? '') ?? 0;
-          if (transferId <= 0) return const DcListScreen();
+          if (transferId <= 0) return _themePage(const DcListScreen());
           final tab = state.uri.queryParameters['tab'] ?? 'incoming';
-          return DcDetailScreen(
-            transferId: transferId,
-            showSaveActions: tab != 'received',
+          return _themePage(
+            DcDetailScreen(
+              transferId: transferId,
+              showSaveActions: tab != 'received',
+            ),
           );
         },
       ),
       GoRoute(
         path: '/variance',
-        builder: (context, state) => const VarianceScreen(),
+        builder: (context, state) => _themePage(const VarianceScreen()),
       ),
       GoRoute(
         path: '/variant-audit',
@@ -142,12 +164,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final variantId =
               int.tryParse(state.uri.queryParameters['variantId'] ?? '') ?? 0;
           if (storeId <= 0 || productId <= 0 || variantId <= 0) {
-            return const HomeScreen();
+            return _themePage(const HomeScreen());
           }
-          return VariantAuditScreen(
-            storeId: storeId,
-            productId: productId,
-            variantId: variantId,
+          return _themePage(
+            VariantAuditScreen(
+              storeId: storeId,
+              productId: productId,
+              variantId: variantId,
+            ),
           );
         },
       ),

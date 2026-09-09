@@ -10,27 +10,36 @@ import 'app_ui.dart';
 /// Shared design language lifted from the Orders screen so every module
 /// (Home, Stock, Transactions, Variance) reads the same.
 ///
-/// Tokens: compact orange header sheet, horizontal colour stat cards,
-/// stadium filter chips, white list cards with a left status strip.
+/// Tokens: dark header sheet, colour stat cards, stadium chips, dark list cards.
 class ModuleTokens {
   ModuleTokens._();
 
   static const cardRadius = 16.0;
-  static const cardBorder = Color(0xFFE8ECF1);
-  static const chipBorder = Color(0xFFD1D9E6);
-  static const mutedText = Color(0xFF64748B);
-  static const strongText = Color(0xFF0F172A);
-  static const faintText = Color(0xFF94A3B8);
+  static Color get cardBorder => AppColors.border;
+  static Color get chipBorder => AppColors.borderInput;
+  static Color get mutedText => AppColors.textSecondary;
+  static Color get strongText => AppColors.textPrimary;
+  static Color get faintText => AppColors.textMuted;
 
   static const listPadding = EdgeInsets.symmetric(horizontal: 10);
 
-  static const cardShadow = [
-    BoxShadow(color: Color(0x0F0F172A), blurRadius: 8, offset: Offset(0, 2)),
-  ];
+  static List<BoxShadow> get cardShadow => AppColors.cardShadow;
 
-  static const statShadow = [
-    BoxShadow(color: Color(0x1F0F172A), blurRadius: 6, offset: Offset(0, 2)),
-  ];
+  static List<BoxShadow> get statShadow => AppColors.isDark
+      ? const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ]
+      : const [
+          BoxShadow(
+            color: Color(0x140F172A),
+            blurRadius: 8,
+            offset: Offset(0, 3),
+          ),
+        ];
 }
 
 /// Compact orange header sheet with Gramik brand, actions and optional search.
@@ -108,15 +117,16 @@ class ModuleHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AppColors.primary,
+        statusBarColor: AppColors.headerBg,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppColors.headerBg,
+          borderRadius:
+              const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         padding: EdgeInsets.fromLTRB(
           8,
@@ -158,10 +168,14 @@ class ModuleHeader extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: AppColors.isDark
+                      ? AppColors.fieldBg
+                      : Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: AppColors.isDark
+                        ? AppColors.border
+                        : Colors.white.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Row(
@@ -169,21 +183,23 @@ class ModuleHeader extends StatelessWidget {
                     Icon(
                       Icons.search_rounded,
                       size: 18,
-                      color: Colors.white.withValues(alpha: 0.5),
+                      color: AppColors.isDark
+                          ? AppColors.textMuted
+                          : Colors.white.withValues(alpha: 0.85),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
                         controller: searchController,
                         onChanged: onSearchChanged,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.isDark
+                              ? AppColors.textPrimary
+                              : Colors.white,
                           fontSize: 14,
                         ),
                         decoration: InputDecoration(
                           isDense: true,
-                          // App-wide InputDecorationTheme fills fields; the
-                          // header pill already provides the surface.
                           filled: false,
                           contentPadding: EdgeInsets.zero,
                           border: InputBorder.none,
@@ -191,7 +207,9 @@ class ModuleHeader extends StatelessWidget {
                           focusedBorder: InputBorder.none,
                           hintText: searchHint ?? 'Search...',
                           hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
+                            color: AppColors.isDark
+                                ? AppColors.textMuted
+                                : Colors.white.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -203,7 +221,9 @@ class ModuleHeader extends StatelessWidget {
                         child: Icon(
                           Icons.cancel_rounded,
                           size: 18,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: AppColors.isDark
+                              ? AppColors.textMuted
+                              : Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
                   ],
@@ -236,8 +256,14 @@ class ModuleHeaderAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final button = Material(
-      color: Colors.white.withValues(alpha: 0.15),
-      shape: const CircleBorder(),
+      color: AppColors.headerActionBg,
+      shape: CircleBorder(
+        side: BorderSide(
+          color: AppColors.isDark
+              ? AppColors.border
+              : Colors.white.withValues(alpha: 0.25),
+        ),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
@@ -247,7 +273,7 @@ class ModuleHeaderAction extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, color: Colors.white, size: 20),
+          child: Icon(icon, color: AppColors.headerActionIcon, size: 20),
         ),
       ),
     );
@@ -266,7 +292,7 @@ class ModuleHeaderAction extends StatelessWidget {
                   height: 18,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: ModuleTokens.strongText,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(9),
                   ),
                   alignment: Alignment.center,
@@ -321,7 +347,7 @@ class ModuleUserMenuAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       offset: const Offset(0, 44),
-      color: Colors.white,
+      color: AppColors.cardBg,
       elevation: 8,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) async {
@@ -331,7 +357,7 @@ class ModuleUserMenuAction extends StatelessWidget {
         if (!context.mounted || !confirmed) return;
         await onLogout();
       },
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => [
         PopupMenuItem<String>(
           value: 'logout',
           height: 44,
@@ -352,8 +378,10 @@ class ModuleUserMenuAction extends StatelessWidget {
         ),
       ],
       child: Material(
-        color: Colors.white.withValues(alpha: 0.15),
-        shape: const CircleBorder(),
+        color: AppColors.fieldBg,
+        shape: CircleBorder(
+          side: BorderSide(color: AppColors.border),
+        ),
         clipBehavior: Clip.antiAlias,
         child: const SizedBox(
           width: 40,
@@ -396,7 +424,7 @@ class ModuleLogoutAction extends StatelessWidget {
               child: Image.asset(
                 AppAssets.logoutIcon,
                 fit: BoxFit.contain,
-                color: Colors.white,
+                color: AppColors.cardBg,
                 colorBlendMode: BlendMode.srcIn,
               ),
             ),
@@ -416,19 +444,22 @@ class ModuleStat {
     required this.labelColor,
     this.isActive = false,
     this.onTap,
+    this.progress,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  /// Accent color (icon + progress). Card fill is always dark.
   final Color background;
   final Color labelColor;
   final bool isActive;
   final VoidCallback? onTap;
+  /// 0..1 progress under the card (mock style).
+  final double? progress;
 }
 
-/// Horizontally scrolling row of solid colour stat cards (Darkstore Orders style).
-/// Cards keep a min width and scroll instead of shrinking/truncating labels.
+/// Dark mock stat cards — accent icon + optional progress (not solid fills).
 class ModuleStatsRow extends StatelessWidget {
   const ModuleStatsRow({super.key, required this.stats});
 
@@ -439,10 +470,10 @@ class ModuleStatsRow extends StatelessWidget {
     if (stats.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 78,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
         itemCount: stats.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) => _ModuleStatCard(stat: stats[index]),
@@ -458,36 +489,90 @@ class _ModuleStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      constraints: const BoxConstraints(minWidth: 140),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: stat.background,
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: ModuleTokens.statShadow,
-        border: stat.isActive
-            ? Border.all(color: Colors.white, width: 2)
-            : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: Icon(stat.icon, color: Colors.white, size: 17),
+    final accent = stat.background;
+    final useSolid = !AppColors.isDark;
+    final cardBg = useSolid ? accent : AppColors.statCardBg;
+    final borderColor = useSolid
+        ? (stat.isActive ? accent.withValues(alpha: 0.9) : accent)
+        : (stat.isActive ? accent : AppColors.statCardBorder);
+    final labelColor = useSolid ? Colors.white.withValues(alpha: 0.9) : stat.labelColor;
+    final valueColor = useSolid ? Colors.white : AppColors.statValueColor;
+    final iconBg = useSolid
+        ? Colors.white.withValues(alpha: 0.2)
+        : accent.withValues(alpha: 0.18);
+    final iconColor = useSolid ? Colors.white : accent;
+
+    final card = SizedBox(
+      width: 128,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: borderColor,
+            width: stat.isActive ? 1.6 : 1,
           ),
-          const SizedBox(width: 10),
-          _ModuleStatText(stat: stat),
-          if (stat.isActive) ...[
-            const SizedBox(width: 6),
-            const Icon(Icons.check_rounded, color: Colors.white, size: 16),
+          boxShadow: useSolid ? ModuleTokens.statShadow : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Icon(stat.icon, color: iconColor, size: 13),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    stat.label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: labelColor,
+                      fontSize: 8.5,
+                      height: 1.1,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              stat.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
+            ),
+            if (!useSolid && stat.progress != null) ...[
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: stat.progress!.clamp(0.0, 1.0),
+                  minHeight: 2.5,
+                  backgroundColor: AppColors.statCardBorder,
+                  color: accent,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
 
@@ -496,7 +581,7 @@ class _ModuleStatCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       clipBehavior: Clip.antiAlias,
-      borderRadius: BorderRadius.circular(11),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
@@ -504,47 +589,6 @@ class _ModuleStatCard extends StatelessWidget {
         },
         child: card,
       ),
-    );
-  }
-}
-
-class _ModuleStatText extends StatelessWidget {
-  const _ModuleStatText({required this.stat});
-
-  final ModuleStat stat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          stat.label.toUpperCase(),
-          maxLines: 1,
-          softWrap: false,
-          style: TextStyle(
-            color: stat.labelColor,
-            fontSize: 8.5,
-            height: 1.2,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          stat.value,
-          maxLines: 1,
-          softWrap: false,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            height: 1.2,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -583,7 +627,7 @@ class ModuleChipsRow extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 6),
             child: Material(
-              color: chip.isActive ? chip.tone : Colors.white,
+              color: chip.isActive ? chip.tone : AppColors.fieldBg,
               shape: StadiumBorder(
                 side: BorderSide(
                   color: chip.isActive ? chip.tone : ModuleTokens.chipBorder,
@@ -620,7 +664,7 @@ class ModuleChipsRow extends StatelessWidget {
                               : FontWeight.w500,
                           color: chip.isActive
                               ? Colors.white
-                              : const Color(0xFF111827),
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -644,13 +688,14 @@ class ModuleStatsRowSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 78,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
         itemCount: count,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) => SizedBox(width: 148, child: _skeletonCard()),
+        itemBuilder: (context, index) =>
+            SizedBox(width: 128, child: _skeletonCard()),
       ),
     );
   }
@@ -686,7 +731,7 @@ class ModuleCardSkeleton extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
           border: Border.all(color: ModuleTokens.cardBorder),
           boxShadow: ModuleTokens.cardShadow,
@@ -773,7 +818,7 @@ class ModuleCard extends StatelessWidget {
       padding: margin,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
           border: Border.all(color: ModuleTokens.cardBorder),
           boxShadow: ModuleTokens.cardShadow,
@@ -863,10 +908,10 @@ class ModuleEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF334155),
+                color: AppColors.textSecondary,
               ),
             ),
             if (message != null) ...[
@@ -874,7 +919,7 @@ class ModuleEmptyState extends StatelessWidget {
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   color: ModuleTokens.faintText,
                 ),

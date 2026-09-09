@@ -6,12 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../core/widgets/app_ui.dart';
-import '../../../../core/widgets/loading_button.dart';
-import '../../../../core/widgets/module_ui.dart';
 import '../../data/models/product_model.dart';
 import '../providers/stock_audit_provider.dart';
 
+/// Audit product tile — matches dark mock (image, chips, stepper, orange Save).
 class ProductVariantRow extends ConsumerStatefulWidget {
   const ProductVariantRow({
     super.key,
@@ -84,7 +82,6 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     );
   }
 
-  /// Shared by the text field and the +/- stepper so both behave identically.
   void _applyQty(int value) {
     final notifier = ref.read(stockAuditControllerProvider.notifier);
     final baseline = AuditQtyHelper.todayAuditQty(widget.variant);
@@ -126,7 +123,17 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     }
   }
 
-  bool get _hasVariance => AuditQtyHelper.hasVariance(widget.variant);
+  /// "Calcium (Sugar free) Animal Feed Supplements" → title + category line.
+  (String, String?) _splitName(String raw) {
+    final name = raw.trim();
+    final close = name.indexOf(')');
+    if (close > 0 && close < name.length - 1) {
+      final title = name.substring(0, close + 1).trim();
+      final sub = name.substring(close + 1).trim();
+      if (sub.isNotEmpty) return (title, sub);
+    }
+    return (name, null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,21 +143,16 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
     );
     final saveLabel = _isRecent ? 'Update' : 'Save';
     final hasComment = (widget.variant.auditComment ?? '').trim().isNotEmpty;
+    final (title, category) = _splitName(widget.product.name);
+    final canSave = _canSave;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      margin: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-      padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(ModuleTokens.cardRadius),
-        border: Border.all(
-          color: _isRecent
-              ? AppColors.auditRecentBorder
-              : ModuleTokens.cardBorder,
-          width: 1.2,
-        ),
-        boxShadow: ModuleTokens.cardShadow,
+        color: const Color(0xFF14141C),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF2A2A36)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,47 +167,78 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.product.name,
+                      title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: AppColors.textPrimary,
+                        color: Colors.white,
                         height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: 7),
+                    if (category != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFFA1A1AA),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        AppChip(
+                        _Pill(
                           label: widget.variant.variantName,
-                          color: _hasVariance
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                          background: AppColors.fieldBg,
-                          bold: _hasVariance,
+                          fg: Colors.white,
+                          bg: const Color(0xFF2A2A36),
                         ),
-                        AppChip(
+                        _Pill(
                           label: '$pcsQty Pcs',
+                          fg: Colors.white,
+                          bg: pcsQty > 0
+                              ? const Color(0xFF166534)
+                              : const Color(0xFF7F1D1D),
                           icon: pcsQty > 0
                               ? Icons.check_circle_rounded
                               : Icons.remove_circle_outline_rounded,
-                          color: pcsQty > 0
-                              ? AppColors.inStock
-                              : AppColors.outStock,
                         ),
                         if (hasComment)
-                          const AppChip(
+                          const _Pill(
                             label: 'Note',
+                            fg: Color(0xFFFBBF24),
+                            bg: Color(0xFF3D2E14),
                             icon: Icons.sticky_note_2_outlined,
-                            color: AppColors.warning,
                           ),
                       ],
                     ),
+                    if (updatedLabel.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: Color(0xFF71717A),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Updated $updatedLabel',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF71717A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -215,45 +248,17 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
               ),
             ],
           ),
-          if (updatedLabel.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, left: 58),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.history_rounded,
-                    size: 12,
-                    color: AppColors.textMuted,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Updated $updatedLabel',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: _qtyStepper()),
               const SizedBox(width: 10),
-              SizedBox(
-                width: 84,
-                child: LoadingButton(
-                  label: saveLabel,
-                  compact: true,
-                  secondary: true,
-                  enabled: _canSave,
-                  isLoading: _saving,
-                  onPressed: _canSave ? _save : null,
-                ),
+              _OrangeSaveButton(
+                label: saveLabel,
+                enabled: canSave,
+                isLoading: _saving,
+                onPressed: canSave ? _save : null,
               ),
-              const SizedBox(width: 4),
             ],
           ),
         ],
@@ -263,10 +268,11 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
 
   Widget _qtyStepper() {
     return Container(
-      height: 40,
+      height: 44,
       decoration: BoxDecoration(
-        color: AppColors.fieldBg,
+        color: const Color(0xFF1E1E28),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2A36)),
       ),
       child: Row(
         children: [
@@ -278,14 +284,20 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
               textAlign: TextAlign.center,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: Colors.white,
               ),
+              cursorColor: AppColors.primary,
               decoration: const InputDecoration(
                 isDense: true,
                 filled: false,
                 hintText: '0',
+                hintStyle: TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                ),
                 contentPadding: EdgeInsets.zero,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -320,6 +332,108 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   }
 }
 
+class _OrangeSaveButton extends StatelessWidget {
+  const _OrangeSaveButton({
+    required this.label,
+    required this.enabled,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool enabled;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = enabled && !isLoading && onPressed != null;
+    final orange = AppColors.primary;
+    final color = active ? orange : orange.withValues(alpha: 0.45);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: active
+            ? () {
+                HapticFeedback.lightImpact();
+                onPressed!();
+              }
+            : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 88,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color, width: 1.5),
+          ),
+          child: isLoading
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: color,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.fg,
+    required this.bg,
+    this.icon,
+  });
+
+  final String label;
+  final Color fg;
+  final Color bg;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(icon == null ? 9 : 7, 4, 9, 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: fg),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StepButton extends StatelessWidget {
   const _StepButton({required this.icon, required this.onTap});
 
@@ -328,16 +442,13 @@ class _StepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 38,
-          height: 40,
-          child: Icon(icon, size: 18, color: AppColors.primaryDark),
-        ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: SizedBox(
+        width: 42,
+        height: 44,
+        child: Icon(icon, size: 20, color: AppColors.primary),
       ),
     );
   }
@@ -353,19 +464,19 @@ class _RowMenuButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       padding: EdgeInsets.zero,
-      splashRadius: 18,
+      color: const Color(0xFF1C1C24),
       offset: const Offset(0, 34),
       icon: const Icon(
         Icons.more_vert_rounded,
-        size: 20,
-        color: AppColors.textMuted,
+        size: 22,
+        color: Color(0xFFA1A1AA),
       ),
       onSelected: (value) {
         HapticFeedback.selectionClick();
         if (value == 'damage') onDamage();
         if (value == 'comment') onComment();
       },
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => [
         PopupMenuItem(
           value: 'damage',
           height: 46,
@@ -377,7 +488,10 @@ class _RowMenuButton extends StatelessWidget {
                 color: AppColors.warning,
               ),
               SizedBox(width: 10),
-              Text('Update Damage Qty'),
+              Text(
+                'Update Damage Qty',
+                style: TextStyle(color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -392,7 +506,7 @@ class _RowMenuButton extends StatelessWidget {
                 color: AppColors.primary,
               ),
               SizedBox(width: 10),
-              Text('Comment'),
+              Text('Comment', style: TextStyle(color: Colors.white)),
             ],
           ),
         ),
@@ -409,11 +523,11 @@ class _ProductThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 46,
-      height: 46,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
-        color: AppColors.fieldBg,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
       child: imageUrl != null && imageUrl!.isNotEmpty
@@ -434,11 +548,14 @@ class _FallbackImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: 20,
-        color: AppColors.textMuted,
+    return const ColoredBox(
+      color: Color(0xFFF4F4F5),
+      child: Center(
+        child: Icon(
+          Icons.inventory_2_outlined,
+          size: 22,
+          color: Color(0xFF71717A),
+        ),
       ),
     );
   }

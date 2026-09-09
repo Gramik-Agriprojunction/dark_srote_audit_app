@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 import '../../data/models/order_model.dart';
 import 'order_status_helper.dart';
 
-const kDetailScreenBg = Color(0xFFF1F5F9);
+Color get kDetailScreenBg => AppColors.background;
 const kCustomerAccent = Color(0xFF3B82F6);
 const kItemsAccent = Color(0xFFF59E0B);
 
@@ -225,9 +227,9 @@ List<OrderOtpEntry> collectOrderOtps(OrderDetailModel order) {
     );
   }
   return (
-    bg: const Color(0xFFF1F5F9),
-    border: const Color(0xFFE2E8F0),
-    text: const Color(0xFF475569),
+    bg: AppColors.background,
+    border: AppColors.border,
+    text: AppColors.textSecondary,
   );
 }
 

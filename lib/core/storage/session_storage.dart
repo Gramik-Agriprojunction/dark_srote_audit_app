@@ -19,6 +19,7 @@ class SessionStorage {
   static const _storeIdKey = 'gramik_mobile_store_id';
   static const _storeLabelKey = 'gramik_mobile_store_label';
   static const _lastActivityKey = 'gramik_last_activity_ms';
+  static const _themeModeKey = 'app_theme_mode';
 
   Future<String?> getAccessToken() async => _prefs.getString(_tokenKey);
 
@@ -85,5 +86,11 @@ class SessionStorage {
     final ms = _prefs.getInt(_lastActivityKey);
     if (ms == null) return null;
     return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  String? getThemeMode() => _prefs.getString(_themeModeKey);
+
+  Future<void> saveThemeMode(String mode) async {
+    await _prefs.setString(_themeModeKey, mode);
   }
 }

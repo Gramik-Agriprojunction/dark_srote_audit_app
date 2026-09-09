@@ -304,7 +304,7 @@ class _ProductCard extends StatelessWidget {
                     children: [
                       Text(
                         row.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           height: 1.25,
@@ -315,7 +315,7 @@ class _ProductCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           row.variantLabel!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                             color: ModuleTokens.mutedText,
@@ -389,7 +389,7 @@ class _ProductCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.chat_bubble_outline_rounded,
                     size: 12,
                     color: ModuleTokens.faintText,
@@ -398,7 +398,7 @@ class _ProductCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       comment,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         height: 1.3,
                         color: ModuleTokens.mutedText,
@@ -412,7 +412,7 @@ class _ProductCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.storefront_outlined,
                     size: 12,
                     color: ModuleTokens.faintText,
@@ -423,7 +423,7 @@ class _ProductCard extends StatelessWidget {
                       row.storeName!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                         color: ModuleTokens.faintText,
@@ -462,7 +462,7 @@ class _MetricStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AppColors.fieldBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: ModuleTokens.cardBorder),
       ),
@@ -483,7 +483,7 @@ class _MetricStrip extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,

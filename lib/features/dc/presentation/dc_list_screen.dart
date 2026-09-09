@@ -289,7 +289,7 @@ class _TransferCard extends StatelessWidget {
                         transfer.reference.isNotEmpty
                             ? transfer.reference
                             : 'Transfer #${transfer.transferId}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: ModuleTokens.strongText,
@@ -301,7 +301,7 @@ class _TransferCard extends StatelessWidget {
                           'From: ${transfer.from!.warehouse}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             color: ModuleTokens.mutedText,
                           ),
@@ -320,7 +320,7 @@ class _TransferCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: ModuleTokens.cardBorder),
               ),
@@ -381,7 +381,7 @@ class _QtyCell extends StatelessWidget {
         Text(
           label.toUpperCase(),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.3,

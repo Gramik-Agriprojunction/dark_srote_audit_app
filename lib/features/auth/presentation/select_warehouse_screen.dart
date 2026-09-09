@@ -102,7 +102,7 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
         statusBarColor: AppColors.primary,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF0F5FA),
+        backgroundColor: AppColors.background,
         body: Column(
           children: [
             Container(
@@ -146,7 +146,7 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     'Dashboard dekhne se pehle warehouse choose karein.',
                     style: TextStyle(
@@ -159,7 +159,7 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
             ),
             Expanded(
               child: _loading
-                  ? const Center(
+                  ? Center(
                       child: CircularProgressIndicator(color: AppColors.primary),
                     )
                   : ListView(
@@ -206,12 +206,12 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                               ),
                             ),
                             child: _saving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: AppColors.cardBg,
                                     ),
                                   )
                                 : const Text(

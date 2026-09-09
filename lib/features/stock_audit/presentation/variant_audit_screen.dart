@@ -260,7 +260,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.history_rounded,
                               size: 13,
                               color: AppColors.textMuted,
@@ -271,7 +271,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                                 DateFormatter.formatAuditDetailUpdatedAt(
                                   detail.auditUpdatedAt,
                                 ),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textMuted,
@@ -309,13 +309,13 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: -0.5,
                                   color: AppColors.textPrimary,
                                 ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   hintText: '0',
                                   filled: false,
                                   border: InputBorder.none,
@@ -410,7 +410,7 @@ class _StatCell extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 9.5,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
@@ -464,7 +464,7 @@ class _Fallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Icon(
         Icons.inventory_2_outlined,
         size: 24,

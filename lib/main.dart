@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/constants/app_colors.dart';
 import 'core/storage/session_storage.dart';
 
 Future<void> main() async {
@@ -14,11 +15,13 @@ Future<void> main() async {
   FlutterNativeSplash.preserve(widgetsBinding: binding);
 
   final prefs = await SharedPreferences.getInstance();
+  final storage = SessionStorage(prefs);
+  AppColors.apply(AppThemeMode.fromStorage(storage.getThemeMode()));
 
   runApp(
     ProviderScope(
       overrides: [
-        sessionStorageProvider.overrideWithValue(SessionStorage(prefs)),
+        sessionStorageProvider.overrideWithValue(storage),
       ],
       child: const StockShieldApp(),
     ),

@@ -66,7 +66,7 @@ class FieldLabel extends StatelessWidget {
         ],
         Text(
           text.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.9,
@@ -102,7 +102,7 @@ class SectionHeading extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.3,
@@ -113,7 +113,7 @@ class SectionHeading extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     height: 1.35,
                     color: AppColors.textSecondary,
@@ -123,7 +123,7 @@ class SectionHeading extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[const SizedBox(width: 10), trailing!],
+        if (trailing != null) ...[SizedBox(width: 10), trailing!],
       ],
     );
   }
@@ -134,31 +134,32 @@ class AppChip extends StatelessWidget {
   const AppChip({
     super.key,
     required this.label,
-    this.color = AppColors.textSecondary,
+    this.color,
     this.background,
     this.icon,
     this.bold = true,
   });
 
   final String label;
-  final Color color;
+  final Color? color;
   final Color? background;
   final IconData? icon;
   final bool bold;
 
   @override
   Widget build(BuildContext context) {
+    final tone = color ?? AppColors.textSecondary;
     return Container(
       padding: EdgeInsets.fromLTRB(icon == null ? 9 : 7, 4, 9, 4),
       decoration: BoxDecoration(
-        color: background ?? color.withValues(alpha: 0.10),
+        color: background ?? tone.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: color),
+            Icon(icon, size: 12, color: tone),
             const SizedBox(width: 4),
           ],
           Text(
@@ -167,7 +168,7 @@ class AppChip extends StatelessWidget {
               fontSize: 11.5,
               height: 1.2,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: color,
+              color: tone,
             ),
           ),
         ],
@@ -212,14 +213,14 @@ class _AppSearchFieldState extends State<AppSearchField> {
     return TextField(
       controller: _controller,
       textInputAction: TextInputAction.search,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14.5,
         fontWeight: FontWeight.w500,
         color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         hintText: widget.hintText,
-        prefixIcon: const Icon(
+        prefixIcon: Icon(
           Icons.search_rounded,
           size: 20,
           color: AppColors.textMuted,
@@ -341,7 +342,7 @@ class AppSelectTile extends StatelessWidget {
                         subtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
                           height: 1.35,
                           fontWeight: FontWeight.w500,
@@ -352,7 +353,7 @@ class AppSelectTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Icon(
+              Icon(
                 Icons.unfold_more_rounded,
                 size: 20,
                 color: AppColors.textMuted,
@@ -397,7 +398,7 @@ class AppEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
@@ -408,7 +409,7 @@ class AppEmptyState extends StatelessWidget {
             Text(
               message!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.4,
                 color: AppColors.textSecondary,
@@ -515,7 +516,7 @@ class StickyActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -553,7 +554,7 @@ class AppSheet extends StatelessWidget {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * maxHeightFactor,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -580,7 +581,7 @@ class AppSheet extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.3,
@@ -591,7 +592,7 @@ class AppSheet extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             subtitle!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               height: 1.35,
                               color: AppColors.textSecondary,
@@ -646,7 +647,7 @@ class AppSnackBar {
                 isError
                     ? Icons.error_outline_rounded
                     : Icons.check_circle_rounded,
-                color: Colors.white,
+                color: AppColors.cardBg,
                 size: 20,
               ),
               const SizedBox(width: 10),

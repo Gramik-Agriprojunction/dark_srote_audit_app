@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Gramik Darkstore theme — aligned with RN `theme.js` + `Login.js`.
+import '../../../../core/constants/app_colors.dart';
+
+/// Gramik Darkstore auth + brand typography.
 class AuthTheme {
   AuthTheme._();
 
-  static const primary = Color(0xFFEC5800);
-  static const primaryDark = Color(0xFFD04E00);
-  static const screenBg = Color(0xFFF0F5FA);
-  static const ink = Color(0xFF1A1A1A);
-  static const muted = Color(0xFF999999);
-  static const mutedLight = Color(0xFF888888);
-  static const line = Color(0xFFECECEC);
-  static const lineSoft = Color(0xFFD7DEE7);
-  static const inputBg = Color(0xFFF7F7F8);
-  static const cardBorder = Color(0xFFD7DEE7);
+  static Color get primary => AppColors.primary;
+  static Color get primaryDark => AppColors.primaryDark;
+  static Color get screenBg => AppColors.background;
+  static Color get ink => AppColors.textPrimary;
+  static Color get muted => AppColors.textMuted;
+  static Color get mutedLight => AppColors.textSecondary;
+  static Color get line => AppColors.border;
+  static Color get lineSoft => AppColors.borderInput;
+  static Color get inputBg => AppColors.fieldBg;
+  static Color get cardBorder => AppColors.border;
 
   static TextStyle title([Color? c]) => GoogleFonts.inter(
         fontSize: 20,
@@ -27,19 +29,22 @@ class AuthTheme {
         fontSize: 24,
         height: 1.2,
         fontWeight: FontWeight.w700,
-        color: c ?? Colors.white,
+        color: c ?? (AppColors.isDark ? Colors.white : AppColors.textPrimary),
       );
 
   static TextStyle brandName([Color? c]) => GoogleFonts.inter(
         fontSize: 22,
         fontWeight: FontWeight.w400,
-        color: c ?? Colors.white.withValues(alpha: 0.8),
+        color: c ?? Colors.white.withValues(alpha: 0.9),
       );
 
   static TextStyle brandNameBold([Color? c]) => GoogleFonts.inter(
         fontSize: 22,
         fontWeight: FontWeight.w800,
-        color: c ?? Colors.white,
+        color: c ??
+            (AppColors.isDark
+                ? AppColors.primary
+                : Colors.white.withValues(alpha: 0.95)),
       );
 
   static TextStyle body([Color? c]) =>

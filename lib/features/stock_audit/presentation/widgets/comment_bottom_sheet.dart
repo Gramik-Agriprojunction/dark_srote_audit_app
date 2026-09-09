@@ -127,7 +127,7 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline_rounded,
                     size: 15,
                     color: AppColors.errorText,
@@ -136,7 +136,7 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
                   Expanded(
                     child: Text(
                       _error!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.errorText,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,

@@ -79,17 +79,26 @@ class TransactionReportModel {
   factory TransactionReportModel.fromJson(Map<String, dynamic> json) {
     final summaryRaw = json['summary'];
     final productsRaw = json['products'];
+    final products = productsRaw is List
+        ? productsRaw
+              .whereType<Map<String, dynamic>>()
+              // Combo parents are expanded into children on the API; skip if any slip through.
+              .where((row) {
+                final type = (row['productType'] ?? row['type'] ?? '')
+                    .toString()
+                    .trim()
+                    .toUpperCase();
+                return type != 'COMBO';
+              })
+              .map(TransactionProductRow.fromJson)
+              .toList()
+        : const <TransactionProductRow>[];
     return TransactionReportModel(
       date: (json['date'] ?? '').toString(),
       summary: summaryRaw is Map<String, dynamic>
           ? TransactionSummary.fromJson(summaryRaw)
           : const TransactionSummary(pickupOrders: 0, rtoDeliveredOrders: 0),
-      products: productsRaw is List
-          ? productsRaw
-                .whereType<Map<String, dynamic>>()
-                .map(TransactionProductRow.fromJson)
-                .toList()
-          : const [],
+      products: products,
     );
   }
 }

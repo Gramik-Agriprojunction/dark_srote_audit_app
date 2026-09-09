@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/app_brand_header.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
 import 'providers/auth_provider.dart';
@@ -192,10 +191,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AuthTheme.primary,
+        statusBarColor: AuthTheme.screenBg,
       ),
       child: Scaffold(
-        backgroundColor: _otpStep ? AuthTheme.primary : AuthTheme.screenBg,
+        backgroundColor: AuthTheme.screenBg,
         body: _otpStep
             ? _OtpView(
                 mobile: _mobile,
@@ -239,141 +238,350 @@ class _LoginView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final dark = AppColors.isDark;
 
-    return SingleChildScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            color: AuthTheme.primary,
-            padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
-            child: const AppBrandMark(size: AppBrandMarkSize.hero),
-          ),
-          Transform.translate(
-            offset: const Offset(0, -28),
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-              padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AuthTheme.cardBorder, width: 0.5),
-                boxShadow: AppColors.cardShadow,
+    if (!dark) {
+      return ColoredBox(
+        color: AppColors.background,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                color: AppColors.primary,
+                padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
+                child: const _LoginBrandHeader(onOrange: true),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Apna Number Daalo', style: AuthTheme.title()),
-                  const SizedBox(height: 4),
-                  Text(
-                    AppConfig.skipSmsOtp
-                        ? 'Testing mode — master OTP se login karein'
-                        : 'Number daalo, hum OTP bhej denge turant',
-                    style: AuthTheme.bodySm(),
+              Transform.translate(
+                offset: const Offset(0, -28),
+                child: _LoginFormCard(
+                  controller: controller,
+                  loading: loading,
+                  error: error,
+                  enabled: enabled,
+                  onSend: onSend,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 20),
+                child: RichText(
+                  text: TextSpan(
+                    style: AuthTheme.caption(AppColors.textMuted),
+                    children: [
+                      const TextSpan(text: 'Powered by '),
+                      TextSpan(
+                        text: 'Gramik',
+                        style: AuthTheme.caption(AppColors.textPrimary)
+                            .copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AuthTheme.inputBg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AuthTheme.line),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        const Positioned.fill(child: _LoginAmbientGlow()),
+        SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(20, top + 36, 20, bottom + 20),
+          child: Column(
+            children: [
+              const _LoginBrandHeader(),
+              const SizedBox(height: 36),
+              _LoginFormCard(
+                controller: controller,
+                loading: loading,
+                error: error,
+                enabled: enabled,
+                onSend: onSend,
+              ),
+              const SizedBox(height: 28),
+              RichText(
+                text: TextSpan(
+                  style: AuthTheme.caption(AppColors.textMuted),
+                  children: [
+                    const TextSpan(text: 'Powered by '),
+                    TextSpan(
+                      text: 'Gramik',
+                      style: AuthTheme.caption(AppColors.textPrimary)
+                          .copyWith(fontWeight: FontWeight.w700),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Row(
-                            children: [
-                              const Text('🇮🇳', style: TextStyle(fontSize: 18)),
-                              const SizedBox(width: 5),
-                              Text(
-                                '+91',
-                                style: AuthTheme.label(
-                                  const Color(0xFF555555),
-                                ).copyWith(fontSize: 14, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 24,
-                          color: const Color(0xFFDDDDDD),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: controller,
-                            keyboardType: TextInputType.phone,
-                            style: AuthTheme.label().copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              hintText: 'Mobile Number',
-                              hintStyle: AuthTheme.bodySm(
-                                const Color(0xFFBBBBBB),
-                              ).copyWith(fontSize: 16),
-                            ),
-                            onSubmitted: (_) {
-                              if (enabled) onSend();
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 12),
-                    _ErrorText(message: error!),
                   ],
-                  const SizedBox(height: 18),
-                  _PrimaryButton(
-                    label: AppConfig.skipSmsOtp ? 'Aage Badho  →' : 'OTP Bhejo  →',
-                    loading: loading,
-                    enabled: enabled,
-                    onPressed: onSend,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoginFormCard extends StatelessWidget {
+  const _LoginFormCard({
+    required this.controller,
+    required this.loading,
+    required this.error,
+    required this.enabled,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final bool loading;
+  final String? error;
+  final bool enabled;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AuthTheme.cardBorder),
+        boxShadow: AppColors.isDark ? null : AppColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Apna Number Daalo', style: AuthTheme.title()),
+          const SizedBox(height: 4),
+          Text(
+            AppConfig.skipSmsOtp
+                ? 'Testing mode — master OTP se login karein'
+                : 'Number daalo, hum OTP bhej denge turant',
+            style: AuthTheme.bodySm(AppColors.textMuted),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.isDark ? AuthTheme.inputBg : const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.isDark ? AuthTheme.lineSoft : AppColors.primary,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Row(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      const Text('🇮🇳', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 5),
+                      Text(
+                        '+91',
+                        style: AuthTheme.label(
+                          AppColors.isDark
+                              ? AppColors.textSecondary
+                              : const Color(0xFFCCCCCC),
+                        ).copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 28),
-                  _FeatureDot(text: 'Stock audit karo real-time'),
-                  const SizedBox(height: 10),
-                  _FeatureDot(text: 'Inventory variance track karo'),
-                  const SizedBox(height: 10),
-                  _FeatureDot(text: 'Pickup & RTO transactions dekho'),
-                ],
+                ),
+                Container(
+                  width: 1,
+                  height: 24,
+                  color: AppColors.isDark
+                      ? AuthTheme.line
+                      : const Color(0xFF555555),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.phone,
+                    cursorColor: AuthTheme.primary,
+                    style: AuthTheme.label(
+                      AppColors.isDark
+                          ? AppColors.textPrimary
+                          : Colors.white,
+                    ).copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                      hintText: 'Mobile Number',
+                      hintStyle: AuthTheme.bodySm(
+                        AppColors.isDark
+                            ? AppColors.textMuted
+                            : const Color(0xFF888888),
+                      ).copyWith(fontSize: 16),
+                    ),
+                    onSubmitted: (_) {
+                      if (enabled) onSend();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (error != null) ...[
+            const SizedBox(height: 12),
+            _ErrorText(message: error!),
+          ],
+          const SizedBox(height: 18),
+          _PrimaryButton(
+            label: AppConfig.skipSmsOtp ? 'Aage Badho  →' : 'OTP Bhejo  →',
+            loading: loading,
+            enabled: enabled,
+            onPressed: onSend,
+          ),
+          const SizedBox(height: 28),
+          const _FeatureDot(text: 'Stock audit karo real-time'),
+          const SizedBox(height: 10),
+          const _FeatureDot(text: 'Inventory variance track karo'),
+          const SizedBox(height: 10),
+          const _FeatureDot(text: 'Pickup & RTO transactions dekho'),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoginAmbientGlow extends StatelessWidget {
+  const _LoginAmbientGlow();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -80,
+            left: -60,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AuthTheme.primary.withValues(alpha: 0.22),
+                    AuthTheme.primary.withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: RichText(
-              text: TextSpan(
-                style: AuthTheme.caption(const Color(0xFFCCCCCC)),
-                children: [
-                  const TextSpan(text: 'Powered by '),
-                  TextSpan(
-                    text: 'Gramik',
-                    style: AuthTheme.caption(
-                      const Color(0xFFBBBBBB),
-                    ).copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ],
+          Positioned(
+            bottom: -40,
+            right: -50,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AuthTheme.primary.withValues(alpha: 0.16),
+                    AuthTheme.primary.withValues(alpha: 0.0),
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _LoginBrandHeader extends StatelessWidget {
+  const _LoginBrandHeader({this.onOrange = false});
+
+  final bool onOrange;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = onOrange || AppColors.isDark
+        ? Colors.white
+        : AppColors.textPrimary;
+    final subtitleColor = onOrange
+        ? Colors.white.withValues(alpha: 0.75)
+        : AppColors.textSecondary;
+
+    return Column(
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            color: onOrange ? Colors.white.withValues(alpha: 0.18) : null,
+            gradient: onOrange
+                ? null
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFF06A1A),
+                      Color(0xFFEC5800),
+                      Color(0xFFD04E00),
+                    ],
+                  ),
+            boxShadow: onOrange
+                ? null
+                : [
+                    BoxShadow(
+                      color: AuthTheme.primary.withValues(alpha: 0.35),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+          ),
+          alignment: Alignment.center,
+          child: ColorFiltered(
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+            child: Image.asset(
+              AppAssets.shopIcon,
+              width: 34,
+              height: 34,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Gramik',
+          style: AuthTheme.brandNameBold(titleColor).copyWith(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Stock Audit • Dark Store',
+          style: AuthTheme.caption(subtitleColor).copyWith(fontSize: 13),
+        ),
+      ],
     );
   }
 }
@@ -407,173 +615,157 @@ class _OtpView extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(24, top + 12, 24, 32),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Material(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: loading ? null : onBack,
-                customBorder: const CircleBorder(),
-                child: const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Center(
-                    child: Text(
-                      '←',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+    return Stack(
+      children: [
+        const Positioned.fill(child: _LoginAmbientGlow()),
+        SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(24, top + 12, 24, 32),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Material(
+                  color: AppColors.fieldBg,
+                  shape: CircleBorder(
+                    side: BorderSide(color: AppColors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: loading ? null : onBack,
+                    customBorder: const CircleBorder(),
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Center(
+                        child: Icon(
+                          Icons.arrow_back_rounded,
+                          size: 20,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: ColorFiltered(
-              colorFilter: const ColorFilter.mode(
-                AuthTheme.primary,
-                BlendMode.srcIn,
-              ),
-              child: Image.asset(
-                AppAssets.shopIcon,
-                width: 40,
-                height: 40,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('OTP Daalo', style: AuthTheme.otpTitle()),
-          const SizedBox(height: 6),
-          Text(
-            AppConfig.skipSmsOtp
-                ? 'Testing mode — SMS nahi bheja gaya'
-                : 'Tumhare number pe OTP bheja hai',
-            style: AuthTheme.bodySm(
-              Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          if (AppConfig.skipSmsOtp) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Master OTP enter karke login karein',
-              style: AuthTheme.caption(
-                Colors.white.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              '+91 $mobile',
-              style: AuthTheme.label(Colors.white).copyWith(
-                fontSize: 15,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          OtpPinInput(
-            controller: controller,
-            length: AppConfig.otpLength,
-            enabled: !loading,
-            inverted: true,
-            onCompleted: (_) => onVerify(),
-          ),
-          const SizedBox(height: 28),
-          if (!AppConfig.skipSmsOtp)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'OTP nahi aaya? ',
-                  style: AuthTheme.bodySm(
-                    Colors.white.withValues(alpha: 0.6),
+              SizedBox(height: 28),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFFF06A1A),
+                      AuthTheme.primary,
+                      AuthTheme.primaryDark,
+                    ],
                   ),
                 ),
-                GestureDetector(
-                  onTap: resendSeconds == 0 && !loading ? onResend : null,
-                  child: Text(
-                    loading && resendSeconds == 0
-                        ? 'Bhej rahe hai...'
-                        : resendSeconds == 0
-                            ? 'Dubara Bhejo'
-                            : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
-                    style: AuthTheme.bodySm(Colors.white).copyWith(
-                      fontWeight: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                    ),
+                alignment: Alignment.center,
+                child: ColorFiltered(
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
                   ),
+                  child: Image.asset(
+                    AppAssets.shopIcon,
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('OTP Daalo', style: AuthTheme.title(AppColors.textPrimary)),
+              const SizedBox(height: 6),
+              Text(
+                AppConfig.skipSmsOtp
+                    ? 'Testing mode — SMS nahi bheja gaya'
+                    : 'Tumhare number pe OTP bheja hai',
+                style: AuthTheme.bodySm(AppColors.textSecondary),
+              ),
+              if (AppConfig.skipSmsOtp) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Master OTP enter karke login karein',
+                  style: AuthTheme.caption(AppColors.textMuted),
                 ),
               ],
-            ),
-          if (!AppConfig.skipSmsOtp && expireSeconds > 0) ...[
-            const SizedBox(height: 10),
-            Text(
-              'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
-              style: AuthTheme.caption(
-                Colors.white.withValues(alpha: 0.55),
-              ),
-            ),
-          ],
-          if (error != null) ...[
-            const SizedBox(height: 12),
-            _ErrorText(message: error!, onPrimary: true),
-          ],
-          const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: canVerify ? onVerify : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
-                foregroundColor: AuthTheme.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.fieldBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '+91 $mobile',
+                  style: AuthTheme.label(AppColors.textPrimary).copyWith(
+                    fontSize: 15,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-              child: loading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: AuthTheme.primary,
-                      ),
-                    )
-                  : Text(
-                      'Verify Karo',
-                      style: AuthTheme.button(AuthTheme.primary),
+              const SizedBox(height: 28),
+              OtpPinInput(
+                controller: controller,
+                length: AppConfig.otpLength,
+                enabled: !loading,
+                inverted: false,
+                onCompleted: (_) => onVerify(),
+              ),
+              const SizedBox(height: 28),
+              if (!AppConfig.skipSmsOtp)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'OTP nahi aaya? ',
+                      style: AuthTheme.bodySm(AppColors.textMuted),
                     ),
-            ),
+                    GestureDetector(
+                      onTap: resendSeconds == 0 && !loading ? onResend : null,
+                      child: Text(
+                        loading && resendSeconds == 0
+                            ? 'Bhej rahe hai...'
+                            : resendSeconds == 0
+                                ? 'Dubara Bhejo'
+                                : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
+                        style: AuthTheme.bodySm(AuthTheme.primary).copyWith(
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AuthTheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              if (!AppConfig.skipSmsOtp && expireSeconds > 0) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
+                  style: AuthTheme.caption(AppColors.textMuted),
+                ),
+              ],
+              if (error != null) ...[
+                const SizedBox(height: 12),
+                _ErrorText(message: error!),
+              ],
+              const SizedBox(height: 28),
+              _PrimaryButton(
+                label: 'Verify Karo',
+                loading: loading,
+                enabled: canVerify,
+                onPressed: onVerify,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -593,31 +785,50 @@ class _PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final active = enabled && !loading;
     return SizedBox(
       width: double.infinity,
       height: 50,
-      child: ElevatedButton(
-        onPressed: enabled && !loading ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AuthTheme.primary,
-          disabledBackgroundColor: AuthTheme.primary.withValues(alpha: 0.4),
-          foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white70,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            colors: active
+                ? [
+                    Color(0xFFF06A1A),
+                    AuthTheme.primary,
+                    AuthTheme.primaryDark,
+                  ]
+                : [
+                    AuthTheme.primary.withValues(alpha: 0.35),
+                    AuthTheme.primaryDark.withValues(alpha: 0.35),
+                  ],
           ),
         ),
-        child: loading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Colors.white,
-                ),
-              )
-            : Text(label, style: AuthTheme.button()),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: active ? onPressed : null,
+            borderRadius: BorderRadius.circular(14),
+            child: Center(
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: AuthTheme.button().copyWith(
+                        color: Colors.white.withValues(alpha: active ? 1 : 0.7),
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -635,23 +846,22 @@ class _FeatureDot extends StatelessWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AuthTheme.primary,
             shape: BoxShape.circle,
           ),
         ),
         const SizedBox(width: 10),
-        Text(text, style: AuthTheme.bodySm(const Color(0xFF888888))),
+        Text(text, style: AuthTheme.bodySm(AppColors.textSecondary)),
       ],
     );
   }
 }
 
 class _ErrorText extends StatelessWidget {
-  const _ErrorText({required this.message, this.onPrimary = false});
+  const _ErrorText({required this.message});
 
   final String message;
-  final bool onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -659,21 +869,13 @@ class _ErrorText extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: onPrimary
-            ? Colors.white.withValues(alpha: 0.15)
-            : const Color(0xFFFFEBEE),
+        color: AppColors.errorBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: onPrimary
-              ? Colors.white.withValues(alpha: 0.25)
-              : const Color(0xFFFFCDD2),
-        ),
+        border: Border.all(color: AppColors.errorBorder),
       ),
       child: Text(
         message,
-        style: AuthTheme.caption(
-          onPrimary ? Colors.white : const Color(0xFFC62828),
-        ),
+        style: AuthTheme.caption(AppColors.errorText),
       ),
     );
   }

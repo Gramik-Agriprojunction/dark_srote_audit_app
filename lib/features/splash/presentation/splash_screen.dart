@@ -187,13 +187,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                       child: Container(
                                         width: 110,
                                         height: 110,
-                                        decoration: const BoxDecoration(
+                                        decoration: BoxDecoration(
                                           color: Colors.white,
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
                                         child: ColorFiltered(
-                                          colorFilter: const ColorFilter.mode(
+                                          colorFilter: ColorFilter.mode(
                                             AppColors.primary,
                                             BlendMode.srcIn,
                                           ),

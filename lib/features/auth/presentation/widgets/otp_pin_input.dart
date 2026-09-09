@@ -103,7 +103,7 @@ class _OtpPinInputState extends State<OtpPinInput> {
                     : Colors.white.withValues(alpha: 0.2);
                 digitColor = AuthTheme.ink;
               } else {
-                bg = Colors.white;
+                bg = AuthTheme.inputBg;
                 border = focused ? AuthTheme.primary : AuthTheme.line;
                 digitColor = AuthTheme.ink;
               }

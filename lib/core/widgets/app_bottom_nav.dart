@@ -24,15 +24,9 @@ class AppBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x14101B12),
-            blurRadius: 24,
-            offset: Offset(0, -6),
-          ),
-        ],
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
@@ -101,7 +95,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : const Color(0xFF94A3B8);
+    final color = isActive ? AppColors.primary : AppColors.textMuted;
     return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -59,10 +60,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AppColors.primary,
+        statusBarColor: AppColors.headerBg,
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF0F5FA),
+        backgroundColor: AppColors.background,
         body: Column(
           children: [
             _ProfileHeader(
@@ -77,8 +78,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: state.isLoading && state.profile == null
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 120),
+                        children: [
+                          const SizedBox(height: 120),
                           Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary,
@@ -97,8 +98,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
                               child: Text(
                                 state.error!,
-                                style: const TextStyle(
-                                  color: Color(0xFFDC2626),
+                                style: TextStyle(
+                                  color: AppColors.errorText,
                                   fontSize: 12,
                                 ),
                               ),
@@ -116,12 +117,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             cancelled: p.cancelled,
                           ),
                           const SizedBox(height: 14),
+                          const _SectionLabel('Appearance'),
+                          _ThemeModeCard(
+                            mode: ref.watch(appThemeModeProvider),
+                            onChanged: (mode) => ref
+                                .read(appThemeModeProvider.notifier)
+                                .setMode(mode),
+                          ),
+                          const SizedBox(height: 14),
                           const _SectionLabel('Menu'),
                           _WhiteCard(
                             children: [
                               _InfoRow(
                                 icon: Icons.dashboard_rounded,
-                                iconBg: const Color(0xFFFFF5F0),
+                                iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,
                                 label: 'Dashboard',
                                 value: '',
@@ -130,7 +139,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.inventory_2_rounded,
-                                iconBg: const Color(0xFFFFF5F0),
+                                iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,
                                 label: 'Stock',
                                 value: '',
@@ -139,8 +148,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.receipt_long_rounded,
-                                iconBg: const Color(0xFFEFF6FF),
-                                iconColor: Color(0xFF2563EB),
+                                iconBg: AppColors.softBlue,
+                                iconColor: const Color(0xFF2563EB),
                                 label: 'Orders',
                                 value: '',
                                 onTap: () => context.go('/orders'),
@@ -148,8 +157,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.swap_horiz_rounded,
-                                iconBg: const Color(0xFFF5F3FF),
-                                iconColor: Color(0xFF7C3AED),
+                                iconBg: AppColors.softPurple,
+                                iconColor: const Color(0xFF7C3AED),
                                 label: 'Transaction',
                                 value: '',
                                 onTap: () => context.go('/transactions'),
@@ -157,8 +166,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.fact_check_rounded,
-                                iconBg: const Color(0xFFFFF7ED),
-                                iconColor: Color(0xFFEA580C),
+                                iconBg: AppColors.softOrange,
+                                iconColor: AppColors.primary,
                                 label: 'Audit',
                                 value: '',
                                 onTap: () => context.go('/audit'),
@@ -166,8 +175,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.compare_arrows_rounded,
-                                iconBg: const Color(0xFFECFDF5),
-                                iconColor: Color(0xFF059669),
+                                iconBg: AppColors.softGreen,
+                                iconColor: AppColors.successText,
                                 label: 'Variance',
                                 value: '',
                                 onTap: () => context.go('/variance'),
@@ -175,8 +184,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.local_shipping_rounded,
-                                iconBg: const Color(0xFFEFF6FF),
-                                iconColor: Color(0xFF0284C7),
+                                iconBg: AppColors.softBlue,
+                                iconColor: const Color(0xFF0284C7),
                                 label: 'DC',
                                 value: '',
                                 onTap: () => context.go('/dc'),
@@ -185,8 +194,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 const _RowDivider(),
                                 _InfoRow(
                                   icon: Icons.store_mall_directory_rounded,
-                                  iconBg: const Color(0xFFFFF7ED),
-                                  iconColor: Color(0xFFEA580C),
+                                  iconBg: AppColors.softOrange,
+                                  iconColor: AppColors.primary,
                                   label: 'Change Warehouse',
                                   value: '',
                                   onTap: () async {
@@ -215,10 +224,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   10,
                   bottom > 0 ? bottom : 12,
                 ),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF0F5FA),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
                   border: Border(
-                    top: BorderSide(color: Color(0xFFE2E6EC)),
+                    top: BorderSide(color: AppColors.border),
                   ),
                 ),
                 child: SizedBox(
@@ -228,12 +237,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onPressed:
                         state.isLoggingOut ? null : _openLogoutSheet,
                     icon: state.isLoggingOut
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: AppColors.cardBg,
                             ),
                           )
                         : const Icon(Icons.logout_rounded, size: 18),
@@ -272,7 +281,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.primary,
+      color: AppColors.headerBg,
       padding: EdgeInsets.fromLTRB(
         14,
         MediaQuery.paddingOf(context).top + 8,
@@ -286,14 +295,16 @@ class _ProfileHeader extends StatelessWidget {
             tooltip: 'Back',
             onTap: onBack,
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Profile',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.isDark
+                    ? AppColors.textPrimary
+                    : Colors.white,
               ),
             ),
           ),
@@ -335,176 +346,155 @@ class _HeroCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
+      child: Column(
         children: [
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFEF5F00).withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Column(
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        width: 2,
-                      ),
-                    ),
-                    child: Text(
-                      name.isEmpty ? 'R' : name[0].toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+              Container(
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  name.isEmpty ? 'R' : name[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            if (retailerId.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                  ),
-                                ),
-                                child: Text(
-                                  retailerId,
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.call,
-                              size: 11,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                phone,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (address.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 11,
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  address,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    height: 1.35,
-                                    color: Colors.white.withValues(alpha: 0.65),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Divider(
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.08),
                 ),
               ),
-              Row(
-                children: [
-                  _HeroStat(value: totalOrders, label: 'Total', color: Colors.white),
-                  _vDiv(),
-                  _HeroStat(
-                    value: delivered,
-                    label: 'Delivered',
-                    color: const Color(0xFF4ADE80),
-                  ),
-                  _vDiv(),
-                  _HeroStat(
-                    value: pending,
-                    label: 'Pending',
-                    color: const Color(0xFFFBBF24),
-                  ),
-                  _vDiv(),
-                  _HeroStat(
-                    value: cancelled,
-                    label: 'Cancelled',
-                    color: const Color(0xFFF87171),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (retailerId.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.fieldBg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Text(
+                              retailerId,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.call,
+                          size: 11,
+                          color: AppColors.textMuted,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            phone,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (address.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 11,
+                            color: AppColors.textMuted,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              address,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                height: 1.35,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: AppColors.border),
+          ),
+          Row(
+            children: [
+              _HeroStat(
+                value: totalOrders,
+                label: 'Total',
+                color: AppColors.textPrimary,
+              ),
+              _vDiv(),
+              _HeroStat(
+                value: delivered,
+                label: 'Delivered',
+                color: AppColors.successText,
+              ),
+              _vDiv(),
+              _HeroStat(
+                value: pending,
+                label: 'Pending',
+                color: AppColors.warning,
+              ),
+              _vDiv(),
+              _HeroStat(
+                value: cancelled,
+                label: 'Cancelled',
+                color: AppColors.errorText,
               ),
             ],
           ),
@@ -516,7 +506,7 @@ class _HeroCard extends StatelessWidget {
   Widget _vDiv() => Container(
         width: 1,
         height: 22,
-        color: Colors.white.withValues(alpha: 0.08),
+        color: AppColors.border,
       );
 }
 
@@ -551,7 +541,7 @@ class _HeroStat extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               letterSpacing: 0.5,
-              color: Colors.white.withValues(alpha: 0.55),
+              color: AppColors.textMuted,
             ),
           ),
         ],
@@ -571,11 +561,123 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 8),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF475569),
+          color: AppColors.textMuted,
           letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeCard extends StatelessWidget {
+  const _ThemeModeCard({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final AppThemeMode mode;
+  final ValueChanged<AppThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Theme',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ThemeChip(
+                  label: 'Default',
+                  icon: Icons.wb_sunny_outlined,
+                  selected: mode == AppThemeMode.light,
+                  onTap: () => onChanged(AppThemeMode.light),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ThemeChip(
+                  label: 'Dark',
+                  icon: Icons.dark_mode_outlined,
+                  selected: mode == AppThemeMode.dark,
+                  onTap: () => onChanged(AppThemeMode.dark),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  const _ThemeChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.primarySoft : AppColors.fieldBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: selected ? AppColors.primary : AppColors.border,
+          width: selected ? 1.4 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? AppColors.primary : AppColors.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -593,9 +695,9 @@ class _WhiteCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(children: children),
     );
@@ -611,10 +713,7 @@ class _RowDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: thin ? 8 : 10),
-      child: Divider(
-        height: 1,
-        color: thin ? const Color(0xFFF4F6FA) : const Color(0xFFEEF1F5),
-      ),
+      child: Divider(height: 1, color: AppColors.border),
     );
   }
 }
@@ -653,25 +752,29 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF334155),
+              color: AppColors.textPrimary,
             ),
           ),
         ),
         if (value.isNotEmpty)
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+              color: AppColors.textPrimary,
             ),
           ),
         if (onTap != null) ...[
           const SizedBox(width: 6),
-          const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF94A3B8)),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 16,
+            color: AppColors.textMuted,
+          ),
         ],
       ],
     );
@@ -687,7 +790,11 @@ class _LogoutConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: AppColors.cardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppColors.border),
+      ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -697,8 +804,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
             Container(
               width: 60,
               height: 60,
-              decoration: const BoxDecoration(
-                color: Color(0xFFFEE2E2),
+              decoration: BoxDecoration(
+                color: AppColors.errorBg,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -707,20 +814,20 @@ class _LogoutConfirmDialog extends StatelessWidget {
                 color: Color(0xFFEF4444),
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10),
+            Text(
               'Logout?',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
+            SizedBox(height: 4),
+            Text(
               'Kya aap logout karna chahte ho?',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 18),
             Row(
@@ -731,8 +838,8 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFF5F5F5),
-                        foregroundColor: const Color(0xFF666666),
+                        backgroundColor: AppColors.fieldBg,
+                        foregroundColor: AppColors.textSecondary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

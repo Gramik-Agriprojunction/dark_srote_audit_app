@@ -32,11 +32,11 @@ class ScrollPaginationFooter extends StatelessWidget {
         : '';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+      padding: EdgeInsets.fromLTRB(10, 14, 10, 10),
       child: Column(
         children: [
           if (isLoadingMore)
-            const CircularProgressIndicator(
+            CircularProgressIndicator(
               color: AppColors.primary,
               strokeWidth: 2.5,
             )
@@ -45,10 +45,10 @@ class ScrollPaginationFooter extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$from-$to of $total$pageLabel',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: AppColors.textSecondary,
             ),
           ),
         ],

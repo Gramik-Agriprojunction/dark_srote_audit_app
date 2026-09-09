@@ -258,7 +258,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Center(
                             child: Text(
                               '$changedCount',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primaryDark,
@@ -266,8 +266,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Expanded(
+                        SizedBox(width: 8),
+                        Expanded(
                           child: Text(
                             'variant pending save',
                             style: TextStyle(
@@ -309,32 +309,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _statsRow(StockAuditState audit, StockAuditController notifier) {
     final filter = audit.auditStatusFilter;
+    final total = audit.totalVariantCount;
+    final audited = audit.auditedVariantCount;
+    final pending = audit.pendingVariantCount;
+    final auditedPct = total > 0 ? audited / total : 0.0;
+    final pendingPct = total > 0 ? pending / total : 0.0;
+
     return ModuleStatsRow(
       stats: [
         ModuleStat(
           icon: Icons.inventory_2_rounded,
           label: 'Total SKU',
-          value: '${audit.totalVariantCount}',
+          value: '$total',
           background: AppColors.primary,
-          labelColor: const Color(0xFFFFE4D2),
+          labelColor: AppColors.textMuted,
+          progress: 1,
           isActive: filter == AuditStatusFilter.all,
           onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.all),
         ),
         ModuleStat(
           icon: Icons.task_alt_rounded,
           label: 'Audited',
-          value: '${audit.auditedVariantCount}',
-          background: const Color(0xFF15803D),
-          labelColor: const Color(0xFFBBF7D0),
+          value: '$audited',
+          background: AppColors.successText,
+          labelColor: AppColors.textMuted,
+          progress: auditedPct,
           isActive: filter == AuditStatusFilter.audited,
           onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.audited),
         ),
         ModuleStat(
           icon: Icons.pending_actions_rounded,
           label: 'Pending',
-          value: '${audit.pendingVariantCount}',
-          background: const Color(0xFFB45309),
-          labelColor: const Color(0xFFFED7AA),
+          value: '$pending',
+          background: AppColors.warning,
+          labelColor: AppColors.textMuted,
+          progress: pendingPct,
           isActive: filter == AuditStatusFilter.pending,
           onTap: () => notifier.setAuditStatusFilter(AuditStatusFilter.pending),
         ),

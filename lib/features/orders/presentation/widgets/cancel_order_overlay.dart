@@ -51,7 +51,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Material(
-        color: const Color(0xFF0F172A),
+        color: AppColors.textPrimary,
         child: SafeArea(
           top: false,
           child: Column(
@@ -112,7 +112,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                           ),
                           Text(
                             '${widget.orderCode} · ${widget.customerName}',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                           ),
                         ],
                       ),
@@ -160,7 +160,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                           if (widget.customerPhone.isNotEmpty)
                             Text(
                               widget.customerPhone,
-                              style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                             ),
                           if (widget.customerAddress.isNotEmpty) ...[
                             const SizedBox(height: 6),
@@ -194,7 +194,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                                             imageUrl: p.thumbnailImg!,
                                             fit: BoxFit.cover,
                                           )
-                                        : const Icon(Icons.inventory_2_outlined, color: Color(0xFF94A3B8)),
+                                        : Icon(Icons.inventory_2_outlined, color: AppColors.textMuted),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
@@ -207,7 +207,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                                   ),
                                   Text(
                                     '×${p.quantity}',
-                                    style: const TextStyle(color: Color(0xFFFDBA74), fontWeight: FontWeight.w700),
+                                    style: TextStyle(color: Color(0xFFFDBA74), fontWeight: FontWeight.w700),
                                   ),
                                 ],
                               ),
@@ -218,7 +218,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                     _DarkCard(
                       title: 'SELECT REASON',
                       child: widget.isLoading
-                          ? const Center(
+                          ? Center(
                               child: Padding(
                                 padding: EdgeInsets.all(16),
                                 child: CircularProgressIndicator(color: AppColors.primary),
@@ -293,9 +293,9 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
               ),
               Container(
                 padding: EdgeInsets.fromLTRB(14, 10, 14, bottom > 0 ? bottom : 10),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(top: BorderSide(color: Color(0x14FFFFFF))),
-                  color: Color(0xFF0F172A),
+                  color: AppColors.textPrimary,
                 ),
                 child: Row(
                   children: [
@@ -382,7 +382,7 @@ class _DarkCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.textPrimary,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
@@ -399,11 +399,11 @@ class _DarkCard extends StatelessWidget {
             ),
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.9,
-                color: Color(0xFFE2E8F0),
+                color: AppColors.border,
               ),
             ),
           ),

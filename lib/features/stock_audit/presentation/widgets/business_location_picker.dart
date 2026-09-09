@@ -88,7 +88,7 @@ class BusinessLocationReadOnly extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.storefront_rounded,
             size: 18,
             color: AppColors.primaryDark,
@@ -100,7 +100,7 @@ class BusinessLocationReadOnly extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
                     height: 1.35,
                     fontWeight: FontWeight.w700,
@@ -110,7 +110,7 @@ class BusinessLocationReadOnly extends StatelessWidget {
                 if ((subtitle ?? '').isNotEmpty)
                   Text(
                     subtitle!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
                       height: 1.35,
                       fontWeight: FontWeight.w500,
@@ -277,7 +277,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
                                         if ((parts.subtitle ?? '').isNotEmpty)
                                           Text(
                                             parts.subtitle!,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11.5,
                                               height: 1.35,
                                               fontWeight: FontWeight.w500,
@@ -288,7 +288,7 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
                                     ),
                                   ),
                                   if (isSelected)
-                                    const Padding(
+                                    Padding(
                                       padding: EdgeInsets.only(left: 8),
                                       child: Icon(
                                         Icons.check_circle_rounded,

@@ -216,10 +216,10 @@ class _DatePill extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_rounded,
                     size: 14,
-                    color: Colors.white,
+                    color: AppColors.cardBg,
                   ),
                   const SizedBox(width: 7),
                   Text(
@@ -231,10 +231,10 @@ class _DatePill extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 16,
-                    color: Colors.white,
+                    color: AppColors.cardBg,
                   ),
                 ],
               ),
@@ -275,7 +275,7 @@ class _TransactionProductCard extends StatelessWidget {
                     children: [
                       Text(
                         row.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           height: 1.25,
@@ -286,7 +286,7 @@ class _TransactionProductCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           row.variantLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                             color: ModuleTokens.mutedText,
@@ -307,7 +307,7 @@ class _TransactionProductCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: ModuleTokens.cardBorder),
               ),
@@ -360,7 +360,7 @@ class _QtyCell extends StatelessWidget {
         Text(
           label.toUpperCase(),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 8,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.3,

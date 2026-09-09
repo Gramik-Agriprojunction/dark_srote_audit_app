@@ -22,7 +22,7 @@ class GramikBrandIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconSize = size - (padding * 2);
     final icon = ColorFiltered(
-      colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+      colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
       child: Image.asset(
         AppAssets.shopIcon,
         width: iconSize,
@@ -65,7 +65,7 @@ class GramikLogo extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: ColorFiltered(
-        colorFilter: const ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(AppColors.primary, BlendMode.srcIn),
         child: Image.asset(
           AppAssets.shopIcon,
           width: size,

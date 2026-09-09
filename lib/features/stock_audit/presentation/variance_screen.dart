@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
+import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -69,6 +70,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appThemeModeProvider);
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(varianceControllerProvider);
     final formatter = NumberFormat.decimalPattern('en_IN');
@@ -271,7 +273,7 @@ class _VarianceRowCard extends StatelessWidget {
                     children: [
                       Text(
                         row.productName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           height: 1.25,
@@ -282,7 +284,7 @@ class _VarianceRowCard extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           row.variantLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                             color: ModuleTokens.mutedText,
@@ -333,7 +335,7 @@ class _VarianceRowCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.storefront_outlined,
                     size: 12,
                     color: ModuleTokens.faintText,
@@ -344,7 +346,7 @@ class _VarianceRowCard extends StatelessWidget {
                       row.storeName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                         color: ModuleTokens.faintText,

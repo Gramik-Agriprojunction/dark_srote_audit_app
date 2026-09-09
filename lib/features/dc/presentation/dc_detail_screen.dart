@@ -101,7 +101,7 @@ class DcDetailScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
                       child: Text(
                         'To: ${transfer.to!.warehouse}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: ModuleTokens.mutedText,
@@ -242,7 +242,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
           children: [
             Text(
               widget.product.productName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
                 height: 1.25,
@@ -253,7 +253,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AppColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: ModuleTokens.cardBorder),
               ),
@@ -284,7 +284,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             const SizedBox(height: 6),
             Text(
               'UOM: ${widget.product.uom}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
                 color: ModuleTokens.faintText,
               ),
@@ -319,7 +319,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         textAlign: TextAlign.center,
                         enabled: !_saving,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -381,7 +381,7 @@ class _Metric extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 7.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
