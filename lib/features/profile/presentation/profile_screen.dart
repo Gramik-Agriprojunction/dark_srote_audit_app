@@ -190,6 +190,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 value: '',
                                 onTap: () => context.go('/dc'),
                               ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.assessment_outlined,
+                                iconBg: AppColors.softPurple,
+                                iconColor: const Color(0xFF7C3AED),
+                                label: 'Report',
+                                value: '',
+                                onTap: () => context.push('/report'),
+                              ),
                               if (isSuperAdmin) ...[
                                 const _RowDivider(),
                                 _InfoRow(

@@ -52,9 +52,10 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  image_path: assets/images/darkstore_launcher.png
+  image_path: assets/images/stockshield_launcher.png
   adaptive_icon_background: "#EC5800"
-  adaptive_icon_foreground: assets/images/darkstore_icon.png
+  adaptive_icon_foreground: assets/images/stockshield_launcher.png
+  adaptive_icon_foreground_inset: 0
 
 flutter_native_splash:
   color: "#EC5800"

@@ -19,6 +19,7 @@ class MyProductsState {
     this.page = 1,
     this.limit = 10,
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
   });
 
@@ -30,6 +31,7 @@ class MyProductsState {
   final int page;
   final int limit;
   final bool isLoading;
+  final bool isLoadingMore;
   final String? error;
 
   List<ProductMismatchRow> get searchFilteredRows {
@@ -75,15 +77,15 @@ class MyProductsState {
 
   bool get hasNextPage => page < totalPages;
 
-  /// Rows visible after scroll-pagination (page × limit chunks).
+  /// Infinite-scroll reveal: first `page * limit` filtered rows.
   List<ProductMismatchRow> get visibleRows {
     if (total == 0) return const [];
     final count = (page * limit).clamp(0, total);
     return filteredRows.take(count).toList();
   }
 
-  int get visibleTo => (page * limit).clamp(0, total);
-  int get visibleFrom => total == 0 ? 0 : 1;
+  int get visibleTo => visibleRows.length;
+  int get visibleFrom => visibleRows.isEmpty ? 0 : 1;
 
   MyProductsState copyWith({
     List<BusinessLocationModel>? locations,
@@ -95,6 +97,7 @@ class MyProductsState {
     int? page,
     int? limit,
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
     bool clearError = false,
   }) {
@@ -109,6 +112,7 @@ class MyProductsState {
       page: page ?? this.page,
       limit: limit ?? this.limit,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -123,6 +127,9 @@ class MyProductsController extends StateNotifier<MyProductsState> {
   MyProductsController(this._repository) : super(const MyProductsState());
 
   final StockAuditRepository _repository;
+
+  /// Blocks rapid scroll-listener page jumps (one chunk per short window).
+  bool _loadMoreLocked = false;
 
   Future<void> initialize({int? preferredStoreId}) async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -141,7 +148,13 @@ class MyProductsController extends StateNotifier<MyProductsState> {
   }
 
   Future<void> loadReport() async {
-    state = state.copyWith(isLoading: true, clearError: true, page: 1);
+    _loadMoreLocked = false;
+    state = state.copyWith(
+      isLoading: true,
+      isLoadingMore: false,
+      clearError: true,
+      page: 1,
+    );
     try {
       final locations = state.locations;
       if (locations.isEmpty) {
@@ -195,10 +208,16 @@ class MyProductsController extends StateNotifier<MyProductsState> {
       // Sort by audit updated date descending (most recent first) - same as CRM
       rows.sort((a, b) => b.auditUpdatedAt.compareTo(a.auditUpdatedAt));
 
-      state = state.copyWith(allRows: rows, isLoading: false, page: 1);
+      state = state.copyWith(
+        allRows: rows,
+        isLoading: false,
+        isLoadingMore: false,
+        page: 1,
+      );
     } on ApiException catch (e) {
       state = state.copyWith(
         isLoading: false,
+        isLoadingMore: false,
         error: e.message,
         allRows: const [],
       );
@@ -212,25 +231,53 @@ class MyProductsController extends StateNotifier<MyProductsState> {
   }
 
   Future<void> setStoreFilter(int? storeId) async {
+    _loadMoreLocked = false;
     state = state.copyWith(
       selectedStoreId: storeId,
       clearSelectedStore: storeId == null,
       page: 1,
+      isLoadingMore: false,
     );
     await loadReport();
   }
 
   void setSearch(String query) {
-    state = state.copyWith(searchQuery: query, page: 1);
+    _loadMoreLocked = false;
+    state = state.copyWith(
+      searchQuery: query,
+      page: 1,
+      isLoadingMore: false,
+    );
   }
 
   void setStatusFilter(StockStatusFilter filter) {
     if (state.statusFilter == filter) return;
-    state = state.copyWith(statusFilter: filter, page: 1);
+    _loadMoreLocked = false;
+    state = state.copyWith(
+      statusFilter: filter,
+      page: 1,
+      isLoadingMore: false,
+    );
   }
 
+  /// Loads the next chunk. Cooldown prevents scroll listener from jumping
+  /// page 1 → last page in a single gesture.
   void loadMore() {
-    if (!state.hasNextPage) return;
-    state = state.copyWith(page: state.page + 1);
+    if (state.isLoading ||
+        state.isLoadingMore ||
+        _loadMoreLocked ||
+        !state.hasNextPage) {
+      return;
+    }
+    _loadMoreLocked = true;
+    state = state.copyWith(
+      isLoadingMore: true,
+      page: state.page + 1,
+    );
+    Future<void>.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      _loadMoreLocked = false;
+      state = state.copyWith(isLoadingMore: false);
+    });
   }
 }

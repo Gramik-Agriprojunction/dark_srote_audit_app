@@ -109,12 +109,12 @@ class AuthController extends StateNotifier<AuthState> {
   /// Kept for call sites; StockAudit does not auto-logout on inactivity.
   void touchActivity() {}
 
-  Future<String> sendOtp(String mobile) async {
+  Future<({String message, bool otpSent})> sendOtp(String mobile) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final message = await _repository.sendOtp(mobile);
+      final result = await _repository.sendOtp(mobile);
       state = state.copyWith(isLoading: false);
-      return message;
+      return result;
     } on ApiException catch (e) {
       state = state.copyWith(isLoading: false, error: e.message);
       rethrow;

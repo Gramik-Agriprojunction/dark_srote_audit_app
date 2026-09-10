@@ -12,9 +12,14 @@ class AuthRepository {
 
   final ApiClient _client;
 
-  Future<String> sendOtp(String mobile) async {
+  Future<({String message, bool otpSent})> sendOtp(String mobile) async {
     final json = await _client.post('/login', body: {'mobile': mobile});
-    return (json['message'] ?? 'OTP sent').toString();
+    final data = json['data'];
+    final otpSent = data is Map && data['otpSent'] == true;
+    return (
+      message: (json['message'] ?? 'OTP sent').toString(),
+      otpSent: otpSent,
+    );
   }
 
   Future<({String token, UserModel user})> verifyOtp({

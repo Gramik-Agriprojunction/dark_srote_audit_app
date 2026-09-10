@@ -268,6 +268,16 @@ class _TransferCard extends StatelessWidget {
     }
   }
 
+  String get _statusLabel {
+    switch (transfer.state.toLowerCase()) {
+      case 'executed':
+      case 'done':
+        return 'Received';
+      default:
+        return transfer.state.isNotEmpty ? transfer.state : '—';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ModuleCard(
@@ -311,7 +321,7 @@ class _TransferCard extends StatelessWidget {
                   ),
                 ),
                 ModuleStatusPill(
-                  label: transfer.state.isNotEmpty ? transfer.state : '—',
+                  label: _statusLabel,
                   color: _statusColor,
                 ),
               ],

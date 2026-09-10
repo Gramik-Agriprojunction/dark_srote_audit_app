@@ -9,6 +9,7 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'widgets/auth_theme.dart';
 import 'widgets/otp_pin_input.dart';
@@ -27,6 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Timer? _expireTimer;
   bool _otpStep = false;
   bool _loading = false;
+  bool _otpSent = false;
   String? _error;
   int _resendSeconds = 25;
   int _expireSeconds = 45;
@@ -109,14 +111,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() => _loading = true);
     try {
-      await ref.read(authControllerProvider.notifier).sendOtp(_mobile);
+      final result =
+          await ref.read(authControllerProvider.notifier).sendOtp(_mobile);
       if (!mounted) return;
       setState(() {
         _loading = false;
         _otpStep = true;
+        _otpSent = result.otpSent;
         if (!resend) _otpController.clear();
       });
-      _startTimers();
+      if (result.otpSent) {
+        _startTimers();
+      } else {
+        _resendTimer?.cancel();
+        _expireTimer?.cancel();
+        setState(() {
+          _resendSeconds = 0;
+          _expireSeconds = 0;
+        });
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -182,6 +195,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _expireTimer?.cancel();
     setState(() {
       _otpStep = false;
+      _otpSent = false;
       _otpController.clear();
       _error = null;
     });
@@ -189,32 +203,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AuthTheme.screenBg,
-      ),
-      child: Scaffold(
-        backgroundColor: AuthTheme.screenBg,
-        body: _otpStep
-            ? _OtpView(
-                mobile: _mobile,
-                controller: _otpController,
-                loading: _loading,
-                error: _error,
-                resendSeconds: _resendSeconds,
-                expireSeconds: _expireSeconds,
-                canVerify: _otpReady,
-                onBack: _backToLogin,
-                onVerify: _verifyOtp,
-                onResend: () => _sendOtp(resend: true),
-              )
-            : _LoginView(
-                controller: _mobileController,
-                loading: _loading,
-                error: _error,
-                enabled: _validMobile,
-                onSend: _sendOtp,
-              ),
+    // Login number screen stays light (no black field); OTP stays full orange.
+    AppColors.apply(AppThemeMode.light);
+
+    return Theme(
+      data: AppTheme.forMode(AppThemeMode.light),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: _otpStep ? AppColors.primary : AppColors.primary,
+        ),
+        child: Scaffold(
+          backgroundColor:
+              _otpStep ? AppColors.primary : AppColors.background,
+          body: _otpStep
+              ? _OtpView(
+                  mobile: _mobile,
+                  controller: _otpController,
+                  loading: _loading,
+                  error: _error,
+                  otpSent: _otpSent,
+                  resendSeconds: _resendSeconds,
+                  expireSeconds: _expireSeconds,
+                  canVerify: _otpReady,
+                  onBack: _backToLogin,
+                  onVerify: _verifyOtp,
+                  onResend: () => _sendOtp(resend: true),
+                )
+              : _LoginView(
+                  controller: _mobileController,
+                  loading: _loading,
+                  error: _error,
+                  enabled: _validMobile,
+                  onSend: _sendOtp,
+                ),
+        ),
       ),
     );
   }
@@ -239,72 +261,32 @@ class _LoginView extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     final bottom = MediaQuery.paddingOf(context).bottom;
-    final dark = AppColors.isDark;
 
-    if (!dark) {
-      return ColoredBox(
-        color: AppColors.background,
-        child: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                color: AppColors.primary,
-                padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
-                child: const _LoginBrandHeader(onOrange: true),
-              ),
-              Transform.translate(
-                offset: const Offset(0, -28),
-                child: _LoginFormCard(
-                  controller: controller,
-                  loading: loading,
-                  error: error,
-                  enabled: enabled,
-                  onSend: onSend,
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 20),
-                child: RichText(
-                  text: TextSpan(
-                    style: AuthTheme.caption(AppColors.textMuted),
-                    children: [
-                      const TextSpan(text: 'Powered by '),
-                      TextSpan(
-                        text: 'Gramik',
-                        style: AuthTheme.caption(AppColors.textPrimary)
-                            .copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Stack(
-      children: [
-        const Positioned.fill(child: _LoginAmbientGlow()),
-        SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: EdgeInsets.fromLTRB(20, top + 36, 20, bottom + 20),
-          child: Column(
-            children: [
-              const _LoginBrandHeader(),
-              const SizedBox(height: 36),
-              _LoginFormCard(
+    return ColoredBox(
+      color: AppColors.background,
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              color: AppColors.primary,
+              padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
+              child: const _LoginBrandHeader(onOrange: true),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -28),
+              child: _LoginFormCard(
                 controller: controller,
                 loading: loading,
                 error: error,
                 enabled: enabled,
                 onSend: onSend,
               ),
-              const SizedBox(height: 28),
-              RichText(
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 20),
+              child: RichText(
                 text: TextSpan(
                   style: AuthTheme.caption(AppColors.textMuted),
                   children: [
@@ -317,10 +299,10 @@ class _LoginView extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -350,28 +332,19 @@ class _LoginFormCard extends StatelessWidget {
         color: AppColors.cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AuthTheme.cardBorder),
-        boxShadow: AppColors.isDark ? null : AppColors.cardShadow,
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Apna Number Daalo', style: AuthTheme.title()),
-          const SizedBox(height: 4),
-          Text(
-            AppConfig.skipSmsOtp
-                ? 'Testing mode — master OTP se login karein'
-                : 'Number daalo, hum OTP bhej denge turant',
-            style: AuthTheme.bodySm(AppColors.textMuted),
-          ),
           const SizedBox(height: 20),
           Container(
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.isDark ? AuthTheme.inputBg : const Color(0xFF1A1A1A),
+              color: AppColors.fieldBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.isDark ? AuthTheme.lineSoft : AppColors.primary,
-              ),
+              border: Border.all(color: AppColors.borderInput),
             ),
             clipBehavior: Clip.antiAlias,
             child: Row(
@@ -384,11 +357,7 @@ class _LoginFormCard extends StatelessWidget {
                       const SizedBox(width: 5),
                       Text(
                         '+91',
-                        style: AuthTheme.label(
-                          AppColors.isDark
-                              ? AppColors.textSecondary
-                              : const Color(0xFFCCCCCC),
-                        ).copyWith(
+                        style: AuthTheme.label(AppColors.textPrimary).copyWith(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -399,20 +368,14 @@ class _LoginFormCard extends StatelessWidget {
                 Container(
                   width: 1,
                   height: 24,
-                  color: AppColors.isDark
-                      ? AuthTheme.line
-                      : const Color(0xFF555555),
+                  color: AppColors.border,
                 ),
                 Expanded(
                   child: TextField(
                     controller: controller,
                     keyboardType: TextInputType.phone,
                     cursorColor: AuthTheme.primary,
-                    style: AuthTheme.label(
-                      AppColors.isDark
-                          ? AppColors.textPrimary
-                          : Colors.white,
-                    ).copyWith(
+                    style: AuthTheme.label(AppColors.textPrimary).copyWith(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
                     ),
@@ -426,11 +389,8 @@ class _LoginFormCard extends StatelessWidget {
                         horizontal: 12,
                       ),
                       hintText: 'Mobile Number',
-                      hintStyle: AuthTheme.bodySm(
-                        AppColors.isDark
-                            ? AppColors.textMuted
-                            : const Color(0xFF888888),
-                      ).copyWith(fontSize: 16),
+                      hintStyle: AuthTheme.bodySm(AppColors.textMuted)
+                          .copyWith(fontSize: 16),
                     ),
                     onSubmitted: (_) {
                       if (enabled) onSend();
@@ -578,7 +538,7 @@ class _LoginBrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Dark Store',
+          'StockShield',
           style: AuthTheme.caption(subtitleColor).copyWith(fontSize: 13),
         ),
       ],
@@ -592,6 +552,7 @@ class _OtpView extends StatelessWidget {
     required this.controller,
     required this.loading,
     required this.error,
+    required this.otpSent,
     required this.resendSeconds,
     required this.expireSeconds,
     required this.canVerify,
@@ -604,6 +565,7 @@ class _OtpView extends StatelessWidget {
   final TextEditingController controller;
   final bool loading;
   final String? error;
+  final bool otpSent;
   final int resendSeconds;
   final int expireSeconds;
   final bool canVerify;
@@ -615,157 +577,168 @@ class _OtpView extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
 
-    return Stack(
-      children: [
-        const Positioned.fill(child: _LoginAmbientGlow()),
-        SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(24, top + 12, 24, 32),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Material(
-                  color: AppColors.fieldBg,
-                  shape: CircleBorder(
-                    side: BorderSide(color: AppColors.border),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: loading ? null : onBack,
-                    customBorder: const CircleBorder(),
-                    child: SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: Center(
-                        child: Icon(
-                          Icons.arrow_back_rounded,
-                          size: 20,
-                          color: AppColors.textPrimary,
-                        ),
+    // Fill entire screen orange (don't rely only on Scaffold).
+    return SizedBox.expand(
+      child: ColoredBox(
+        color: const Color(0xFFEC5800),
+        child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(24, top + 12, 24, 32),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Material(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: loading ? null : onBack,
+                  customBorder: const CircleBorder(),
+                  child: const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Center(
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        size: 20,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                 ),
               ),
-              SizedBox(height: 28),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFFF06A1A),
-                      AuthTheme.primary,
-                      AuthTheme.primaryDark,
-                    ],
-                  ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: ColorFiltered(
+                colorFilter: const ColorFilter.mode(
+                  Color(0xFFEC5800),
+                  BlendMode.srcIn,
                 ),
-                alignment: Alignment.center,
-                child: ColorFiltered(
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                  child: Image.asset(
-                    AppAssets.shopIcon,
-                    width: 34,
-                    height: 34,
-                    fit: BoxFit.contain,
-                  ),
+                child: Image.asset(
+                  AppAssets.shopIcon,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 16),
-              Text('OTP Daalo', style: AuthTheme.title(AppColors.textPrimary)),
-              const SizedBox(height: 6),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'OTP Daalo',
+              style: AuthTheme.otpTitle(Colors.white),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              otpSent
+                  ? 'Tumhare number pe OTP bheja hai'
+                  : 'SMS band hai — Master OTP se login karein',
+              style: AuthTheme.bodySm(Colors.white.withValues(alpha: 0.7)),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '+91 $mobile',
+                style: AuthTheme.label(Colors.white).copyWith(
+                  fontSize: 15,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            OtpPinInput(
+              controller: controller,
+              length: AppConfig.otpLength,
+              enabled: !loading,
+              inverted: true,
+              onCompleted: (_) => onVerify(),
+            ),
+            const SizedBox(height: 28),
+            if (otpSent)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'OTP nahi aaya? ',
+                    style: AuthTheme.bodySm(
+                      Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: resendSeconds == 0 && !loading ? onResend : null,
+                    child: Text(
+                      loading && resendSeconds == 0
+                          ? 'Bhej rahe hai...'
+                          : resendSeconds == 0
+                              ? 'Dubara Bhejo'
+                              : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
+                      style: AuthTheme.bodySm(Colors.white).copyWith(
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            if (otpSent && expireSeconds > 0) ...[
+              const SizedBox(height: 10),
               Text(
-                AppConfig.skipSmsOtp
-                    ? 'Testing mode — SMS nahi bheja gaya'
-                    : 'Tumhare number pe OTP bheja hai',
-                style: AuthTheme.bodySm(AppColors.textSecondary),
-              ),
-              if (AppConfig.skipSmsOtp) ...[
-                const SizedBox(height: 6),
-                Text(
-                  'Master OTP enter karke login karein',
-                  style: AuthTheme.caption(AppColors.textMuted),
+                'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
+                style: AuthTheme.caption(
+                  Colors.white.withValues(alpha: 0.55),
                 ),
-              ],
-              const SizedBox(height: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                decoration: BoxDecoration(
-                  color: AppColors.fieldBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  '+91 $mobile',
-                  style: AuthTheme.label(AppColors.textPrimary).copyWith(
-                    fontSize: 15,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              OtpPinInput(
-                controller: controller,
-                length: AppConfig.otpLength,
-                enabled: !loading,
-                inverted: false,
-                onCompleted: (_) => onVerify(),
-              ),
-              const SizedBox(height: 28),
-              if (!AppConfig.skipSmsOtp)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'OTP nahi aaya? ',
-                      style: AuthTheme.bodySm(AppColors.textMuted),
-                    ),
-                    GestureDetector(
-                      onTap: resendSeconds == 0 && !loading ? onResend : null,
-                      child: Text(
-                        loading && resendSeconds == 0
-                            ? 'Bhej rahe hai...'
-                            : resendSeconds == 0
-                                ? 'Dubara Bhejo'
-                                : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
-                        style: AuthTheme.bodySm(AuthTheme.primary).copyWith(
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AuthTheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              if (!AppConfig.skipSmsOtp && expireSeconds > 0) ...[
-                const SizedBox(height: 10),
-                Text(
-                  'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
-                  style: AuthTheme.caption(AppColors.textMuted),
-                ),
-              ],
-              if (error != null) ...[
-                const SizedBox(height: 12),
-                _ErrorText(message: error!),
-              ],
-              const SizedBox(height: 28),
-              _PrimaryButton(
-                label: 'Verify Karo',
-                loading: loading,
-                enabled: canVerify,
-                onPressed: onVerify,
               ),
             ],
-          ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              _ErrorText(message: error!, onPrimary: true),
+            ],
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: canVerify ? onVerify : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.5),
+                  foregroundColor: const Color(0xFFEC5800),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Color(0xFFEC5800),
+                        ),
+                      )
+                    : Text(
+                        'Verify Karo',
+                        style: AuthTheme.button(const Color(0xFFEC5800)),
+                      ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+      ),
     );
   }
 }
@@ -859,9 +832,10 @@ class _FeatureDot extends StatelessWidget {
 }
 
 class _ErrorText extends StatelessWidget {
-  const _ErrorText({required this.message});
+  const _ErrorText({required this.message, this.onPrimary = false});
 
   final String message;
+  final bool onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -869,13 +843,21 @@ class _ErrorText extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.errorBg,
+        color: onPrimary
+            ? Colors.white.withValues(alpha: 0.18)
+            : AppColors.errorBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.errorBorder),
+        border: Border.all(
+          color: onPrimary
+              ? Colors.white.withValues(alpha: 0.35)
+              : AppColors.errorBorder,
+        ),
       ),
       child: Text(
         message,
-        style: AuthTheme.caption(AppColors.errorText),
+        style: AuthTheme.caption(
+          onPrimary ? Colors.white : AppColors.errorText,
+        ),
       ),
     );
   }

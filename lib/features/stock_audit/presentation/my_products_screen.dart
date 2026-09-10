@@ -35,7 +35,8 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 220) {
+    // Near bottom — load next page (cooldown inside loadMore).
+    if (pos.extentAfter <= 220) {
       ref.read(myProductsControllerProvider.notifier).loadMore();
     }
   }
@@ -153,7 +154,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                   if (rows.isNotEmpty && state.total > 0)
                     SliverToBoxAdapter(
                       child: ScrollPaginationFooter(
-                        isLoadingMore: false,
+                        isLoadingMore: state.isLoadingMore,
                         hasNextPage: state.hasNextPage,
                         from: state.visibleFrom,
                         to: state.visibleTo,

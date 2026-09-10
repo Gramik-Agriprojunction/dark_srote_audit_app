@@ -269,7 +269,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ),
                 padding: EdgeInsets.only(
                   top: navTop + 44,
-                  bottom: showBottom ? 58 + bottom : 16 + bottom,
+                  bottom: showBottom
+                      ? (showPrintReceipt ? 108 : 58) + bottom
+                      : 16 + bottom,
                 ),
                 children: [
                   _HeroExpand(
@@ -448,6 +450,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   showCancel: showCancel,
                   statusColor: AppColors.primary,
                   loading: state.isActionLoading || _printBusy,
+                  onPickupOtp: showPrintReceipt
+                      ? () => context.push(
+                            '/orders/${widget.orderId}/pickup-otp',
+                            extra: code,
+                          )
+                      : null,
                   onPrintReceipt: () => _printReceipt(order),
                   onCancel: () => _openCancelOverlay(order),
                   onBack: () => context.pop(),
@@ -1924,6 +1932,7 @@ class _BottomActionBar extends StatelessWidget {
     required this.onPrintReceipt,
     required this.onCancel,
     required this.onBack,
+    this.onPickupOtp,
   });
 
   final double bottomInset;
@@ -1934,6 +1943,7 @@ class _BottomActionBar extends StatelessWidget {
   final VoidCallback onPrintReceipt;
   final VoidCallback onCancel;
   final VoidCallback onBack;
+  final VoidCallback? onPickupOtp;
 
   @override
   Widget build(BuildContext context) {
@@ -1949,12 +1959,26 @@ class _BottomActionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: showPrintReceipt
-          ? _BottomButton(
-              label: 'Print Receipt',
-              icon: Icons.print_outlined,
-              color: statusColor,
-              loading: loading,
-              onTap: onPrintReceipt,
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onPickupOtp != null) ...[
+                  _BottomButton(
+                    label: 'Pickup OTP Dale',
+                    icon: Icons.key_outlined,
+                    color: statusColor,
+                    onTap: onPickupOtp!,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _BottomButton(
+                  label: 'Print Receipt',
+                  icon: Icons.print_outlined,
+                  color: statusColor,
+                  loading: loading,
+                  onTap: onPrintReceipt,
+                ),
+              ],
             )
           : showCancel
               ? _BottomButton(

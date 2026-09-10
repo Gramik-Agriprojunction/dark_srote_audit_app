@@ -17,6 +17,8 @@ import '../features/dc/presentation/dc_detail_screen.dart';
 import '../features/dc/presentation/dc_list_screen.dart';
 import '../features/orders/presentation/order_detail_screen.dart';
 import '../features/orders/presentation/orders_screen.dart';
+import '../features/orders/presentation/pickup_otp_enter_screen.dart';
+import '../features/profile/presentation/inventory_report_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
@@ -112,6 +114,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => _themePage(const ProfileScreen()),
       ),
       GoRoute(
+        path: '/report',
+        builder: (context, state) =>
+            _themePage(const InventoryReportScreen()),
+      ),
+      GoRoute(
         path: '/orders/:orderId',
         builder: (context, state) {
           final orderId =
@@ -119,6 +126,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (orderId <= 0) return _themePage(const OrdersScreen());
           return _themePage(OrderDetailScreen(orderId: orderId));
         },
+        routes: [
+          GoRoute(
+            path: 'pickup-otp',
+            builder: (context, state) {
+              final orderId =
+                  int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
+              final orderCode = state.extra is String
+                  ? state.extra as String
+                  : null;
+              return _themePage(
+                PickupOtpEnterScreen(
+                  orderId: orderId,
+                  orderCode: orderCode,
+                ),
+              );
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/my-products',

@@ -37,8 +37,9 @@ class AppConfig {
 
   static const int otpLength = 5;
 
-  /// Stock Audit testing — SMS OTP band; sirf master OTP se login.
-  static const bool skipSmsOtp = true;
+  /// When true, UI hides resend/timer; backend may still skip SMS via env.
+  /// Production/login: false — SMS OTP + master OTP dono chalenge.
+  static const bool skipSmsOtp = false;
 
   static bool isMasterOtp(String otp) {
     final value = otp.trim();
