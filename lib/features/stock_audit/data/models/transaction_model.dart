@@ -29,6 +29,7 @@ class TransactionProductRow {
     required this.pickupQty,
     required this.rtoDeliveredQty,
     required this.totalQty,
+    this.image,
   });
 
   final int productId;
@@ -36,11 +37,17 @@ class TransactionProductRow {
   final int variantId;
   final String variantLabel;
   final String sku;
+  final String? image;
   final int pickupQty;
   final int rtoDeliveredQty;
   final int totalQty;
 
+  /// Net moved: pickup − RTO.
+  int get actualQty => pickupQty - rtoDeliveredQty;
+
   factory TransactionProductRow.fromJson(Map<String, dynamic> json) {
+    final imageRaw = json['image'] ?? json['thumbnailImg'] ?? json['thumbnail'];
+    final image = imageRaw == null ? null : imageRaw.toString().trim();
     return TransactionProductRow(
       productId: json['productId'] is int
           ? json['productId'] as int
@@ -52,6 +59,7 @@ class TransactionProductRow {
       variantLabel: (json['variantLabel'] ?? json['sku'] ?? 'Variant')
           .toString(),
       sku: (json['sku'] ?? '').toString(),
+      image: (image == null || image.isEmpty) ? null : image,
       pickupQty: json['pickupQty'] is int
           ? json['pickupQty'] as int
           : int.tryParse('${json['pickupQty']}') ?? 0,

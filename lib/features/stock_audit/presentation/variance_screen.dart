@@ -189,16 +189,10 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                         childCount: state.rows.length,
                       ),
                     ),
-                  if (state.rows.isNotEmpty && state.meta.total > 0)
+                  if (state.rows.isNotEmpty)
                     SliverToBoxAdapter(
                       child: ScrollPaginationFooter(
                         isLoadingMore: state.isLoadingMore,
-                        hasNextPage: state.hasNextPage,
-                        from: state.rows.isEmpty ? 0 : 1,
-                        to: state.rows.length,
-                        total: state.meta.total,
-                        page: state.meta.page,
-                        totalPages: state.meta.totalPages,
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),

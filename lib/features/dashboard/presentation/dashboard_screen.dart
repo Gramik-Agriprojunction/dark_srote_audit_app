@@ -1,14 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/theme_mode_provider.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/product_image_thumb.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../orders/presentation/utils/order_status_helper.dart';
+import '../../stock_audit/presentation/providers/my_products_provider.dart';
+import '../../stock_audit/presentation/providers/stock_audit_provider.dart';
 import '../data/models/dashboard_model.dart';
 import 'providers/dashboard_provider.dart';
 
@@ -136,12 +137,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         if (data != null) ...[
                           if (data.mismatchAlert.count > 0) ...[
-                            _MismatchCard(alert: data.mismatchAlert),
+                            _MismatchCard(
+                              alert: data.mismatchAlert,
+                              onTap: () {
+                                ref
+                                    .read(
+                                      myProductsControllerProvider.notifier,
+                                    )
+                                    .setStatusFilter(StockStatusFilter.short);
+                                context.go('/my-products?filter=short');
+                              },
+                            ),
                             const SizedBox(height: 10),
                           ],
-                          _AuditProgressCard(progress: data.auditProgress),
+                          _AuditProgressCard(
+                            progress: data.auditProgress,
+                            onTap: () {
+                              ref
+                                  .read(stockAuditControllerProvider.notifier)
+                                  .setAuditStatusFilter(
+                                    AuditStatusFilter.audited,
+                                  );
+                              context.go('/audit');
+                            },
+                          ),
                           const SizedBox(height: 10),
-                          _SummaryGrid(summary: data.summary),
+                          _SummaryGrid(
+                            summary: data.summary,
+                            onStockTap: () {
+                              if (data.summary.stockMismatch > 0) {
+                                ref
+                                    .read(
+                                      myProductsControllerProvider.notifier,
+                                    )
+                                    .setStatusFilter(StockStatusFilter.short);
+                                context.go('/my-products?filter=short');
+                              } else {
+                                context.go('/my-products');
+                              }
+                            },
+                          ),
                           SizedBox(height: 16),
                           Text(
                             'Quick Actions',
@@ -202,34 +237,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentTab: AppTab.dashboard,
-        onDashboardTap: () {},
-        onHomeTap: () => context.go('/audit'),
-        onOrdersTap: () => context.go('/orders'),
-        onStockTap: () => context.go('/my-products'),
-      ),
     );
   }
 }
 
 class _MismatchCard extends StatelessWidget {
-  const _MismatchCard({required this.alert});
+  const _MismatchCard({required this.alert, required this.onTap});
 
   final DashboardMismatchAlert alert;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final first = alert.items.isNotEmpty ? alert.items.first : null;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.errorBg,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.errorBorder),
-      ),
-      child: Column(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.errorBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.errorBorder),
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -266,7 +300,7 @@ class _MismatchCard extends StatelessWidget {
               '${first.displayName} me ${first.difference} units ka mismatch paya gaya hai. Please verify physical count and approve.',
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.errorText,
+                color: AppColors.textPrimary,
                 height: 1.35,
               ),
             ),
@@ -281,41 +315,12 @@ class _MismatchCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: first.image != null && first.image!.trim().isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: first.image!.trim(),
-                              fit: BoxFit.cover,
-                              placeholder: (_, _) => Container(
-                                color: AppColors.background,
-                                child: Icon(
-                                  Icons.inventory_2_outlined,
-                                  size: 20,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                              errorWidget: (_, _, _) => Container(
-                                color: AppColors.background,
-                                child: Icon(
-                                  Icons.inventory_2_outlined,
-                                  size: 20,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            )
-                          : Container(
-                              color: AppColors.background,
-                              child: Icon(
-                                Icons.inventory_2_outlined,
-                                size: 20,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                    ),
+                  ProductImageThumb(
+                    imageUrl: first.image,
+                    width: 48,
+                    height: 48,
+                    borderRadius: 10,
+                    iconSize: 20,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -381,6 +386,8 @@ class _MismatchCard extends StatelessWidget {
             ),
           ],
         ],
+          ),
+        ),
       ),
     );
   }
@@ -423,22 +430,31 @@ class _MismatchCard extends StatelessWidget {
 }
 
 class _AuditProgressCard extends StatelessWidget {
-  const _AuditProgressCard({required this.progress});
+  const _AuditProgressCard({
+    required this.progress,
+    required this.onTap,
+  });
 
   final DashboardAuditProgress progress;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final pct = (progress.percent.clamp(0, 100)) / 100.0;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBg,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -493,15 +509,21 @@ class _AuditProgressCard extends StatelessWidget {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
 }
 
 class _SummaryGrid extends StatelessWidget {
-  const _SummaryGrid({required this.summary});
+  const _SummaryGrid({
+    required this.summary,
+    required this.onStockTap,
+  });
 
   final DashboardSummary summary;
+  final VoidCallback onStockTap;
 
   @override
   Widget build(BuildContext context) {
@@ -541,7 +563,7 @@ class _SummaryGrid extends StatelessWidget {
                     : null,
               ),
             ],
-            onTap: () => context.go('/my-products'),
+            onTap: onStockTap,
           ),
         ),
         const SizedBox(width: 8),
@@ -561,7 +583,7 @@ class _SummaryGrid extends StatelessWidget {
                 color: const Color(0xFF0284C7),
               ),
             ],
-            onTap: () => context.go('/dc'),
+            onTap: () => context.push('/dc'),
           ),
         ),
       ],
@@ -699,7 +721,15 @@ class _QuickActionsRow extends StatelessWidget {
               color: AppColors.cardBg,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: () => context.go(actions[i].route),
+                onTap: () {
+                  final route = actions[i].route;
+                  // DC is outside the tab shell — push so back returns to dashboard.
+                  if (route == '/dc') {
+                    context.push(route);
+                  } else {
+                    context.go(route);
+                  }
+                },
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
@@ -775,25 +805,12 @@ class _RecentOrderTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: order.firstProductImage != null &&
-                            order.firstProductImage!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: order.firstProductImage!,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            color: AppColors.background,
-                            child: Icon(
-                              Icons.inventory_2_outlined,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                  ),
+                ProductImageThumb(
+                  imageUrl: order.firstProductImage,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  iconSize: 20,
                 ),
                 const SizedBox(width: 10),
                 Expanded(

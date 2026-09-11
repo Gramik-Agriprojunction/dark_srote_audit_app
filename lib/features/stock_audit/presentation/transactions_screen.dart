@@ -9,6 +9,7 @@ import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/product_image_thumb.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/transaction_model.dart';
 import 'providers/transactions_provider.dart';
@@ -115,6 +116,18 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           ),
                           background: const Color(0xFFB45309),
                           labelColor: const Color(0xFFFED7AA),
+                        ),
+                        ModuleStat(
+                          icon: Icons.inventory_2_outlined,
+                          label: 'Actual Qty',
+                          value: formatter.format(
+                            products.fold<int>(
+                              0,
+                              (sum, row) => sum + row.actualQty,
+                            ),
+                          ),
+                          background: AppColors.inStock,
+                          labelColor: const Color(0xFFBBF7D0),
                         ),
                         ModuleStat(
                           icon: Icons.category_outlined,
@@ -258,6 +271,9 @@ class _TransactionProductCard extends StatelessWidget {
     final statusColor = hasRto
         ? const Color(0xFFB45309)
         : const Color(0xFF1D4ED8);
+    final actualColor = row.actualQty >= 0
+        ? AppColors.inStock
+        : AppColors.outStock;
 
     return ModuleCard(
       statusColor: statusColor,
@@ -269,6 +285,8 @@ class _TransactionProductCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _ProductThumb(imageUrl: row.image),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +323,7 @@ class _TransactionProductCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
+              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
               decoration: BoxDecoration(
                 color: AppColors.fieldBg,
                 borderRadius: BorderRadius.circular(12),
@@ -332,12 +350,41 @@ class _TransactionProductCard extends StatelessWidget {
                       color: const Color(0xFFB45309),
                     ),
                   ),
+                  Container(
+                    width: 1,
+                    height: 26,
+                    color: ModuleTokens.cardBorder,
+                  ),
+                  Expanded(
+                    child: _QtyCell(
+                      label: 'Actual Qty',
+                      value: formatter.format(row.actualQty),
+                      color: actualColor,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProductThumb extends StatelessWidget {
+  const _ProductThumb({this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProductImageThumb(
+      imageUrl: imageUrl,
+      width: 48,
+      height: 48,
+      borderRadius: 12,
+      iconSize: 22,
     );
   }
 }
@@ -360,10 +407,12 @@ class _QtyCell extends StatelessWidget {
         Text(
           label.toUpperCase(),
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 8,
+            fontSize: 7.5,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
+            letterSpacing: 0.2,
             color: ModuleTokens.faintText,
           ),
         ),

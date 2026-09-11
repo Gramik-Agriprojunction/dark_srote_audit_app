@@ -461,31 +461,40 @@ class ModuleStat {
 
 /// Dark mock stat cards — accent icon + optional progress (not solid fills).
 class ModuleStatsRow extends StatelessWidget {
-  const ModuleStatsRow({super.key, required this.stats});
+  const ModuleStatsRow({
+    super.key,
+    required this.stats,
+    this.itemWidth = 136,
+  });
 
   final List<ModuleStat> stats;
+  final double itemWidth;
 
   @override
   Widget build(BuildContext context) {
     if (stats.isEmpty) return const SizedBox.shrink();
 
     return SizedBox(
-      height: 96,
+      height: 102,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
         itemCount: stats.length,
         separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) => _ModuleStatCard(stat: stats[index]),
+        itemBuilder: (context, index) => _ModuleStatCard(
+          stat: stats[index],
+          width: itemWidth,
+        ),
       ),
     );
   }
 }
 
 class _ModuleStatCard extends StatelessWidget {
-  const _ModuleStatCard({required this.stat});
+  const _ModuleStatCard({required this.stat, required this.width});
 
   final ModuleStat stat;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +512,7 @@ class _ModuleStatCard extends StatelessWidget {
     final iconColor = useSolid ? Colors.white : accent;
 
     final card = SizedBox(
-      width: 128,
+      width: width,
       child: Container(
         padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
         decoration: BoxDecoration(
@@ -534,14 +543,15 @@ class _ModuleStatCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     stat.label.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    softWrap: true,
+                    overflow: TextOverflow.clip,
                     style: TextStyle(
                       color: labelColor,
-                      fontSize: 8.5,
-                      height: 1.1,
+                      fontSize: 7.5,
+                      height: 1.2,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.08,
                     ),
                   ),
                 ),

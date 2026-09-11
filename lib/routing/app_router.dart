@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../core/constants/app_colors.dart';
 import '../core/theme/theme_aware.dart';
 import '../core/theme/theme_mode_provider.dart';
+import '../core/widgets/history_back_scope.dart';
+import '../core/widgets/main_tab_shell.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/select_warehouse_screen.dart';
@@ -26,6 +28,10 @@ import '../features/stock_audit/presentation/variant_audit_screen.dart';
 /// Forces the page to rebuild/remount when theme flips (needed because
 /// [AppColors] are static getters and stacked routes from `push` stay mounted).
 Widget _themePage(Widget page) => ThemeAware(builder: (_, __) => page);
+
+/// Stack screens get system-back → pop, or dashboard when opened via [go].
+Widget _stackPage(Widget page) =>
+    _themePage(HistoryBackScope(child: page));
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authNotifier = ValueNotifier<AuthState>(
@@ -97,26 +103,61 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) =>
             '/dashboard${state.uri.query.isNotEmpty ? '?${state.uri.query}' : ''}',
       ),
-      GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => _themePage(const DashboardScreen()),
-      ),
-      GoRoute(
-        path: '/audit',
-        builder: (context, state) => _themePage(const HomeScreen()),
-      ),
-      GoRoute(
-        path: '/orders',
-        builder: (context, state) => _themePage(const OrdersScreen()),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainTabShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dashboard',
+                builder: (context, state) =>
+                    _themePage(const DashboardScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/my-products',
+                builder: (context, state) => _themePage(
+                  MyProductsScreen(
+                    initialStatusFilter:
+                        state.uri.queryParameters['filter'],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/orders',
+                builder: (context, state) =>
+                    _themePage(const OrdersScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/audit',
+                builder: (context, state) =>
+                    _themePage(const HomeScreen()),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/profile',
-        builder: (context, state) => _themePage(const ProfileScreen()),
+        builder: (context, state) => _stackPage(const ProfileScreen()),
       ),
       GoRoute(
         path: '/report',
         builder: (context, state) =>
-            _themePage(const InventoryReportScreen()),
+            _stackPage(const InventoryReportScreen()),
       ),
       GoRoute(
         path: '/orders/:orderId',
@@ -124,7 +165,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final orderId =
               int.tryParse(state.pathParameters['orderId'] ?? '') ?? 0;
           if (orderId <= 0) return _themePage(const OrdersScreen());
-          return _themePage(OrderDetailScreen(orderId: orderId));
+          return _stackPage(OrderDetailScreen(orderId: orderId));
         },
         routes: [
           GoRoute(
@@ -135,7 +176,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               final orderCode = state.extra is String
                   ? state.extra as String
                   : null;
-              return _themePage(
+              return _stackPage(
                 PickupOtpEnterScreen(
                   orderId: orderId,
                   orderCode: orderCode,
@@ -146,18 +187,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/my-products',
-        builder: (context, state) => _themePage(const MyProductsScreen()),
-      ),
-      GoRoute(
         path: '/transactions',
-        builder: (context, state) => _themePage(const TransactionsScreen()),
+        builder: (context, state) => _stackPage(const TransactionsScreen()),
       ),
       GoRoute(
         path: '/dc',
         builder: (context, state) {
           final tab = state.uri.queryParameters['tab'] ?? 'incoming';
-          return _themePage(DcListScreen(initialTab: tab));
+          return _stackPage(DcListScreen(initialTab: tab));
         },
       ),
       GoRoute(
@@ -165,9 +202,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final transferId =
               int.tryParse(state.pathParameters['transferId'] ?? '') ?? 0;
-          if (transferId <= 0) return _themePage(const DcListScreen());
+          if (transferId <= 0) return _stackPage(const DcListScreen());
           final tab = state.uri.queryParameters['tab'] ?? 'incoming';
-          return _themePage(
+          return _stackPage(
             DcDetailScreen(
               transferId: transferId,
               showSaveActions: tab != 'received',
@@ -177,7 +214,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/variance',
-        builder: (context, state) => _themePage(const VarianceScreen()),
+        builder: (context, state) => _stackPage(const VarianceScreen()),
       ),
       GoRoute(
         path: '/variant-audit',
@@ -191,7 +228,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (storeId <= 0 || productId <= 0 || variantId <= 0) {
             return _themePage(const HomeScreen());
           }
-          return _themePage(
+          return _stackPage(
             VariantAuditScreen(
               storeId: storeId,
               productId: productId,

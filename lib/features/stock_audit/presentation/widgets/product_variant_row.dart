@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/product_image_thumb.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -530,42 +530,13 @@ class _ProductThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ProductImageThumb(
+      imageUrl: imageUrl,
       width: 56,
       height: 56,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: imageUrl != null && imageUrl!.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: imageUrl!,
-              fit: BoxFit.cover,
-              fadeInDuration: const Duration(milliseconds: 200),
-              placeholder: (_, _) => const _FallbackImage(),
-              errorWidget: (_, _, _) => const _FallbackImage(),
-            )
-          : const _FallbackImage(),
-    );
-  }
-}
-
-class _FallbackImage extends StatelessWidget {
-  const _FallbackImage();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.fieldBg,
-      child: Center(
-        child: Icon(
-          Icons.inventory_2_outlined,
-          size: 22,
-          color: AppColors.textMuted,
-        ),
-      ),
+      borderRadius: 12,
+      iconSize: 22,
+      backgroundColor: AppColors.surface,
     );
   }
 }

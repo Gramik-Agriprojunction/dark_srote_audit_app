@@ -6,7 +6,9 @@ import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
 import '../data/models/transaction_model.dart';
+import '../data/models/stock_reconciliation_model.dart';
 import '../data/models/variance_model.dart';
+import '../../../core/constants/app_pagination.dart';
 
 final stockAuditRepositoryProvider = Provider<StockAuditRepository>((ref) {
   return StockAuditRepository(ref.watch(apiClientProvider));
@@ -121,11 +123,31 @@ class StockAuditRepository {
     return TransactionReportModel.fromJson(requireJsonMap(json['data']));
   }
 
+  Future<StockReconciliationReportModel> getStockReconciliation({
+    required int businessLocationId,
+    String status = 'ALL',
+    String search = '',
+    int page = 1,
+    int limit = kAppPageSize,
+  }) async {
+    final json = await _client.get(
+      '/stock-reconciliation',
+      query: {
+        'business_location_id': businessLocationId,
+        'status': status,
+        if (search.trim().isNotEmpty) 'search': search.trim(),
+        'page': page,
+        'limit': limit,
+      },
+    );
+    return StockReconciliationReportModel.fromJson(requireJsonMap(json['data']));
+  }
+
   Future<VarianceReportModel> getVariance({
     required int businessLocationId,
     String type = 'ALL',
     int page = 1,
-    int limit = 10,
+    int limit = kAppPageSize,
   }) async {
     final json = await _client.get(
       '/variance',

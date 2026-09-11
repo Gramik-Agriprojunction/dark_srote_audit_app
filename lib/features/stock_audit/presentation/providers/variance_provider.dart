@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_pagination.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/variance_model.dart';
@@ -27,7 +28,12 @@ class VarianceState {
     this.selectedStoreId,
     this.typeFilter = VarianceTypeFilter.all,
     this.rows = const [],
-    this.meta = const PaginationMeta(page: 1, limit: 10, total: 0, totalPages: 0),
+    this.meta = const PaginationMeta(
+      page: 1,
+      limit: kAppPageSize,
+      total: 0,
+      totalPages: 0,
+    ),
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error,
@@ -133,7 +139,7 @@ class VarianceController extends StateNotifier<VarianceState> {
         businessLocationId: storeId,
         type: state.typeFilter.apiValue,
         page: page,
-        limit: state.meta.limit,
+        limit: kAppPageSize,
       );
 
       final merged = loadMore

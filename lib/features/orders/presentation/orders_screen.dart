@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/alert_banner.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/scroll_pagination_footer.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -192,12 +191,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     SliverToBoxAdapter(
                       child: ScrollPaginationFooter(
                         isLoadingMore: state.isLoadingMore,
-                        hasNextPage: state.pagination.hasNextPage,
-                        from: state.orders.isEmpty ? 0 : 1,
-                        to: state.orders.length,
-                        total: state.pagination.total,
-                        page: state.pagination.currentPage,
-                        totalPages: state.pagination.totalPages,
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
@@ -206,13 +199,6 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentTab: AppTab.orders,
-        onDashboardTap: () => context.go('/dashboard'),
-        onHomeTap: () => context.go('/audit'),
-        onOrdersTap: () {},
-        onStockTap: () => context.go('/my-products'),
       ),
     );
   }

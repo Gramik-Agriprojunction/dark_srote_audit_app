@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +9,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/product_image_thumb.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/stock_audit_detail_model.dart';
@@ -439,37 +439,12 @@ class _DetailImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ProductImageThumb(
+      imageUrl: imageUrl,
       width: 62,
       height: 62,
-      decoration: BoxDecoration(
-        color: AppColors.fieldBg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: imageUrl != null && imageUrl!.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: imageUrl!,
-              fit: BoxFit.cover,
-              fadeInDuration: const Duration(milliseconds: 200),
-              errorWidget: (_, _, _) => const _Fallback(),
-            )
-          : const _Fallback(),
-    );
-  }
-}
-
-class _Fallback extends StatelessWidget {
-  const _Fallback();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: 24,
-        color: AppColors.textMuted,
-      ),
+      borderRadius: 16,
+      iconSize: 24,
     );
   }
 }

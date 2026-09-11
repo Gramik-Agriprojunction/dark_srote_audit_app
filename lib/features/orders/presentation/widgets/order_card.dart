@@ -1,7 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/product_image_thumb.dart';
 
 import '../../data/models/order_model.dart';
 import '../utils/order_status_helper.dart';
@@ -213,30 +213,12 @@ class _Thumb extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
+        ProductImageThumb(
+          imageUrl: imageUrl,
           width: 48,
           height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.fieldBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: imageUrl != null && imageUrl!.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: imageUrl!,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => Icon(
-                    Icons.inventory_2_outlined,
-                    size: 20,
-                    color: AppColors.textMuted,
-                  ),
-                )
-              : Icon(
-                  Icons.inventory_2_outlined,
-                  size: 20,
-                  color: AppColors.textMuted,
-                ),
+          borderRadius: 12,
+          iconSize: 20,
         ),
         if (badgeCount != null)
           Positioned(
@@ -309,30 +291,12 @@ class _ProductRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          ProductImageThumb(
+            imageUrl: product.thumbnailImg,
             width: 34,
             height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.fieldBg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: product.thumbnailImg != null && product.thumbnailImg!.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: product.thumbnailImg!,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, _, _) => const Icon(
-                      Icons.inventory_2_outlined,
-                      size: 13,
-                      color: Color(0xFFCBD5E1),
-                    ),
-                  )
-                : const Icon(
-                    Icons.inventory_2_outlined,
-                    size: 13,
-                    color: Color(0xFFCBD5E1),
-                  ),
+            borderRadius: 8,
+            iconSize: 13,
           ),
           const SizedBox(width: 10),
           Expanded(

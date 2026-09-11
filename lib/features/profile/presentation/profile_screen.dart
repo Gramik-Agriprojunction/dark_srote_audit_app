@@ -161,7 +161,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 iconColor: const Color(0xFF7C3AED),
                                 label: 'Transaction',
                                 value: '',
-                                onTap: () => context.go('/transactions'),
+                                onTap: () => context.push('/transactions'),
                               ),
                               const _RowDivider(),
                               _InfoRow(
@@ -179,7 +179,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 iconColor: AppColors.successText,
                                 label: 'Variance',
                                 value: '',
-                                onTap: () => context.go('/variance'),
+                                onTap: () => context.push('/variance'),
                               ),
                               const _RowDivider(),
                               _InfoRow(
@@ -188,7 +188,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 iconColor: const Color(0xFF0284C7),
                                 label: 'DC',
                                 value: '',
-                                onTap: () => context.go('/dc'),
+                                onTap: () => context.push('/dc'),
                               ),
                               const _RowDivider(),
                               _InfoRow(

@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/product_image_thumb.dart';
 import '../../data/models/order_model.dart';
 import '../utils/order_status_helper.dart';
 
@@ -181,20 +181,14 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
                                 children: [
-                                  Container(
+                                  ProductImageThumb(
+                                    imageUrl: p.thumbnailImg,
                                     width: 36,
                                     height: 36,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0x1AFFFFFF),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
-                                    child: p.thumbnailImg != null && p.thumbnailImg!.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: p.thumbnailImg!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Icon(Icons.inventory_2_outlined, color: AppColors.textMuted),
+                                    borderRadius: 8,
+                                    iconSize: 16,
+                                    backgroundColor: const Color(0x1AFFFFFF),
+                                    showBorder: false,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(

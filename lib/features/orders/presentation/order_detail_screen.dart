@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/product_image_thumb.dart';
 import '../data/models/order_model.dart';
 import '../services/thermal_printer_service.dart';
 import 'providers/order_detail_provider.dart';
@@ -1550,21 +1550,13 @@ class _ProductItem extends StatelessWidget {
               Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Container(
+                  ProductImageThumb(
+                    imageUrl: product.thumbnailImg,
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.cardBg,
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: product.thumbnailImg != null && product.thumbnailImg!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: product.thumbnailImg!,
-                            fit: BoxFit.cover,
-                          )
-                        : Icon(Icons.inventory_2_outlined, size: 17, color: AppColors.textMuted),
+                    borderRadius: 11,
+                    iconSize: 17,
+                    backgroundColor: AppColors.cardBg,
                   ),
                   if (product.quantity > 1)
                     Positioned(
@@ -1725,18 +1717,12 @@ class _ComboLine extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
+          ProductImageThumb(
+            imageUrl: combo.image,
             width: 34,
             height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.fieldBg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.border),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: combo.image != null && combo.image!.isNotEmpty
-                ? CachedNetworkImage(imageUrl: combo.image!, fit: BoxFit.cover)
-                : Icon(Icons.inventory_2_outlined, size: 14, color: AppColors.textMuted),
+            borderRadius: 8,
+            iconSize: 14,
           ),
           const SizedBox(width: 8),
           Expanded(

@@ -13,9 +13,10 @@ class InventoryReportRepository {
 
   final DarkStoreApiClient _client;
 
-  /// Proxies Odoo `warehouse/{id}/inventory_summary` via local backend.
+  /// Proxies Odoo `warehouse/{id}/inventory_summary` via CRM backend.
+  /// [warehouseId] = logged-in / selected Dark Store warehouse id.
   Future<InventorySummaryModel> fetchInventorySummary({
-    int warehouseId = 2,
+    required int warehouseId,
   }) async {
     final json = await _client.get(
       '/darkstore/warehouse/$warehouseId/inventory_summary',

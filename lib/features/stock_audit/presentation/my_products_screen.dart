@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/scroll_pagination_footer.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -14,7 +13,10 @@ import '../data/models/product_mismatch_model.dart';
 import 'providers/my_products_provider.dart';
 
 class MyProductsScreen extends ConsumerStatefulWidget {
-  const MyProductsScreen({super.key});
+  const MyProductsScreen({super.key, this.initialStatusFilter});
+
+  /// Optional route query (`filter=short|excess|matched|all`).
+  final String? initialStatusFilter;
 
   @override
   ConsumerState<MyProductsScreen> createState() => _MyProductsScreenState();
@@ -30,6 +32,35 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  @override
+  void didUpdateWidget(covariant MyProductsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialStatusFilter != widget.initialStatusFilter) {
+      _applyRouteStatusFilter();
+    }
+  }
+
+  StockStatusFilter? _parseStatusFilter(String? raw) {
+    switch ((raw ?? '').trim().toLowerCase()) {
+      case 'short':
+        return StockStatusFilter.short;
+      case 'excess':
+        return StockStatusFilter.excess;
+      case 'matched':
+        return StockStatusFilter.matched;
+      case 'all':
+        return StockStatusFilter.all;
+      default:
+        return null;
+    }
+  }
+
+  void _applyRouteStatusFilter() {
+    final filter = _parseStatusFilter(widget.initialStatusFilter);
+    if (filter == null) return;
+    ref.read(myProductsControllerProvider.notifier).setStatusFilter(filter);
   }
 
   void _onScroll() {
@@ -54,11 +85,14 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     if (_initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
+    _applyRouteStatusFilter();
     final storage = ref.read(sessionStorageProvider);
     final preferredStoreId = await storage.getSelectedStoreId();
     await ref
         .read(myProductsControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    // Re-apply after load in case initialize raced with route filter.
+    _applyRouteStatusFilter();
     final selectedId = ref.read(myProductsControllerProvider).selectedStoreId;
     if (selectedId != null) {
       await storage.saveSelectedStoreId(selectedId);
@@ -74,7 +108,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final state = ref.watch(myProductsControllerProvider);
-    final rows = state.visibleRows;
+    final rows = state.rows;
     final formatter = NumberFormat.decimalPattern('en_IN');
 
     if (_searchController.text != state.searchQuery) {
@@ -151,16 +185,10 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                         childCount: rows.length,
                       ),
                     ),
-                  if (rows.isNotEmpty && state.total > 0)
+                  if (rows.isNotEmpty)
                     SliverToBoxAdapter(
                       child: ScrollPaginationFooter(
                         isLoadingMore: state.isLoadingMore,
-                        hasNextPage: state.hasNextPage,
-                        from: state.visibleFrom,
-                        to: state.visibleTo,
-                        total: state.total,
-                        page: state.page,
-                        totalPages: state.totalPages,
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
@@ -169,13 +197,6 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: AppBottomNav(
-        currentTab: AppTab.stock,
-        onDashboardTap: () => context.go('/dashboard'),
-        onHomeTap: () => context.go('/audit'),
-        onOrdersTap: () => context.go('/orders'),
-        onStockTap: () {},
       ),
     );
   }

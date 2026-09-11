@@ -83,7 +83,7 @@ class PaginationMeta {
           : int.tryParse('${json['page']}') ?? 1,
       limit: json['limit'] is int
           ? json['limit'] as int
-          : int.tryParse('${json['limit']}') ?? 10,
+          : int.tryParse('${json['limit']}') ?? 20,
       total: json['total'] is int
           ? json['total'] as int
           : int.tryParse('${json['total']}') ?? 0,
@@ -115,7 +115,7 @@ class VarianceReportModel {
           : const [],
       meta: metaRaw is Map<String, dynamic>
           ? PaginationMeta.fromJson(metaRaw)
-          : const PaginationMeta(page: 1, limit: 10, total: 0, totalPages: 0),
+          : const PaginationMeta(page: 1, limit: 20, total: 0, totalPages: 0),
     );
   }
 }

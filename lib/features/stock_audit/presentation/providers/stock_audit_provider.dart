@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/stock_audit_repository.dart';
@@ -70,9 +71,9 @@ class StockAuditState {
               case AuditStatusFilter.all:
                 return true;
               case AuditStatusFilter.audited:
-                return variant.auditUpdatedAt != null;
+                return DateFormatter.isAuditUpdatedToday(variant.auditUpdatedAt);
               case AuditStatusFilter.pending:
-                return variant.auditUpdatedAt == null;
+                return !DateFormatter.isAuditUpdatedToday(variant.auditUpdatedAt);
             }
           }).toList();
           if (variants.isEmpty) return null;
@@ -87,15 +88,20 @@ class StockAuditState {
         (sum, product) => sum + product.variants.length,
       );
 
+  /// Variants whose audit was saved/updated today (IST).
   int get auditedVariantCount => products.fold<int>(
         0,
         (sum, product) =>
             sum +
             product.variants
-                .where((variant) => variant.auditUpdatedAt != null)
+                .where(
+                  (variant) =>
+                      DateFormatter.isAuditUpdatedToday(variant.auditUpdatedAt),
+                )
                 .length,
       );
 
+  /// SKUs not yet audited today (includes never-audited + older audits).
   int get pendingVariantCount => totalVariantCount - auditedVariantCount;
 
   StockAuditState copyWith({

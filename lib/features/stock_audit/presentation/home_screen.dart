@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
-import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -290,20 +289,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: AppBottomNav(
-        currentTab: AppTab.audit,
-        onDashboardTap: () => context.go('/dashboard'),
-        onHomeTap: () {
-          ref.read(authControllerProvider.notifier).touchActivity();
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-          );
-        },
-        onOrdersTap: () => context.go('/orders'),
-        onStockTap: () => context.go('/my-products'),
-      ),
     );
   }
 
@@ -354,9 +339,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _emptyTitle(AuditStatusFilter filter) {
     switch (filter) {
       case AuditStatusFilter.audited:
-        return 'Koi audited SKU nahi mila';
+        return 'Aaj koi audit nahi hua';
       case AuditStatusFilter.pending:
-        return 'Koi pending SKU nahi mila';
+        return 'Aaj ke liye sab pending clear hai';
       case AuditStatusFilter.all:
         return 'Koi product nahi mila';
     }
@@ -365,9 +350,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _emptyMessage(AuditStatusFilter filter) {
     switch (filter) {
       case AuditStatusFilter.audited:
-        return 'Is filter par abhi koi audited variant nahi hai.';
+        return 'Aaj abhi tak kisi variant ka audit save nahi hua.';
       case AuditStatusFilter.pending:
-        return 'Sab variants audit ho chuke hain.';
+        return 'Aaj ke liye audit baaki sab SKU yahan dikhenge.';
       case AuditStatusFilter.all:
         return 'Is location par koi product nahi mila.';
     }

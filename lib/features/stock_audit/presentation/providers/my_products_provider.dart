@@ -1,116 +1,95 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/app_pagination.dart';
 import '../../../../core/network/api_exception.dart';
-import '../../../../core/utils/audit_qty_helper.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/product_mismatch_model.dart';
+import '../../data/models/stock_reconciliation_model.dart';
+import '../../data/models/variance_model.dart';
 import '../../data/stock_audit_repository.dart';
 import '../utils/resolve_store_id.dart';
 
 enum StockStatusFilter { all, matched, short, excess }
 
+extension StockStatusFilterApi on StockStatusFilter {
+  String get apiValue {
+    switch (this) {
+      case StockStatusFilter.all:
+        return 'ALL';
+      case StockStatusFilter.matched:
+        return 'MATCHED';
+      case StockStatusFilter.short:
+        return 'SHORT';
+      case StockStatusFilter.excess:
+        return 'EXCESS';
+    }
+  }
+}
+
 class MyProductsState {
   const MyProductsState({
     this.locations = const [],
-    this.allRows = const [],
+    this.rows = const [],
+    this.summary = const StockReconciliationSummary(),
+    this.meta = const PaginationMeta(
+      page: 1,
+      limit: kAppPageSize,
+      total: 0,
+      totalPages: 0,
+    ),
     this.selectedStoreId,
     this.searchQuery = '',
     this.statusFilter = StockStatusFilter.all,
-    this.page = 1,
-    this.limit = 10,
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error,
   });
 
   final List<BusinessLocationModel> locations;
-  final List<ProductMismatchRow> allRows;
+  final List<ProductMismatchRow> rows;
+  final StockReconciliationSummary summary;
+  final PaginationMeta meta;
   final int? selectedStoreId;
   final String searchQuery;
   final StockStatusFilter statusFilter;
-  final int page;
-  final int limit;
   final bool isLoading;
   final bool isLoadingMore;
   final String? error;
 
-  List<ProductMismatchRow> get searchFilteredRows {
-    final term = searchQuery.trim().toLowerCase();
-    if (term.isEmpty) return allRows;
-    return allRows.where((row) {
-      return row.productName.toLowerCase().contains(term) ||
-          (row.sku ?? '').toLowerCase().contains(term) ||
-          (row.storeName ?? '').toLowerCase().contains(term) ||
-          (row.variantLabel ?? '').toLowerCase().contains(term) ||
-          (row.comment ?? '').toLowerCase().contains(term);
-    }).toList();
-  }
+  int get totalSkuCount => summary.totalSku;
+  int get matchedCount => summary.matched;
+  int get shortCount => summary.short;
+  int get excessCount => summary.excess;
 
-  List<ProductMismatchRow> get filteredRows {
-    final rows = searchFilteredRows;
-    switch (statusFilter) {
-      case StockStatusFilter.all:
-        return rows;
-      case StockStatusFilter.matched:
-        return rows
-            .where((row) => row.status == ReconStatus.matched)
-            .toList();
-      case StockStatusFilter.short:
-        return rows.where((row) => row.status == ReconStatus.short).toList();
-      case StockStatusFilter.excess:
-        return rows.where((row) => row.status == ReconStatus.excess).toList();
-    }
-  }
-
-  int get totalSkuCount => searchFilteredRows.length;
-  int get matchedCount => searchFilteredRows
-      .where((r) => r.status == ReconStatus.matched)
-      .length;
-  int get shortCount =>
-      searchFilteredRows.where((r) => r.status == ReconStatus.short).length;
-  int get excessCount =>
-      searchFilteredRows.where((r) => r.status == ReconStatus.excess).length;
-
-  int get total => filteredRows.length;
-
-  int get totalPages => total > 0 ? (total / limit).ceil() : 0;
-
-  bool get hasNextPage => page < totalPages;
-
-  /// Infinite-scroll reveal: first `page * limit` filtered rows.
-  List<ProductMismatchRow> get visibleRows {
-    if (total == 0) return const [];
-    final count = (page * limit).clamp(0, total);
-    return filteredRows.take(count).toList();
-  }
-
-  int get visibleTo => visibleRows.length;
-  int get visibleFrom => visibleRows.isEmpty ? 0 : 1;
+  bool get hasNextPage => meta.page < meta.totalPages;
 
   MyProductsState copyWith({
     List<BusinessLocationModel>? locations,
-    List<ProductMismatchRow>? allRows,
+    List<ProductMismatchRow>? rows,
+    StockReconciliationSummary? summary,
+    PaginationMeta? meta,
     int? selectedStoreId,
     bool clearSelectedStore = false,
     String? searchQuery,
     StockStatusFilter? statusFilter,
-    int? page,
-    int? limit,
     bool? isLoading,
     bool? isLoadingMore,
     String? error,
     bool clearError = false,
+    bool clearRows = false,
   }) {
     return MyProductsState(
       locations: locations ?? this.locations,
-      allRows: allRows ?? this.allRows,
+      rows: clearRows ? const [] : (rows ?? this.rows),
+      summary: summary ?? this.summary,
+      meta: meta ?? this.meta,
       selectedStoreId: clearSelectedStore
           ? null
           : (selectedStoreId ?? this.selectedStoreId),
       searchQuery: searchQuery ?? this.searchQuery,
       statusFilter: statusFilter ?? this.statusFilter,
-      page: page ?? this.page,
-      limit: limit ?? this.limit,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
@@ -127,12 +106,10 @@ class MyProductsController extends StateNotifier<MyProductsState> {
   MyProductsController(this._repository) : super(const MyProductsState());
 
   final StockAuditRepository _repository;
-
-  /// Blocks rapid scroll-listener page jumps (one chunk per short window).
-  bool _loadMoreLocked = false;
+  Timer? _searchDebounce;
 
   Future<void> initialize({int? preferredStoreId}) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true, clearRows: true);
     try {
       final locations = await _repository.getBusinessLocations();
       final storeId = resolvePreferredStoreId(locations, preferredStoreId);
@@ -147,137 +124,120 @@ class MyProductsController extends StateNotifier<MyProductsState> {
     }
   }
 
-  Future<void> loadReport() async {
-    _loadMoreLocked = false;
+  Future<void> loadReport() => _fetch(page: 1);
+
+  Future<void> setStoreFilter(int? storeId) async {
     state = state.copyWith(
-      isLoading: true,
-      isLoadingMore: false,
-      clearError: true,
-      page: 1,
+      selectedStoreId: storeId,
+      clearSelectedStore: storeId == null,
+      clearRows: true,
     );
-    try {
-      final locations = state.locations;
-      if (locations.isEmpty) {
-        state = state.copyWith(isLoading: false, allRows: const []);
-        return;
-      }
+    await _fetch(page: 1);
+  }
 
-      final targets = state.selectedStoreId == null
-          ? locations
-          : locations.where((location) => location.id == state.selectedStoreId);
+  void setSearch(String query) {
+    state = state.copyWith(searchQuery: query, clearError: true, clearRows: true);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      _fetch(page: 1);
+    });
+  }
 
-      final rows = <ProductMismatchRow>[];
+  Future<void> setStatusFilter(StockStatusFilter filter) async {
+    if (state.statusFilter == filter) return;
+    state = state.copyWith(
+      statusFilter: filter,
+      clearRows: true,
+      clearError: true,
+    );
+    await _fetch(page: 1);
+  }
 
-      for (final location in targets) {
-        final products = await _repository.getLocationProducts(location.id);
-        for (final product in products) {
-          for (final variant in product.variants) {
-            if (variant.auditUpdatedAt == null) continue;
+  Future<void> loadMore() async {
+    if (state.isLoading ||
+        state.isLoadingMore ||
+        !state.hasNextPage ||
+        state.selectedStoreId == null) {
+      return;
+    }
+    await _fetch(page: state.meta.page + 1, loadMore: true);
+  }
 
-            final totalPhysicalStock = variant.auditQty;
-            final systemStock = variant.availableStock;
-            final damageStock = variant.damageQty;
-            final physicalStock = AuditQtyHelper.physicalStock(variant);
-            // Lens v2PlotRunDiff: Total Physical − System Stock at Last Audit.
-            // Damage is part of Total Physical, so leaked/damaged units do not
-            // create a SHORT by themselves (matches Lens full report).
-            final difference =
-                AuditQtyHelper.reconciliationDifference(variant);
-            final status = ProductMismatchRow.statusFromDifference(difference);
-
-            rows.add(
-              ProductMismatchRow(
-                productName: product.name,
-                variantLabel: variant.variantName,
-                sku: variant.sku,
-                storeName: location.label,
-                systemStock: systemStock,
-                totalPhysicalStock: totalPhysicalStock,
-                physicalStock: physicalStock,
-                damageStock: damageStock,
-                comment: _normalizeComment(variant.damageComment),
-                difference: difference,
-                status: status,
-                auditUpdatedAt: variant.auditUpdatedAt!,
-              ),
-            );
-          }
-        }
-      }
-
-      // Sort by audit updated date descending (most recent first) - same as CRM
-      rows.sort((a, b) => b.auditUpdatedAt.compareTo(a.auditUpdatedAt));
-
+  Future<void> _fetch({required int page, bool loadMore = false}) async {
+    final storeId = state.selectedStoreId;
+    if (storeId == null) {
       state = state.copyWith(
-        allRows: rows,
         isLoading: false,
         isLoadingMore: false,
-        page: 1,
+        rows: const [],
+        summary: const StockReconciliationSummary(),
+        meta: const PaginationMeta(
+          page: 1,
+          limit: kAppPageSize,
+          total: 0,
+          totalPages: 0,
+        ),
+      );
+      return;
+    }
+
+    if (loadMore) {
+      state = state.copyWith(isLoadingMore: true, clearError: true);
+    } else {
+      state = state.copyWith(isLoading: true, clearError: true, clearRows: true);
+    }
+
+    try {
+      final report = await _repository.getStockReconciliation(
+        businessLocationId: storeId,
+        status: state.statusFilter.apiValue,
+        search: state.searchQuery,
+        page: page,
+        limit: kAppPageSize,
+      );
+
+      final merged = loadMore
+          ? _mergeRows(state.rows, report.rows)
+          : report.rows;
+
+      state = state.copyWith(
+        rows: merged,
+        summary: report.summary,
+        meta: report.meta,
+        isLoading: false,
+        isLoadingMore: false,
+        clearError: true,
       );
     } on ApiException catch (e) {
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,
         error: e.message,
-        allRows: const [],
+        clearRows: !loadMore,
       );
     }
   }
 
-  String? _normalizeComment(String? value) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) return null;
-    return trimmed;
-  }
-
-  Future<void> setStoreFilter(int? storeId) async {
-    _loadMoreLocked = false;
-    state = state.copyWith(
-      selectedStoreId: storeId,
-      clearSelectedStore: storeId == null,
-      page: 1,
-      isLoadingMore: false,
-    );
-    await loadReport();
-  }
-
-  void setSearch(String query) {
-    _loadMoreLocked = false;
-    state = state.copyWith(
-      searchQuery: query,
-      page: 1,
-      isLoadingMore: false,
-    );
-  }
-
-  void setStatusFilter(StockStatusFilter filter) {
-    if (state.statusFilter == filter) return;
-    _loadMoreLocked = false;
-    state = state.copyWith(
-      statusFilter: filter,
-      page: 1,
-      isLoadingMore: false,
-    );
-  }
-
-  /// Loads the next chunk. Cooldown prevents scroll listener from jumping
-  /// page 1 → last page in a single gesture.
-  void loadMore() {
-    if (state.isLoading ||
-        state.isLoadingMore ||
-        _loadMoreLocked ||
-        !state.hasNextPage) {
-      return;
+  List<ProductMismatchRow> _mergeRows(
+    List<ProductMismatchRow> existing,
+    List<ProductMismatchRow> incoming,
+  ) {
+    final seen = <String>{};
+    for (final row in existing) {
+      seen.add('${row.sku}|${row.productName}|${row.auditUpdatedAt.millisecondsSinceEpoch}');
     }
-    _loadMoreLocked = true;
-    state = state.copyWith(
-      isLoadingMore: true,
-      page: state.page + 1,
-    );
-    Future<void>.delayed(const Duration(milliseconds: 350), () {
-      if (!mounted) return;
-      _loadMoreLocked = false;
-      state = state.copyWith(isLoadingMore: false);
-    });
+    final merged = [...existing];
+    for (final row in incoming) {
+      final key =
+          '${row.sku}|${row.productName}|${row.auditUpdatedAt.millisecondsSinceEpoch}';
+      if (seen.add(key)) merged.add(row);
+    }
+    return merged;
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 }

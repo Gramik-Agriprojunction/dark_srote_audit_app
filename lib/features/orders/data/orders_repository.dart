@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dark_store_api_client.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/role_helper.dart';
+import '../../../core/constants/app_pagination.dart';
 import 'models/order_model.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
@@ -22,7 +23,7 @@ class OrdersRepository {
     String? search,
     String? status,
     int page = 1,
-    int limit = 30,
+    int limit = kAppPageSize,
     String source = 'gramik',
   }) async {
     final query = <String, dynamic>{
