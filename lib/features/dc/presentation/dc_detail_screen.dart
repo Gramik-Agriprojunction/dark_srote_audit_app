@@ -9,6 +9,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../data/dc_repository.dart';
 import '../data/models/dc_transfer_model.dart';
 import 'providers/dc_provider.dart';
 
@@ -72,59 +73,10 @@ class DcDetailScreen extends ConsumerWidget {
               onLogout: logout,
             ),
             Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
-                children: [
-                  ModuleStatsRow(
-                    stats: [
-                      ModuleStat(
-                        icon: Icons.call_received_rounded,
-                        label: 'Incoming Qty',
-                        value: formatter.format(transfer.incomingQty),
-                        background: const Color(0xFF15803D),
-                        labelColor: const Color(0xFFBBF7D0),
-                      ),
-                      ModuleStat(
-                        icon: Icons.check_circle_outline_rounded,
-                        label: 'Received Qty',
-                        value: formatter.format(transfer.receivedQty),
-                        background: AppColors.primary,
-                        labelColor: const Color(0xFFFFE4D2),
-                      ),
-                    ],
-                  ),
-                  if ((transfer.to?.warehouse ?? '').isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                      child: Text(
-                        'To: ${transfer.to!.warehouse}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ModuleTokens.mutedText,
-                        ),
-                      ),
-                    ),
-                  if (transfer.products.isEmpty)
-                    const ModuleEmptyState(
-                      icon: Icons.inventory_2_outlined,
-                      title: 'Koi product line nahi',
-                      message: 'Is transfer me product detail available nahi hai.',
-                    )
-                  else
-                    ...transfer.products.map(
-                      (product) => _ProductCard(
-                        transferId: transfer.transferId,
-                        inboundPickingId: transfer.inboundPickingId,
-                        product: product,
-                        formatter: formatter,
-                        showSaveActions: showSaveActions,
-                      ),
-                    ),
-                ],
+              child: _DcDetailBody(
+                transfer: transfer,
+                formatter: formatter,
+                showSaveActions: showSaveActions,
               ),
             ),
           ],
@@ -134,82 +86,150 @@ class DcDetailScreen extends ConsumerWidget {
   }
 }
 
-class _ProductCard extends ConsumerStatefulWidget {
-  const _ProductCard({
-    required this.transferId,
-    required this.inboundPickingId,
-    required this.product,
+class _DcDetailBody extends ConsumerStatefulWidget {
+  const _DcDetailBody({
+    required this.transfer,
     required this.formatter,
     required this.showSaveActions,
   });
 
-  final int transferId;
-  final int? inboundPickingId;
-  final DcProductLineModel product;
+  final DcTransferModel transfer;
   final NumberFormat formatter;
   final bool showSaveActions;
 
   @override
-  ConsumerState<_ProductCard> createState() => _ProductCardState();
+  ConsumerState<_DcDetailBody> createState() => _DcDetailBodyState();
 }
 
-class _ProductCardState extends ConsumerState<_ProductCard> {
-  late final TextEditingController _qtyController;
+class _DcDetailBodyState extends ConsumerState<_DcDetailBody> {
+  final Map<int, TextEditingController> _qtyByProduct = {};
   bool _saving = false;
-  bool _saved = false;
+  int? _savingProductId;
+  int? _savedProductId;
+
+  DcTransferModel get transfer => widget.transfer;
 
   @override
   void initState() {
     super.initState();
-    final incoming = widget.product.incomingQty;
-    _qtyController = TextEditingController(
-      text: incoming > 0 ? incoming.toInt().toString() : '',
-    );
+    _syncControllers(transfer.products);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DcDetailBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transfer.transferId != transfer.transferId ||
+        !_sameProductIds(oldWidget.transfer.products, transfer.products)) {
+      _syncControllers(transfer.products);
+    }
   }
 
   @override
   void dispose() {
-    _qtyController.dispose();
+    for (final controller in _qtyByProduct.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  bool get _canSave {
-    if (widget.inboundPickingId == null || widget.inboundPickingId! <= 0) {
-      return false;
+  bool _sameProductIds(
+    List<DcProductLineModel> a,
+    List<DcProductLineModel> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].productId != b[i].productId) return false;
     }
-    final qty = int.tryParse(_qtyController.text.trim());
-    return qty != null && qty >= 0 && !_saving;
+    return true;
   }
 
-  Future<void> _save() async {
+  void _syncControllers(List<DcProductLineModel> products) {
+    final nextIds = products.map((row) => row.productId).toSet();
+    final staleIds =
+        _qtyByProduct.keys.where((id) => !nextIds.contains(id)).toList();
+    for (final id in staleIds) {
+      _qtyByProduct.remove(id)?.dispose();
+    }
+    for (final product in products) {
+      final incoming = product.incomingQty;
+      final text = incoming > 0 ? incoming.toInt().toString() : '';
+      final existing = _qtyByProduct[product.productId];
+      if (existing == null) {
+        _qtyByProduct[product.productId] = TextEditingController(text: text);
+      }
+    }
+  }
+
+  int? _qtyFor(DcProductLineModel product) {
+    final raw = _qtyByProduct[product.productId]?.text.trim() ?? '';
+    if (raw.isEmpty) {
+      return product.incomingQty > 0 ? product.incomingQty.toInt() : null;
+    }
+    return int.tryParse(raw);
+  }
+
+  List<DcInboundOperation> _operations() {
+    final operations = <DcInboundOperation>[];
+    for (final product in transfer.products) {
+      final qty = _qtyFor(product);
+      if (qty == null || qty <= 0) continue;
+      operations.add(
+        DcInboundOperation(productId: product.productId, quantity: qty),
+      );
+    }
+    return operations;
+  }
+
+  bool get _canSave {
+    if (transfer.inboundPickingId == null || transfer.inboundPickingId! <= 0) {
+      return false;
+    }
+    if (_saving || transfer.products.isEmpty) return false;
+    return _operations().length == transfer.products.length;
+  }
+
+  Future<void> _save(int productId) async {
     if (!_canSave) return;
-    final qty = int.tryParse(_qtyController.text.trim());
-    if (qty == null) return;
-    final inboundPickingId = widget.inboundPickingId!;
+    final inboundPickingId = transfer.inboundPickingId!;
+    final operations = _operations();
+    if (operations.length != transfer.products.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Har product ki qty 0 se zyada honi chahiye.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Color(0xFFB91C1C),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _saving = true;
-      _saved = false;
+      _savingProductId = productId;
+      _savedProductId = null;
     });
 
     try {
-      await ref.read(dcControllerProvider.notifier).validateInboundProduct(
-            transferId: widget.transferId,
+      await ref.read(dcControllerProvider.notifier).validateInboundProducts(
+            transferId: transfer.transferId,
             inboundPickingId: inboundPickingId,
-            productId: widget.product.productId,
-            quantity: qty,
+            operations: operations,
           );
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saved = true;
+        _savingProductId = null;
+        _savedProductId = productId;
       });
       await ref.read(dcControllerProvider.notifier).refresh();
       if (!mounted) return;
       context.go('/dc?tab=received');
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _saving = false);
+      setState(() {
+        _saving = false;
+        _savingProductId = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.message),
@@ -219,7 +239,10 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
       );
     } catch (_) {
       if (!mounted) return;
-      setState(() => _saving = false);
+      setState(() {
+        _saving = false;
+        _savingProductId = null;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Connection error. Dubara try karein.'),
@@ -232,7 +255,101 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave = _canSave;
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
+      children: [
+        ModuleStatsRow(
+          stats: [
+            ModuleStat(
+              icon: Icons.call_received_rounded,
+              label: 'Incoming Qty',
+              value: widget.formatter.format(transfer.incomingQty),
+              background: const Color(0xFF15803D),
+              labelColor: const Color(0xFFBBF7D0),
+            ),
+            ModuleStat(
+              icon: Icons.check_circle_outline_rounded,
+              label: 'Received Qty',
+              value: widget.formatter.format(transfer.receivedQty),
+              background: AppColors.primary,
+              labelColor: const Color(0xFFFFE4D2),
+            ),
+          ],
+        ),
+        if ((transfer.to?.warehouse ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+            child: Text(
+              'To: ${transfer.to!.warehouse}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: ModuleTokens.mutedText,
+              ),
+            ),
+          ),
+        if (transfer.products.isEmpty)
+          const ModuleEmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: 'Koi product line nahi',
+            message: 'Is transfer me product detail available nahi hai.',
+          )
+        else
+          ...transfer.products.map(
+            (product) => _ProductCard(
+              product: product,
+              formatter: widget.formatter,
+              showSaveActions: widget.showSaveActions,
+              inboundPickingId: transfer.inboundPickingId,
+              qtyController: _qtyByProduct[product.productId]!,
+              saving: _saving && _savingProductId == product.productId,
+              saved: _savedProductId == product.productId,
+              canSave: _canSave,
+              onChanged: () {
+                if (_savedProductId != null) {
+                  setState(() => _savedProductId = null);
+                } else {
+                  setState(() {});
+                }
+              },
+              onSave: () => _save(product.productId),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({
+    required this.product,
+    required this.formatter,
+    required this.showSaveActions,
+    required this.inboundPickingId,
+    required this.qtyController,
+    required this.saving,
+    required this.saved,
+    required this.canSave,
+    required this.onChanged,
+    required this.onSave,
+  });
+
+  final DcProductLineModel product;
+  final NumberFormat formatter;
+  final bool showSaveActions;
+  final int? inboundPickingId;
+  final TextEditingController qtyController;
+  final bool saving;
+  final bool saved;
+  final bool canSave;
+  final VoidCallback onChanged;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
     return ModuleCard(
       statusColor: const Color(0xFF15803D),
       child: Padding(
@@ -241,7 +358,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.product.productName,
+              product.productName,
               style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
@@ -262,7 +379,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                   Expanded(
                     child: _Metric(
                       label: 'Incoming',
-                      value: widget.formatter.format(widget.product.incomingQty),
+                      value: formatter.format(product.incomingQty),
                       color: const Color(0xFF15803D),
                     ),
                   ),
@@ -274,7 +391,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                   Expanded(
                     child: _Metric(
                       label: 'Received',
-                      value: widget.formatter.format(widget.product.receivedQty),
+                      value: formatter.format(product.receivedQty),
                       color: AppColors.primary,
                     ),
                   ),
@@ -283,13 +400,13 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             ),
             const SizedBox(height: 6),
             Text(
-              'UOM: ${widget.product.uom}',
+              'UOM: ${product.uom}',
               style: TextStyle(
                 fontSize: 10.5,
                 color: ModuleTokens.faintText,
               ),
             ),
-            if (widget.showSaveActions && widget.inboundPickingId == null) ...[
+            if (showSaveActions && inboundPickingId == null) ...[
               const SizedBox(height: 8),
               const Text(
                 'Inbound picking id missing — save unavailable',
@@ -300,7 +417,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                 ),
               ),
             ],
-            if (widget.showSaveActions) ...[
+            if (showSaveActions) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -314,10 +431,10 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       ),
                       alignment: Alignment.center,
                       child: TextField(
-                        controller: _qtyController,
+                        controller: qtyController,
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        enabled: !_saving,
+                        enabled: !saving,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         style: TextStyle(
                           fontSize: 16,
@@ -333,9 +450,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                         ),
-                        onChanged: (_) {
-                          if (_saved) setState(() => _saved = false);
-                        },
+                        onChanged: (_) => onChanged(),
                       ),
                     ),
                   ),
@@ -343,12 +458,12 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                   SizedBox(
                     width: 84,
                     child: LoadingButton(
-                      label: _saved ? 'Saved' : 'Save',
+                      label: saved ? 'Saved' : 'Save',
                       compact: true,
                       secondary: true,
-                      enabled: canSave,
-                      isLoading: _saving,
-                      onPressed: canSave ? _save : null,
+                      enabled: canSave || saving,
+                      isLoading: saving,
+                      onPressed: canSave ? onSave : null,
                     ),
                   ),
                 ],

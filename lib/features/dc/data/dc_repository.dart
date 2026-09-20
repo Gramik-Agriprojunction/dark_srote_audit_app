@@ -12,6 +12,16 @@ final dcRepositoryProvider = Provider<DcRepository>((ref) {
   );
 });
 
+class DcInboundOperation {
+  const DcInboundOperation({
+    required this.productId,
+    required this.quantity,
+  });
+
+  final int productId;
+  final int quantity;
+}
+
 class DcRepository {
   DcRepository(this._client, this._storage);
 
@@ -36,18 +46,22 @@ class DcRepository {
     return DcTransferListModel.fromJson(json);
   }
 
-  Future<String> validateInboundProduct({
+  Future<String> validateInboundProducts({
     required int transferId,
     required int inboundPickingId,
-    required int productId,
-    required int quantity,
+    required List<DcInboundOperation> operations,
   }) async {
     final json = await _client.post(
       '/darkstore/inter-branch-transfers/$transferId/inbound/$inboundPickingId/validate',
       body: {
-        'operations': [
-          {'product_id': productId, 'quantity': quantity},
-        ],
+        'operations': operations
+            .map(
+              (row) => {
+                'product_id': row.productId,
+                'quantity': row.quantity,
+              },
+            )
+            .toList(),
       },
     );
     return (json['message'] ?? 'Saved successfully').toString();
