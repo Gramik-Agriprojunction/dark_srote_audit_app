@@ -59,8 +59,11 @@ class AppStrings {
   String get themeDefault => _t('Default', 'डिफ़ॉल्ट');
   String get themeDark => _t('Dark', 'डार्क');
   String get language => _t('Language', 'भाषा');
+  String get languageSetting => _t('Language Setting', 'भाषा सेटिंग');
   String get languageEnglish => 'English';
   String get languageHindi => 'हिंदी';
+  String get languageEn => 'En';
+  String get languageHi => 'Hi';
   String get total => _t('Total', 'कुल');
   String get delivered => _t('Delivered', 'डिलीवर्ड');
   String get pending => _t('Pending', 'पेंडिंग');
@@ -261,6 +264,10 @@ class AppStrings {
   String get inboundPickingMissing => _t(
         'Inbound picking id missing — save unavailable',
         'इनबाउंड पिकिंग ID गायब — सेव उपलब्ध नहीं',
+      );
+  String get allProductsQtyRequired => _t(
+        'Har product ki qty fill karein (0 se zyada).',
+        'हर उत्पाद की मात्रा भरें (0 से ज़्यादा)।',
       );
   String get transferIdMissing => _t(
         'Transfer id missing — detail open nahi ho sakta.',

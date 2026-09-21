@@ -200,7 +200,7 @@ class DcController extends StateNotifier<DcState> {
   Future<String> validateInboundProducts({
     required int transferId,
     required int inboundPickingId,
-    required List<DcInboundOperation> operations,
+    required List<DcTransferOperation> operations,
   }) {
     return _repository.validateInboundProducts(
       transferId: transferId,
@@ -209,17 +209,15 @@ class DcController extends StateNotifier<DcState> {
     );
   }
 
-  Future<String> validateOutboundProduct({
+  Future<String> validateOutboundProducts({
     required int transferId,
     required int outboundPickingId,
-    required int productId,
-    required int quantity,
+    required List<DcTransferOperation> operations,
   }) {
-    return _repository.validateOutboundProduct(
+    return _repository.validateOutboundProducts(
       transferId: transferId,
       outboundPickingId: outboundPickingId,
-      productId: productId,
-      quantity: quantity,
+      operations: operations,
     );
   }
 }

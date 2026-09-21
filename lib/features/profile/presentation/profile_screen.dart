@@ -48,6 +48,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await ref.read(authControllerProvider.notifier).logout();
   }
 
+  Future<void> _openLanguageSheet(AppStrings strings) async {
+    final selected = await showModalBottomSheet<AppLanguage>(
+      context: context,
+      backgroundColor: AppColors.cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => _LanguageSheet(
+        strings: strings,
+        language: ref.read(appLanguageProvider),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    await ref.read(appLanguageProvider.notifier).setLanguage(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
@@ -132,14 +148,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             onChanged: (mode) => ref
                                 .read(appThemeModeProvider.notifier)
                                 .setMode(mode),
-                          ),
-                          const SizedBox(height: 14),
-                          _LanguageCard(
-                            strings: s,
-                            language: ref.watch(appLanguageProvider),
-                            onChanged: (language) => ref
-                                .read(appLanguageProvider.notifier)
-                                .setLanguage(language),
                           ),
                           const SizedBox(height: 14),
                           _SectionLabel(s.menu),
@@ -243,6 +251,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   },
                                 ),
                               ],
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.translate_rounded,
+                                iconBg: AppColors.softOrange,
+                                iconColor: AppColors.primary,
+                                label: s.languageSetting,
+                                value: ref.watch(appLanguageProvider) ==
+                                        AppLanguage.hi
+                                    ? s.languageHi
+                                    : s.languageEn,
+                                onTap: () => _openLanguageSheet(s),
+                              ),
                             ],
                           ),
                         ],
@@ -671,56 +691,61 @@ class _ThemeModeCard extends StatelessWidget {
   }
 }
 
-class _LanguageCard extends StatelessWidget {
-  const _LanguageCard({
+class _LanguageSheet extends StatelessWidget {
+  const _LanguageSheet({
     required this.strings,
     required this.language,
-    required this.onChanged,
   });
 
   final AppStrings strings;
   final AppLanguage language;
-  final ValueChanged<AppLanguage> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottom),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Text(
-            strings.language,
+            strings.languageSetting,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
                 child: _ThemeChip(
-                  label: strings.languageEnglish,
+                  label: strings.languageEn,
                   icon: Icons.language_rounded,
                   selected: language == AppLanguage.en,
-                  onTap: () => onChanged(AppLanguage.en),
+                  onTap: () => Navigator.pop(context, AppLanguage.en),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _ThemeChip(
-                  label: strings.languageHindi,
+                  label: strings.languageHi,
                   leadingText: 'अ',
                   selected: language == AppLanguage.hi,
-                  onTap: () => onChanged(AppLanguage.hi),
+                  onTap: () => Navigator.pop(context, AppLanguage.hi),
                 ),
               ),
             ],

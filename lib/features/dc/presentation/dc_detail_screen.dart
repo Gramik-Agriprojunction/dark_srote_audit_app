@@ -92,112 +92,13 @@ class DcDetailScreen extends ConsumerWidget {
               onLogout: logout,
             ),
             Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
-                children: [
-                  ModuleStatsRow(
-                    stats: _isTransferredMode
-                        ? [
-                            ModuleStat(
-                              icon: Icons.call_made_rounded,
-                              label: s.outgoingQty,
-                              value: formatter.format(transfer.outgoingQty),
-                              background: const Color(0xFF1D4ED8),
-                              labelColor: const Color(0xFFBFDBFE),
-                            ),
-                            ModuleStat(
-                              icon: Icons.check_circle_outline_rounded,
-                              label: s.transferredQty,
-                              value: formatter.format(transfer.transferredQty),
-                              background: const Color(0xFF7C3AED),
-                              labelColor: const Color(0xFFE9D5FF),
-                            ),
-                          ]
-                        : _isOutgoingMode
-                            ? [
-                                ModuleStat(
-                                  icon: Icons.call_made_rounded,
-                                  label: s.outgoingQty,
-                                  value: formatter.format(transfer.outgoingQty),
-                                  background: accent,
-                                  labelColor: const Color(0xFFBFDBFE),
-                                ),
-                                ModuleStat(
-                                  icon: Icons.check_circle_outline_rounded,
-                                  label: s.transferredQty,
-                                  value: formatter
-                                      .format(transfer.transferredQty),
-                                  background: AppColors.primary,
-                                  labelColor: const Color(0xFFFFE4D2),
-                                ),
-                              ]
-                            : [
-                                ModuleStat(
-                                  icon: Icons.call_received_rounded,
-                                  label: s.incomingQty,
-                                  value: formatter.format(transfer.incomingQty),
-                                  background: const Color(0xFF15803D),
-                                  labelColor: const Color(0xFFBBF7D0),
-                                ),
-                                ModuleStat(
-                                  icon: Icons.check_circle_outline_rounded,
-                                  label: s.receivedQty,
-                                  value: formatter.format(transfer.receivedQty),
-                                  background: AppColors.primary,
-                                  labelColor: const Color(0xFFFFE4D2),
-                                ),
-                              ],
-                  ),
-                  if (_isOutgoingMode &&
-                      (transfer.to?.warehouse ?? '').isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                      child: Text(
-                        s.toWarehouse(transfer.to!.warehouse ?? ''),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ModuleTokens.mutedText,
-                        ),
-                      ),
-                    )
-                  else if (!_isOutgoingMode &&
-                      (transfer.from?.warehouse ?? '').isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                      child: Text(
-                        s.fromWarehouse(transfer.from!.warehouse ?? ''),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ModuleTokens.mutedText,
-                        ),
-                      ),
-                    ),
-                  if (transfer.products.isEmpty)
-                    ModuleEmptyState(
-                      icon: Icons.inventory_2_outlined,
-                      title: s.noProductLines,
-                      message: s.noProductDetail,
-                    )
-                  else
-                    ...transfer.products.map(
-                      (product) => _ProductCard(
-                        transferId: transfer.transferId,
-                        inboundPickingId: transfer.inboundPickingId,
-                        outboundPickingId: transfer.outboundPickingId,
-                        product: product,
-                        formatter: formatter,
-                        showSaveActions: allowSaveActions,
-                        isOutgoingMode: _isOutgoingMode,
-                        isTransferredMode: _isTransferredMode,
-                        accent: accent,
-                      ),
-                    ),
-                ],
+              child: _DcDetailBody(
+                transfer: transfer,
+                formatter: formatter,
+                showSaveActions: allowSaveActions,
+                isOutgoingMode: _isOutgoingMode,
+                isTransferredMode: _isTransferredMode,
+                accent: accent,
               ),
             ),
           ],
@@ -207,12 +108,9 @@ class DcDetailScreen extends ConsumerWidget {
   }
 }
 
-class _ProductCard extends ConsumerStatefulWidget {
-  const _ProductCard({
-    required this.transferId,
-    required this.inboundPickingId,
-    required this.outboundPickingId,
-    required this.product,
+class _DcDetailBody extends ConsumerStatefulWidget {
+  const _DcDetailBody({
+    required this.transfer,
     required this.formatter,
     required this.showSaveActions,
     required this.isOutgoingMode,
@@ -220,10 +118,7 @@ class _ProductCard extends ConsumerStatefulWidget {
     required this.accent,
   });
 
-  final int transferId;
-  final int? inboundPickingId;
-  final int? outboundPickingId;
-  final DcProductLineModel product;
+  final DcTransferModel transfer;
   final NumberFormat formatter;
   final bool showSaveActions;
   final bool isOutgoingMode;
@@ -231,47 +126,122 @@ class _ProductCard extends ConsumerStatefulWidget {
   final Color accent;
 
   @override
-  ConsumerState<_ProductCard> createState() => _ProductCardState();
+  ConsumerState<_DcDetailBody> createState() => _DcDetailBodyState();
 }
 
-class _ProductCardState extends ConsumerState<_ProductCard> {
-  late final TextEditingController _qtyController;
+class _DcDetailBodyState extends ConsumerState<_DcDetailBody> {
+  final Map<int, TextEditingController> _qtyByProduct = {};
   bool _saving = false;
   bool _saved = false;
+
+  DcTransferModel get transfer => widget.transfer;
+
+  bool get _canEditQty =>
+      widget.showSaveActions && !widget.isTransferredMode;
 
   @override
   void initState() {
     super.initState();
-    final seedQty = widget.isOutgoingMode
-        ? widget.product.outgoingQty
-        : widget.product.incomingQty;
-    _qtyController = TextEditingController(
-      text: seedQty > 0 ? seedQty.toInt().toString() : '',
-    );
+    _syncControllers(transfer.products);
+  }
+
+  @override
+  void didUpdateWidget(covariant _DcDetailBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.transfer.transferId != transfer.transferId ||
+        !_sameProductIds(oldWidget.transfer.products, transfer.products)) {
+      _syncControllers(transfer.products);
+    }
   }
 
   @override
   void dispose() {
-    _qtyController.dispose();
+    for (final controller in _qtyByProduct.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  int? get _activePickingId =>
-      widget.isOutgoingMode ? widget.outboundPickingId : widget.inboundPickingId;
-
-  bool get _canSave {
-    if (!widget.showSaveActions) return false;
-    final pickingId = _activePickingId;
-    if (pickingId == null || pickingId <= 0) return false;
-    final qty = int.tryParse(_qtyController.text.trim());
-    return qty != null && qty >= 0 && !_saving;
+  bool _sameProductIds(
+    List<DcProductLineModel> a,
+    List<DcProductLineModel> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].productId != b[i].productId) return false;
+    }
+    return true;
   }
 
-  Future<void> _save() async {
-    if (!_canSave) return;
-    final qty = int.tryParse(_qtyController.text.trim());
-    if (qty == null) return;
+  void _syncControllers(List<DcProductLineModel> products) {
+    final nextIds = products.map((row) => row.productId).toSet();
+    final staleIds =
+        _qtyByProduct.keys.where((id) => !nextIds.contains(id)).toList();
+    for (final id in staleIds) {
+      _qtyByProduct.remove(id)?.dispose();
+    }
+    for (final product in products) {
+      final seed = widget.isOutgoingMode
+          ? product.outgoingQty
+          : product.incomingQty;
+      final text = seed > 0 ? seed.toInt().toString() : '';
+      if (!_qtyByProduct.containsKey(product.productId)) {
+        _qtyByProduct[product.productId] = TextEditingController(text: text);
+      }
+    }
+  }
+
+  int? _qtyFor(DcProductLineModel product) {
+    final raw = _qtyByProduct[product.productId]?.text.trim() ?? '';
+    if (raw.isEmpty) {
+      final seed =
+          widget.isOutgoingMode ? product.outgoingQty : product.incomingQty;
+      return seed > 0 ? seed.toInt() : null;
+    }
+    return int.tryParse(raw);
+  }
+
+  List<DcTransferOperation> _operations() {
+    final operations = <DcTransferOperation>[];
+    for (final product in transfer.products) {
+      final qty = _qtyFor(product);
+      if (qty == null || qty < 0) continue;
+      operations.add(
+        DcTransferOperation(productId: product.productId, quantity: qty),
+      );
+    }
+    return operations;
+  }
+
+  int? get _activePickingId => widget.isOutgoingMode
+      ? transfer.outboundPickingId
+      : transfer.inboundPickingId;
+
+  bool get _canSave {
+    if (!_canEditQty) return false;
+    final pickingId = _activePickingId;
+    if (pickingId == null || pickingId <= 0) return false;
+    if (_saving || transfer.products.isEmpty) return false;
+    return _operations().length == transfer.products.length;
+  }
+
+  Future<void> _saveAll() async {
+    final s = ref.read(appStringsProvider);
+    if (!_canSave) {
+      if (_operations().length != transfer.products.length) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(s.allProductsQtyRequired),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFB91C1C),
+          ),
+        );
+      }
+      return;
+    }
+
     final pickingId = _activePickingId!;
+    final operations = _operations();
 
     setState(() {
       _saving = true;
@@ -280,22 +250,16 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
     try {
       if (widget.isOutgoingMode) {
-        await ref.read(dcControllerProvider.notifier).validateOutboundProduct(
-              transferId: widget.transferId,
+        await ref.read(dcControllerProvider.notifier).validateOutboundProducts(
+              transferId: transfer.transferId,
               outboundPickingId: pickingId,
-              productId: widget.product.productId,
-              quantity: qty,
+              operations: operations,
             );
       } else {
         await ref.read(dcControllerProvider.notifier).validateInboundProducts(
-              transferId: widget.transferId,
+              transferId: transfer.transferId,
               inboundPickingId: pickingId,
-              operations: [
-                DcInboundOperation(
-                  productId: widget.product.productId,
-                  quantity: qty,
-                ),
-              ],
+              operations: operations,
             );
       }
       if (!mounted) return;
@@ -323,7 +287,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ref.read(appStringsProvider).connectionError),
+          content: Text(s.connectionError),
           behavior: SnackBarBehavior.floating,
           backgroundColor: const Color(0xFFB91C1C),
         ),
@@ -334,21 +298,178 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(appStringsProvider);
-    final canSave = _canSave;
-    final pickingMissing = widget.showSaveActions &&
-        (_activePickingId == null || _activePickingId! <= 0);
+    final pickingMissing =
+        _canEditQty && (_activePickingId == null || _activePickingId! <= 0);
+
+    return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 24),
+      children: [
+        ModuleStatsRow(
+          stats: widget.isTransferredMode
+              ? [
+                  ModuleStat(
+                    icon: Icons.call_made_rounded,
+                    label: s.outgoingQty,
+                    value: widget.formatter.format(transfer.outgoingQty),
+                    background: const Color(0xFF1D4ED8),
+                    labelColor: const Color(0xFFBFDBFE),
+                  ),
+                  ModuleStat(
+                    icon: Icons.check_circle_outline_rounded,
+                    label: s.transferredQty,
+                    value: widget.formatter.format(transfer.transferredQty),
+                    background: const Color(0xFF7C3AED),
+                    labelColor: const Color(0xFFE9D5FF),
+                  ),
+                ]
+              : widget.isOutgoingMode
+                  ? [
+                      ModuleStat(
+                        icon: Icons.call_made_rounded,
+                        label: s.outgoingQty,
+                        value: widget.formatter.format(transfer.outgoingQty),
+                        background: widget.accent,
+                        labelColor: const Color(0xFFBFDBFE),
+                      ),
+                      ModuleStat(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: s.transferredQty,
+                        value: widget.formatter.format(transfer.transferredQty),
+                        background: AppColors.primary,
+                        labelColor: const Color(0xFFFFE4D2),
+                      ),
+                    ]
+                  : [
+                      ModuleStat(
+                        icon: Icons.call_received_rounded,
+                        label: s.incomingQty,
+                        value: widget.formatter.format(transfer.incomingQty),
+                        background: const Color(0xFF15803D),
+                        labelColor: const Color(0xFFBBF7D0),
+                      ),
+                      ModuleStat(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: s.receivedQty,
+                        value: widget.formatter.format(transfer.receivedQty),
+                        background: AppColors.primary,
+                        labelColor: const Color(0xFFFFE4D2),
+                      ),
+                    ],
+        ),
+        if (widget.isOutgoingMode &&
+            (transfer.to?.warehouse ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+            child: Text(
+              s.toWarehouse(transfer.to!.warehouse ?? ''),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: ModuleTokens.mutedText,
+              ),
+            ),
+          )
+        else if (!widget.isOutgoingMode &&
+            (transfer.from?.warehouse ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+            child: Text(
+              s.fromWarehouse(transfer.from!.warehouse ?? ''),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: ModuleTokens.mutedText,
+              ),
+            ),
+          ),
+        if (transfer.products.isEmpty)
+          ModuleEmptyState(
+            icon: Icons.inventory_2_outlined,
+            title: s.noProductLines,
+            message: s.noProductDetail,
+          )
+        else ...[
+          ...transfer.products.map((product) {
+            return _ProductCard(
+              product: product,
+              formatter: widget.formatter,
+              showQtyField: _canEditQty,
+              isOutgoingMode: widget.isOutgoingMode,
+              isTransferredMode: widget.isTransferredMode,
+              accent: widget.accent,
+              qtyController: _qtyByProduct[product.productId]!,
+              onChanged: () {
+                if (_saved) {
+                  setState(() => _saved = false);
+                } else {
+                  setState(() {});
+                }
+              },
+            );
+          }),
+          if (_canEditQty) ...[
+            if (pickingMissing) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.isOutgoingMode
+                    ? s.outboundPickingMissing
+                    : s.inboundPickingMissing,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFFB91C1C),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            LoadingButton(
+              label: _saved ? s.saved : s.save,
+              isLoading: _saving,
+              onPressed: _canSave ? _saveAll : null,
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _ProductCard extends ConsumerWidget {
+  const _ProductCard({
+    required this.product,
+    required this.formatter,
+    required this.showQtyField,
+    required this.isOutgoingMode,
+    required this.isTransferredMode,
+    required this.accent,
+    required this.qtyController,
+    required this.onChanged,
+  });
+
+  final DcProductLineModel product;
+  final NumberFormat formatter;
+  final bool showQtyField;
+  final bool isOutgoingMode;
+  final bool isTransferredMode;
+  final Color accent;
+  final TextEditingController qtyController;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
 
     return ModuleCard(
-      statusColor: widget.isOutgoingMode
-          ? widget.accent
-          : const Color(0xFF15803D),
+      statusColor: isOutgoingMode ? accent : const Color(0xFF15803D),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.product.productName,
+              product.productName,
               style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
@@ -365,13 +486,12 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                 border: Border.all(color: ModuleTokens.cardBorder),
               ),
               child: Row(
-                children: widget.isTransferredMode
+                children: isTransferredMode
                     ? [
                         Expanded(
                           child: _Metric(
                             label: s.outgoing,
-                            value: widget.formatter
-                                .format(widget.product.outgoingQty),
+                            value: formatter.format(product.outgoingQty),
                             color: const Color(0xFF1D4ED8),
                           ),
                         ),
@@ -383,20 +503,18 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         Expanded(
                           child: _Metric(
                             label: s.transferredQty,
-                            value: widget.formatter
-                                .format(widget.product.transferredQty),
+                            value: formatter.format(product.transferredQty),
                             color: const Color(0xFF7C3AED),
                           ),
                         ),
                       ]
-                    : widget.isOutgoingMode
+                    : isOutgoingMode
                         ? [
                             Expanded(
                               child: _Metric(
                                 label: s.outgoing,
-                                value: widget.formatter
-                                    .format(widget.product.outgoingQty),
-                                color: widget.accent,
+                                value: formatter.format(product.outgoingQty),
+                                color: accent,
                               ),
                             ),
                             Container(
@@ -407,8 +525,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             Expanded(
                               child: _Metric(
                                 label: s.transferredQty,
-                                value: widget.formatter
-                                    .format(widget.product.transferredQty),
+                                value:
+                                    formatter.format(product.transferredQty),
                                 color: AppColors.primary,
                               ),
                             ),
@@ -417,8 +535,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             Expanded(
                               child: _Metric(
                                 label: s.incoming,
-                                value: widget.formatter
-                                    .format(widget.product.incomingQty),
+                                value: formatter.format(product.incomingQty),
                                 color: const Color(0xFF15803D),
                               ),
                             ),
@@ -430,8 +547,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             Expanded(
                               child: _Metric(
                                 label: s.received,
-                                value: widget.formatter
-                                    .format(widget.product.receivedQty),
+                                value: formatter.format(product.receivedQty),
                                 color: AppColors.primary,
                               ),
                             ),
@@ -440,52 +556,25 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             ),
             const SizedBox(height: 6),
             Text(
-              '${s.uom}: ${widget.product.uom}',
+              '${s.uom}: ${product.uom}',
               style: TextStyle(
                 fontSize: 10.5,
                 color: ModuleTokens.faintText,
               ),
             ),
-            if (widget.showSaveActions) ...[
-              if (pickingMissing) ...[
-                const SizedBox(height: 8),
-                Text(
-                  widget.isOutgoingMode
-                      ? s.outboundPickingMissing
-                      : s.inboundPickingMissing,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: Color(0xFFB91C1C),
-                  ),
-                ),
-              ],
+            if (showQtyField) ...[
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _qtyController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        labelText: widget.isOutgoingMode
-                            ? s.transferredQtyLabel
-                            : s.receivedQtyLabel,
-                        isDense: true,
-                      ),
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: 110,
-                    child: LoadingButton(
-                      label: _saved ? s.saved : s.save,
-                      isLoading: _saving,
-                      onPressed: canSave ? _save : null,
-                    ),
-                  ),
-                ],
+              TextField(
+                controller: qtyController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: isOutgoingMode
+                      ? s.transferredQtyLabel
+                      : s.receivedQtyLabel,
+                  isDense: true,
+                ),
+                onChanged: (_) => onChanged(),
               ),
             ],
           ],

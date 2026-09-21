@@ -13,8 +13,8 @@ final dcRepositoryProvider = Provider<DcRepository>((ref) {
   );
 });
 
-class DcInboundOperation {
-  const DcInboundOperation({
+class DcTransferOperation {
+  const DcTransferOperation({
     required this.productId,
     required this.quantity,
   });
@@ -22,6 +22,9 @@ class DcInboundOperation {
   final int productId;
   final int quantity;
 }
+
+/// Kept for existing call sites.
+typedef DcInboundOperation = DcTransferOperation;
 
 class DcFetchQuery {
   const DcFetchQuery({
@@ -105,7 +108,7 @@ class DcRepository {
   Future<String> validateInboundProducts({
     required int transferId,
     required int inboundPickingId,
-    required List<DcInboundOperation> operations,
+    required List<DcTransferOperation> operations,
   }) async {
     await _ensureCanWrite();
     final json = await _client.post(
@@ -124,19 +127,23 @@ class DcRepository {
     return (json['message'] ?? 'Saved successfully').toString();
   }
 
-  Future<String> validateOutboundProduct({
+  Future<String> validateOutboundProducts({
     required int transferId,
     required int outboundPickingId,
-    required int productId,
-    required int quantity,
+    required List<DcTransferOperation> operations,
   }) async {
     await _ensureCanWrite();
     final json = await _client.post(
       '/darkstore/inter-branch-transfers/$transferId/outbound/$outboundPickingId/validate',
       body: {
-        'operations': [
-          {'product_id': productId, 'quantity': quantity},
-        ],
+        'operations': operations
+            .map(
+              (row) => {
+                'product_id': row.productId,
+                'quantity': row.quantity,
+              },
+            )
+            .toList(),
       },
     );
     return (json['message'] ?? 'Saved successfully').toString();
