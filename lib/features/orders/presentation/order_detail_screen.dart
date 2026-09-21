@@ -7,9 +7,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/theme_mode_provider.dart';
+import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/models/order_model.dart';
 import '../services/thermal_printer_service.dart';
 import 'providers/order_detail_provider.dart';
@@ -39,6 +41,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(orderDetailControllerProvider(widget.orderId).notifier).load();
     });
   }
@@ -81,6 +84,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _openCancelOverlay(OrderDetailModel order) async {
+    if (ref.read(isViewOnlySessionProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+      );
+      return;
+    }
     final controller = ref.read(orderDetailControllerProvider(widget.orderId).notifier);
     await controller.loadCancelReasons();
     if (!mounted) return;
@@ -120,6 +129,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _printReceipt(OrderDetailModel order) async {
+    if (ref.read(isViewOnlySessionProvider)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+      );
+      return;
+    }
     if (_printBusy) return;
     setState(() => _printBusy = true);
     try {
@@ -240,8 +255,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final statusUpper = order.orderStatus.toUpperCase();
     final isPending = statusUpper == 'PENDING';
     final isManifested = statusUpper == 'MANIFESTED';
-    final showPrintReceipt = !order.isCounterSale && (isPending || isManifested);
-    final showCancel = order.isCounterSale && statusUpper == 'DELIVERED';
+    final viewOnly = ref.watch(isViewOnlySessionProvider);
+    final showPrintReceipt =
+        !viewOnly && !order.isCounterSale && (isPending || isManifested);
+    final showCancel =
+        !viewOnly && order.isCounterSale && statusUpper == 'DELIVERED';
     final showBottom = showPrintReceipt || showCancel || !isPending;
     final topPickupOtps = collectTopPickupOtps(order);
     final otpList = collectOrderOtps(order);

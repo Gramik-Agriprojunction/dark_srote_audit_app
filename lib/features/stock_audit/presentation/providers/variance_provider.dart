@@ -87,6 +87,7 @@ class VarianceController extends StateNotifier<VarianceState> {
   VarianceController(this._repository) : super(const VarianceState());
 
   final StockAuditRepository _repository;
+  int _fetchGeneration = 0;
 
   Future<void> initialize({int? preferredStoreId}) async {
     state = state.copyWith(
@@ -118,6 +119,7 @@ class VarianceController extends StateNotifier<VarianceState> {
   }
 
   Future<void> _fetch({required int page, bool loadMore = false}) async {
+    final generation = ++_fetchGeneration;
     final storeId = state.selectedStoreId;
     if (storeId == null) {
       state = state.copyWith(
@@ -141,6 +143,7 @@ class VarianceController extends StateNotifier<VarianceState> {
         page: page,
         limit: kAppPageSize,
       );
+      if (generation != _fetchGeneration) return;
 
       final merged = loadMore
           ? _mergeRows(state.rows, report.rows)
@@ -154,6 +157,8 @@ class VarianceController extends StateNotifier<VarianceState> {
         clearError: true,
       );
     } on ApiException catch (e) {
+      if (generation != _fetchGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,

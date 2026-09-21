@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../storage/session_storage.dart';
 import 'api_exception.dart';
+import 'dio_helpers.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   return ApiClient(ref.watch(sessionStorageProvider));
@@ -16,6 +17,7 @@ class ApiClient {
         baseUrl: AppConfig.apiBaseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -34,6 +36,7 @@ class ApiClient {
         },
       ),
     );
+    _dio.interceptors.add(RetryOnConnectionInterceptor(_dio));
   }
 
   late final Dio _dio;
@@ -50,7 +53,7 @@ class ApiClient {
       );
       return _unwrap(response.data);
     } on DioException catch (e) {
-      throw _mapError(e);
+      throwMappedDioException(e);
     }
   }
 
@@ -62,7 +65,7 @@ class ApiClient {
       final response = await _dio.post<Map<String, dynamic>>(path, data: body);
       return _unwrap(response.data);
     } on DioException catch (e) {
-      throw _mapError(e);
+      throwMappedDioException(e);
     }
   }
 
@@ -77,19 +80,5 @@ class ApiClient {
       throwApiException(message);
     }
     return json;
-  }
-
-  ApiException _mapError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      final message = (data['message'] ?? data['msg'] ?? 'Something went wrong')
-          .toString();
-      throwApiException(message, statusCode: e.response?.statusCode);
-    }
-    if (e.type == DioExceptionType.connectionError ||
-        e.type == DioExceptionType.connectionTimeout) {
-      return ApiException('Connection error. Please try again.');
-    }
-    return ApiException('Something went wrong. Please try again.');
   }
 }

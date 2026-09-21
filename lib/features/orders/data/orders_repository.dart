@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/network/dark_store_api_client.dart';
 import '../../../core/storage/session_storage.dart';
+import '../../../core/utils/json_parse.dart';
 import '../../../core/utils/role_helper.dart';
 import '../../../core/constants/app_pagination.dart';
 import 'models/order_model.dart';
@@ -64,10 +66,10 @@ class OrdersRepository {
       '/order/dark-store-order-details/$orderId',
       query: query.isEmpty ? null : query,
     );
-    final data = json['data'] as Map<String, dynamic>?;
-    final orderJson = data?['order'] as Map<String, dynamic>?;
+    final data = asJsonMap(json['data']);
+    final orderJson = asJsonMap(data?['order']);
     if (orderJson == null) {
-      throw Exception('Order detail not found');
+      throw ApiException('Order detail not found');
     }
     return OrderDetailModel.fromJson(orderJson);
   }
@@ -97,6 +99,7 @@ class OrdersRepository {
   }
 
   Future<String> markReadyToPick(int orderId) async {
+    await _ensureCanWrite();
     final body = await _superAdminStoreBody();
     body['order_id'] = orderId;
     final json = await _client.post(
@@ -111,6 +114,7 @@ class OrdersRepository {
     required int orderId,
     required String reason,
   }) async {
+    await _ensureCanWrite();
     final body = await _superAdminStoreBody();
     body.addAll({
       'order_id': orderId,
@@ -122,5 +126,12 @@ class OrdersRepository {
       body: body,
     );
     return (json['message'] ?? json['msg'] ?? 'Order cancelled').toString();
+  }
+
+  Future<void> _ensureCanWrite() async {
+    final user = await _storage.getUser();
+    if (RoleHelper.isViewOnlyRole(user?.role?.name)) {
+      throw ApiException(RoleHelper.viewOnlyMessage);
+    }
   }
 }

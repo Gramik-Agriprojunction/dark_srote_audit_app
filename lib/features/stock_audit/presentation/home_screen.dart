@@ -32,7 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _bootstrap() async {
-    if (_initialized) return;
+    if (!mounted || _initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
@@ -42,10 +42,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (queryStoreId != null) {
       await storage.saveSelectedStoreId(queryStoreId);
     }
+    if (!mounted) return;
     final preferredStoreId = queryStoreId ?? await storage.getSelectedStoreId();
+    if (!mounted) return;
     await ref
         .read(stockAuditControllerProvider.notifier)
         .loadLocations(preferredStoreId: preferredStoreId);
+    if (!mounted) return;
     final selectedId =
         ref.read(stockAuditControllerProvider).selectedLocationId;
     if (selectedId != null) {
@@ -99,9 +102,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final viewOnly = ref.watch(isViewOnlySessionProvider);
     final audit = ref.watch(stockAuditControllerProvider);
     final changedCount = _changedCount(audit);
-    final hasChanges = changedCount > 0;
+    final hasChanges = !viewOnly && changedCount > 0;
     final notifier = ref.read(stockAuditControllerProvider.notifier);
     final selectedLoc = audit.locations
         .where((l) => l.id == audit.selectedLocationId)
@@ -208,6 +212,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             key: ValueKey(variant.id),
                             product: product,
                             variant: variant,
+                            readOnly: viewOnly,
                             onOpenDamage: () {
                               ref
                                   .read(authControllerProvider.notifier)
@@ -282,7 +287,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       label: audit.isSaving ? 'Saving...' : 'Save Stocks',
                       icon: Icons.cloud_upload_outlined,
                       isLoading: audit.isSaving,
-                      onPressed: () => notifier.saveAllChanged(),
+                      onPressed: () => notifier.saveAllChanged(context),
                     ),
                   )
                 : const SizedBox(width: double.infinity),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -86,6 +87,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
   }
 
   void _stepDamage(int delta) {
+    if (ref.read(isViewOnlySessionProvider)) return;
     final current = int.tryParse(_damageQtyController.text.trim()) ?? 0;
     final next = current + delta;
     if (next < 0) return;
@@ -94,6 +96,10 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
   }
 
   Future<void> _submit() async {
+    if (ref.read(isViewOnlySessionProvider)) {
+      setState(() => _error = RoleHelper.viewOnlyMessage);
+      return;
+    }
     final detail = _detail;
     if (detail == null) return;
 
@@ -152,6 +158,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
+    final viewOnly = ref.watch(isViewOnlySessionProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -299,11 +306,13 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                           children: [
                             _CircleStep(
                               icon: Icons.remove_rounded,
-                              onTap: () => _stepDamage(-1),
+                              onTap: viewOnly ? () {} : () => _stepDamage(-1),
                             ),
                             Expanded(
                               child: TextField(
                                 controller: _damageQtyController,
+                                enabled: !viewOnly,
+                                readOnly: viewOnly,
                                 keyboardType: TextInputType.number,
                                 textAlign: TextAlign.center,
                                 inputFormatters: [
@@ -331,7 +340,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                             ),
                             _CircleStep(
                               icon: Icons.add_rounded,
-                              onTap: () => _stepDamage(1),
+                              onTap: viewOnly ? () {} : () => _stepDamage(1),
                             ),
                           ],
                         ),
@@ -343,6 +352,8 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                         const SizedBox(height: 10),
                         TextField(
                           controller: _damageCommentController,
+                          enabled: !viewOnly,
+                          readOnly: viewOnly,
                           maxLines: 3,
                           maxLength: 1000,
                           style: const TextStyle(fontSize: 14, height: 1.4),
@@ -358,7 +369,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
               ],
             ),
           ),
-          if (!_loading && detail != null)
+          if (!_loading && detail != null && !viewOnly)
             StickyActionBar(
               child: LoadingButton(
                 label: _submitting ? 'Submitting...' : 'Submit',

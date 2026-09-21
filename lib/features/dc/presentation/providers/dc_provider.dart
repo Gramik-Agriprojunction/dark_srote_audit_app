@@ -9,6 +9,7 @@ class DcState {
     this.warehouse,
     this.summary,
     this.transfers = const [],
+    this.queryKey = 'in',
     this.isLoading = false,
     this.isRefreshing = false,
     this.error,
@@ -17,6 +18,7 @@ class DcState {
   final DcWarehouseModel? warehouse;
   final DcSummaryModel? summary;
   final List<DcTransferModel> transfers;
+  final String queryKey;
   final bool isLoading;
   final bool isRefreshing;
   final String? error;
@@ -32,6 +34,7 @@ class DcState {
     DcWarehouseModel? warehouse,
     DcSummaryModel? summary,
     List<DcTransferModel>? transfers,
+    String? queryKey,
     bool? isLoading,
     bool? isRefreshing,
     String? error,
@@ -41,6 +44,7 @@ class DcState {
       warehouse: warehouse ?? this.warehouse,
       summary: summary ?? this.summary,
       transfers: transfers ?? this.transfers,
+      queryKey: queryKey ?? this.queryKey,
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       error: clearError ? null : (error ?? this.error),
@@ -56,29 +60,94 @@ class DcController extends StateNotifier<DcState> {
   DcController(this._repository) : super(const DcState());
 
   final DcRepository _repository;
+  int _loadGeneration = 0;
+  DcFetchQuery _query = DcFetchQuery.incoming;
 
-  Future<void> initialize() => _load(refresh: false);
+  Future<void> initialize({DcFetchQuery query = DcFetchQuery.incoming}) =>
+      _load(refresh: false, query: query);
 
-  Future<void> refresh() => _load(refresh: true);
+  Future<void> refresh({DcFetchQuery? query}) =>
+      _load(refresh: true, query: query ?? _query);
 
-  Future<void> _load({required bool refresh}) async {
+  Future<void> loadWithQuery(DcFetchQuery query) =>
+      _load(refresh: true, query: query);
+
+  DcSummaryModel _mergeSummary({
+    required String queryKey,
+    required DcSummaryModel next,
+    DcSummaryModel? previous,
+  }) {
+    if (previous == null) return next;
+
+    int pick(int nextValue, int previousValue) =>
+        nextValue > 0 ? nextValue : previousValue;
+
+    switch (queryKey) {
+      case 'out':
+        return DcSummaryModel(
+          incomingTransfers: previous.incomingTransfers,
+          receivedTransfers: previous.receivedTransfers,
+          outgoingTransfers: next.outgoingTransfers,
+          transferredTransfers: previous.transferredTransfers,
+          totalTransfers: next.totalTransfers,
+        );
+      case 'transferred':
+        return DcSummaryModel(
+          incomingTransfers: previous.incomingTransfers,
+          receivedTransfers: previous.receivedTransfers,
+          outgoingTransfers: previous.outgoingTransfers,
+          transferredTransfers: next.transferredTransfers,
+          totalTransfers: next.totalTransfers,
+        );
+      default:
+        return DcSummaryModel(
+          incomingTransfers: next.incomingTransfers,
+          receivedTransfers: next.receivedTransfers,
+          outgoingTransfers: pick(
+            next.outgoingTransfers,
+            previous.outgoingTransfers,
+          ),
+          transferredTransfers: pick(
+            next.transferredTransfers,
+            previous.transferredTransfers,
+          ),
+          totalTransfers: next.totalTransfers,
+        );
+    }
+  }
+
+  Future<void> _load({
+    required bool refresh,
+    required DcFetchQuery query,
+  }) async {
+    final generation = ++_loadGeneration;
+    _query = query;
     state = state.copyWith(
       isLoading: !refresh && state.transfers.isEmpty,
       isRefreshing: refresh,
+      queryKey: query.key,
       clearError: true,
     );
 
     try {
-      final result = await _repository.fetchTransfers();
+      final result = await _repository.fetchTransfers(query: query);
+      if (generation != _loadGeneration) return;
       state = state.copyWith(
         warehouse: result.warehouse,
-        summary: result.summary,
+        summary: _mergeSummary(
+          queryKey: query.key,
+          next: result.summary,
+          previous: state.summary,
+        ),
         transfers: result.transfers,
+        queryKey: query.key,
         isLoading: false,
         isRefreshing: false,
         clearError: true,
       );
     } on ApiException catch (e) {
+      if (generation != _loadGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
@@ -96,6 +165,20 @@ class DcController extends StateNotifier<DcState> {
       transferId: transferId,
       inboundPickingId: inboundPickingId,
       operations: operations,
+    );
+  }
+
+  Future<String> validateOutboundProduct({
+    required int transferId,
+    required int outboundPickingId,
+    required int productId,
+    required int quantity,
+  }) {
+    return _repository.validateOutboundProduct(
+      transferId: transferId,
+      outboundPickingId: outboundPickingId,
+      productId: productId,
+      quantity: quantity,
     );
   }
 }

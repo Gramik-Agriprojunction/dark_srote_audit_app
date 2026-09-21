@@ -202,12 +202,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final transferId =
               int.tryParse(state.pathParameters['transferId'] ?? '') ?? 0;
-          if (transferId <= 0) return _stackPage(const DcListScreen());
           final tab = state.uri.queryParameters['tab'] ?? 'incoming';
+          if (transferId <= 0) {
+            return _stackPage(DcListScreen(initialTab: tab));
+          }
+          final canSave =
+              tab == 'incoming' || tab == 'outgoing';
           return _stackPage(
             DcDetailScreen(
               transferId: transferId,
-              showSaveActions: tab != 'received',
+              tab: tab,
+              showSaveActions: canSave,
             ),
           );
         },

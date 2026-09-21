@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/storage/session_storage.dart';
 import '../../../core/utils/json_parse.dart';
+import '../../../core/utils/role_helper.dart';
 import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
@@ -11,13 +14,24 @@ import '../data/models/variance_model.dart';
 import '../../../core/constants/app_pagination.dart';
 
 final stockAuditRepositoryProvider = Provider<StockAuditRepository>((ref) {
-  return StockAuditRepository(ref.watch(apiClientProvider));
+  return StockAuditRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(sessionStorageProvider),
+  );
 });
 
 class StockAuditRepository {
-  StockAuditRepository(this._client);
+  StockAuditRepository(this._client, this._storage);
 
   final ApiClient _client;
+  final SessionStorage _storage;
+
+  Future<void> _ensureCanWrite() async {
+    final user = await _storage.getUser();
+    if (RoleHelper.isViewOnlyRole(user?.role?.name)) {
+      throw ApiException(RoleHelper.viewOnlyMessage);
+    }
+  }
 
   Future<List<BusinessLocationModel>> getBusinessLocations() async {
     final json = await _client.get('/business-locations');
@@ -61,6 +75,7 @@ class StockAuditRepository {
     required int businessLocationId,
     required List<Map<String, dynamic>> items,
   }) async {
+    await _ensureCanWrite();
     final json = await _client.post(
       '/stock-audits/bulk',
       body: {'businessLocationId': businessLocationId, 'items': items},
@@ -74,6 +89,7 @@ class StockAuditRepository {
     required int variantId,
     required String comment,
   }) async {
+    await _ensureCanWrite();
     await _client.post(
       '/stock-audits/comment',
       body: {
@@ -92,6 +108,7 @@ class StockAuditRepository {
     required int damageQty,
     String? damageComment,
   }) async {
+    await _ensureCanWrite();
     final json = await _client.post(
       '/stock-audits/discrepancy',
       body: {

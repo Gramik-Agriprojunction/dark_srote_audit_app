@@ -26,6 +26,7 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(inventoryReportControllerProvider.notifier).load();
     });
   }
@@ -343,7 +344,7 @@ class _InventoryProductCard extends StatelessWidget {
                   _vDiv(),
                   Expanded(
                     child: _QtyCell(
-                      label: 'Transfer Out',
+                      label: 'Transferred Out',
                       value: format(item.transferredOutQty),
                       color: const Color(0xFFB45309),
                     ),

@@ -75,6 +75,13 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
   },
 );
 
+/// True when logged-in user is SuperAdmin (browse-only, no mutations).
+final isViewOnlySessionProvider = Provider<bool>((ref) {
+  return RoleHelper.isViewOnlyRole(
+    ref.watch(authControllerProvider).user?.role?.name,
+  );
+});
+
 class AuthController extends StateNotifier<AuthState> {
   AuthController(this._repository, this._storage)
     : super(const AuthState(status: AuthStatus.unknown)) {

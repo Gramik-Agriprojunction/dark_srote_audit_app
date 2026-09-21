@@ -82,15 +82,17 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
   }
 
   Future<void> _bootstrap() async {
-    if (_initialized) return;
+    if (!mounted || _initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
     _applyRouteStatusFilter();
     final storage = ref.read(sessionStorageProvider);
     final preferredStoreId = await storage.getSelectedStoreId();
+    if (!mounted) return;
     await ref
         .read(myProductsControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    if (!mounted) return;
     // Re-apply after load in case initialize raced with route filter.
     _applyRouteStatusFilter();
     final selectedId = ref.read(myProductsControllerProvider).selectedStoreId;
@@ -363,7 +365,7 @@ class _ProductCard extends StatelessWidget {
                   value: formatter.format(row.totalPhysicalStock),
                 ),
                 _MetricCell(
-                  label: 'Physical',
+                  label: 'Usable',
                   value: formatter.format(row.physicalStock),
                 ),
                 _MetricCell(

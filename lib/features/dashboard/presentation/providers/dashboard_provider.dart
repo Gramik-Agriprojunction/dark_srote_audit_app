@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/network/api_exception.dart';
 import '../../data/dashboard_repository.dart';
 import '../../data/models/dashboard_model.dart';
 
@@ -36,8 +37,10 @@ class DashboardController extends StateNotifier<DashboardState> {
   DashboardController(this._repo) : super(const DashboardState());
 
   final DashboardRepository _repo;
+  int _loadGeneration = 0;
 
-  Future<void> load({bool refresh = false, int attempt = 0}) async {
+  Future<void> load({bool refresh = false}) async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(
       isLoading: !refresh && state.data == null,
       isRefreshing: refresh,
@@ -45,28 +48,34 @@ class DashboardController extends StateNotifier<DashboardState> {
     );
     try {
       final data = await _repo.fetchDashboard();
+      if (generation != _loadGeneration) return;
       state = state.copyWith(
         data: data,
         isLoading: false,
         isRefreshing: false,
       );
-    } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', '');
-      final isConnection = message.toLowerCase().contains('connection');
-      if (isConnection && attempt < 3) {
-        await Future<void>.delayed(Duration(milliseconds: 800 * (attempt + 1)));
-        return load(refresh: refresh || state.data != null, attempt: attempt + 1);
-      }
+    } on ApiException catch (e) {
+      if (generation != _loadGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
-        error: message,
+        error: e.message,
+      );
+    } catch (e) {
+      if (generation != _loadGeneration) return;
+      state = state.copyWith(
+        isLoading: false,
+        isRefreshing: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
       );
     }
   }
 }
 
+/// Kept alive across bottom-nav switches so Home is not re-fetched (and
+/// flaky) every time the user leaves and returns to the tab.
 final dashboardControllerProvider =
-    StateNotifierProvider.autoDispose<DashboardController, DashboardState>(
+    StateNotifierProvider<DashboardController, DashboardState>(
   (ref) => DashboardController(ref.watch(dashboardRepositoryProvider)),
 );

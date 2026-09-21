@@ -31,14 +31,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   Future<void> _bootstrap() async {
-    if (_initialized) return;
+    if (!mounted || _initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
     final preferredStoreId = await storage.getSelectedStoreId();
+    if (!mounted) return;
     await ref
         .read(transactionsControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    if (!mounted) return;
     final selectedId = ref.read(transactionsControllerProvider).selectedStoreId;
     if (selectedId != null) {
       await storage.saveSelectedStoreId(selectedId);
@@ -119,11 +121,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ),
                         ModuleStat(
                           icon: Icons.inventory_2_outlined,
-                          label: 'Actual Qty',
+                          label: 'Inventory Change Qty',
                           value: formatter.format(
                             products.fold<int>(
                               0,
-                              (sum, row) => sum + row.actualQty,
+                              (sum, row) => sum + row.inventoryChangeQty,
                             ),
                           ),
                           background: AppColors.inStock,
@@ -271,7 +273,7 @@ class _TransactionProductCard extends StatelessWidget {
     final statusColor = hasRto
         ? const Color(0xFFB45309)
         : const Color(0xFF1D4ED8);
-    final actualColor = row.actualQty >= 0
+    final inventoryChangeColor = row.inventoryChangeQty >= 0
         ? AppColors.inStock
         : AppColors.outStock;
 
@@ -357,9 +359,9 @@ class _TransactionProductCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _QtyCell(
-                      label: 'Actual Qty',
-                      value: formatter.format(row.actualQty),
-                      color: actualColor,
+                      label: 'Inventory Change Qty',
+                      value: formatter.format(row.inventoryChangeQty),
+                      color: inventoryChangeColor,
                     ),
                   ),
                 ],

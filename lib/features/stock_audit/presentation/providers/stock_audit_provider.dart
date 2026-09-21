@@ -1,11 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/utils/audit_transaction_mismatch_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../data/models/business_location_model.dart';
 import '../../data/models/product_model.dart';
+import '../../data/models/transaction_model.dart';
 import '../../data/stock_audit_repository.dart';
 import '../utils/resolve_store_id.dart';
+import '../widgets/mismatch_reason_dialog.dart';
 
 enum AuditStatusFilter { all, audited, pending }
 
@@ -23,6 +27,7 @@ class StockAuditState {
     this.successMessage,
     this.qtyDrafts = const {},
     this.emptyDraftVariantIds = const {},
+    this.variantInventoryChangeQty = const {},
   });
 
   final List<BusinessLocationModel> locations;
@@ -37,6 +42,7 @@ class StockAuditState {
   final String? successMessage;
   final Map<int, int> qtyDrafts;
   final Set<int> emptyDraftVariantIds;
+  final Map<int, int> variantInventoryChangeQty;
 
   bool get showProducts => selectedLocationId != null;
 
@@ -120,6 +126,7 @@ class StockAuditState {
     bool clearSuccessMessage = false,
     Map<int, int>? qtyDrafts,
     Set<int>? emptyDraftVariantIds,
+    Map<int, int>? variantInventoryChangeQty,
     bool clearDrafts = false,
   }) {
     return StockAuditState(
@@ -141,6 +148,8 @@ class StockAuditState {
       emptyDraftVariantIds: clearDrafts
           ? const {}
           : (emptyDraftVariantIds ?? this.emptyDraftVariantIds),
+      variantInventoryChangeQty:
+          variantInventoryChangeQty ?? this.variantInventoryChangeQty,
     );
   }
 }
@@ -154,6 +163,7 @@ class StockAuditController extends StateNotifier<StockAuditState> {
   StockAuditController(this._repository) : super(const StockAuditState());
 
   final StockAuditRepository _repository;
+  int _productsLoadGeneration = 0;
 
   Future<void> loadLocations({int? preferredStoreId}) async {
     state = state.copyWith(isLoadingLocations: true, clearMessages: true);
@@ -178,6 +188,7 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       clearSelectedLocation: locationId == null,
       selectedLocationId: locationId,
       products: const [],
+      variantInventoryChangeQty: const {},
       searchQuery: '',
       auditStatusFilter: AuditStatusFilter.all,
       clearDrafts: true,
@@ -189,15 +200,38 @@ class StockAuditController extends StateNotifier<StockAuditState> {
   }
 
   Future<void> loadProducts(int locationId) async {
+    final generation = ++_productsLoadGeneration;
     state = state.copyWith(
       isLoadingProducts: true,
       clearMessages: true,
       clearDrafts: true,
     );
     try {
-      final products = await _repository.getLocationProducts(locationId);
-      state = state.copyWith(products: products, isLoadingProducts: false);
+      final today = DateTime.now();
+      final date =
+          '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final results = await Future.wait([
+        _repository.getLocationProducts(locationId),
+        _repository.getTransactions(
+          businessLocationId: locationId,
+          date: date,
+        ),
+      ]);
+      if (generation != _productsLoadGeneration) return;
+      final products = results[0] as List<ProductModel>;
+      final transactions = results[1] as TransactionReportModel;
+      final changeMap = <int, int>{
+        for (final row in transactions.products)
+          row.variantId: row.inventoryChangeQty,
+      };
+      state = state.copyWith(
+        products: products,
+        variantInventoryChangeQty: changeMap,
+        isLoadingProducts: false,
+      );
     } on ApiException catch (e) {
+      if (generation != _productsLoadGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoadingProducts: false,
         error: e.message,
@@ -276,10 +310,58 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     state = state.copyWith(products: products, clearDrafts: true);
   }
 
+  int inventoryChangeQtyFor(int variantId) =>
+      state.variantInventoryChangeQty[variantId] ?? 0;
+
+  Future<String?> resolveMismatchReason({
+    required BuildContext context,
+    required int variantId,
+    required int qty,
+    String? productName,
+    String? variantLabel,
+  }) async {
+    final variant = findVariant(variantId);
+    if (variant == null) return null;
+
+    final baselineQty = AuditTransactionMismatchHelper.baselineQty(variant);
+    final inventoryChangeQty = inventoryChangeQtyFor(variantId);
+    if (!AuditTransactionMismatchHelper.requiresReason(
+      newQty: qty,
+      baselineQty: baselineQty,
+      inventoryChangeQty: inventoryChangeQty,
+    )) {
+      return null;
+    }
+
+    final expectedQty = AuditTransactionMismatchHelper.expectedQty(
+      baselineQty: baselineQty,
+      inventoryChangeQty: inventoryChangeQty,
+    );
+
+    ProductModel? product;
+    for (final item in state.products) {
+      if (item.variants.any((v) => v.id == variantId)) {
+        product = item;
+        break;
+      }
+    }
+
+    return showMismatchReasonDialog(
+      context: context,
+      productName: productName ?? product?.name ?? 'Product',
+      variantLabel: variantLabel ?? variant.variantName,
+      baselineQty: baselineQty,
+      inventoryChangeQty: inventoryChangeQty,
+      expectedQty: expectedQty,
+      enteredQty: qty,
+    );
+  }
+
   Future<bool> saveSingleVariant({
     required int productId,
     required int variantId,
     required int qty,
+    String? mismatchReason,
   }) async {
     final locationId = state.selectedLocationId;
     if (locationId == null) return false;
@@ -289,7 +371,13 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       final result = await _repository.saveBulk(
         businessLocationId: locationId,
         items: [
-          {'productId': productId, 'variantId': variantId, 'qty': qty},
+          {
+            'productId': productId,
+            'variantId': variantId,
+            'qty': qty,
+            if (mismatchReason != null && mismatchReason.trim().isNotEmpty)
+              'mismatchReason': mismatchReason.trim(),
+          },
         ],
       );
       if (result.items.isNotEmpty) {
@@ -317,7 +405,7 @@ class StockAuditController extends StateNotifier<StockAuditState> {
     }
   }
 
-  Future<bool> saveAllChanged() async {
+  Future<bool> saveAllChanged(BuildContext context) async {
     final locationId = state.selectedLocationId;
     if (locationId == null) {
       state = state.copyWith(error: 'Business location select karein.');
@@ -330,10 +418,28 @@ class StockAuditController extends StateNotifier<StockAuditState> {
         final draft = state.qtyDrafts[variant.id];
         final hasDraft = state.qtyDrafts.containsKey(variant.id);
         if (!hasDraft || draft == null) continue;
+
+        final reason = await resolveMismatchReason(
+          context: context,
+          variantId: variant.id,
+          qty: draft,
+          productName: product.name,
+          variantLabel: variant.variantName,
+        );
+        if (AuditTransactionMismatchHelper.requiresReason(
+          newQty: draft,
+          baselineQty: AuditTransactionMismatchHelper.baselineQty(variant),
+          inventoryChangeQty: inventoryChangeQtyFor(variant.id),
+        )) {
+          if (reason == null || reason.trim().isEmpty) return false;
+        }
+
         items.add({
           'productId': product.id,
           'variantId': variant.id,
           'qty': draft,
+          if (reason != null && reason.trim().isNotEmpty)
+            'mismatchReason': reason.trim(),
         });
       }
     }

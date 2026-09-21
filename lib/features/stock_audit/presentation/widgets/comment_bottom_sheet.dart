@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/role_helper.dart';
 import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/widgets/loading_button.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/stock_audit_provider.dart';
 
 Future<void> showCommentSheet({
@@ -15,6 +17,12 @@ Future<void> showCommentSheet({
   required String variantLabel,
   String? initialComment,
 }) {
+  if (ref.read(isViewOnlySessionProvider)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+    );
+    return Future.value();
+  }
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,

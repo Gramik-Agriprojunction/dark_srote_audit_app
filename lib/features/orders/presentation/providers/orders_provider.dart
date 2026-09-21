@@ -135,6 +135,7 @@ class OrdersController extends StateNotifier<OrdersState> {
 
   final OrdersRepository _repository;
   Timer? _searchDebounce;
+  int _loadGeneration = 0;
 
   Future<void> initialize() => _load(page: 1);
 
@@ -186,6 +187,8 @@ class OrdersController extends StateNotifier<OrdersState> {
     bool loadMore = false,
     bool isRefresh = false,
   }) async {
+    final generation = ++_loadGeneration;
+
     if (loadMore) {
       state = state.copyWith(isLoadingMore: true, clearError: true);
     } else if (isRefresh) {
@@ -200,6 +203,7 @@ class OrdersController extends StateNotifier<OrdersState> {
         status: state.activeTab.id,
         page: page,
       );
+      if (generation != _loadGeneration) return;
 
       final merged = loadMore
           ? _mergeOrders(state.orders, result.orders)
@@ -215,18 +219,23 @@ class OrdersController extends StateNotifier<OrdersState> {
         clearError: true,
       );
     } on ApiException catch (e) {
+      if (generation != _loadGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
         isLoadingMore: false,
         error: e.message,
       );
-    } catch (_) {
+    } catch (e) {
+      if (generation != _loadGeneration) return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
         isLoadingMore: false,
-        error: 'Connection error. Please try again.',
+        error: e is ApiException
+            ? e.message
+            : 'Something went wrong. Please try again.',
       );
     }
   }

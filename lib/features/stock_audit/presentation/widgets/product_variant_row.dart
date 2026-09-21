@@ -6,6 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/product_image_thumb.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
+import '../../../../core/utils/audit_transaction_mismatch_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../data/models/product_model.dart';
 import '../providers/stock_audit_provider.dart';
@@ -18,12 +19,14 @@ class ProductVariantRow extends ConsumerStatefulWidget {
     required this.variant,
     required this.onOpenDamage,
     required this.onOpenComment,
+    this.readOnly = false,
   });
 
   final ProductModel product;
   final ProductVariantModel variant;
   final VoidCallback onOpenDamage;
   final VoidCallback onOpenComment;
+  final bool readOnly;
 
   @override
   ConsumerState<ProductVariantRow> createState() => _ProductVariantRowState();
@@ -84,6 +87,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   }
 
   void _applyQty(int value) {
+    if (widget.readOnly) return;
     final notifier = ref.read(stockAuditControllerProvider.notifier);
     final baseline = AuditQtyHelper.todayAuditQty(widget.variant);
     if (value == baseline && _isRecent) {
@@ -94,6 +98,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   }
 
   void _step(int delta) {
+    if (widget.readOnly) return;
     final current = int.tryParse(_controller.text.trim()) ?? 0;
     final next = current + delta;
     if (next < 0) return;
@@ -103,20 +108,42 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   }
 
   Future<void> _save() async {
-    if (!_canSave || _saving) return;
+    if (widget.readOnly || !_canSave || _saving) return;
     setState(() => _saving = true);
 
     final state = ref.read(stockAuditControllerProvider);
     final draft = state.qtyDrafts[widget.variant.id];
     final qty = draft ?? AuditQtyHelper.todayAuditQty(widget.variant);
 
-    final ok = await ref
-        .read(stockAuditControllerProvider.notifier)
-        .saveSingleVariant(
-          productId: widget.product.id,
-          variantId: widget.variant.id,
-          qty: qty,
-        );
+    final notifier = ref.read(stockAuditControllerProvider.notifier);
+    final mismatchReason = await notifier.resolveMismatchReason(
+      context: context,
+      variantId: widget.variant.id,
+      qty: qty,
+      productName: widget.product.name,
+      variantLabel: widget.variant.variantName,
+    );
+    if (!mounted) return;
+
+    final inventoryChangeQty =
+        notifier.inventoryChangeQtyFor(widget.variant.id);
+    if (AuditTransactionMismatchHelper.requiresReason(
+      newQty: qty,
+      baselineQty: AuditTransactionMismatchHelper.baselineQty(widget.variant),
+      inventoryChangeQty: inventoryChangeQty,
+    )) {
+      if (mismatchReason == null || mismatchReason.trim().isEmpty) {
+        setState(() => _saving = false);
+        return;
+      }
+    }
+
+    final ok = await notifier.saveSingleVariant(
+      productId: widget.product.id,
+      variantId: widget.variant.id,
+      qty: qty,
+      mismatchReason: mismatchReason,
+    );
 
     if (mounted) {
       setState(() => _saving = false);
@@ -247,25 +274,28 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                   ],
                 ),
               ),
-              _RowMenuButton(
-                onDamage: widget.onOpenDamage,
-                onComment: widget.onOpenComment,
-              ),
+              if (!widget.readOnly)
+                _RowMenuButton(
+                  onDamage: widget.onOpenDamage,
+                  onComment: widget.onOpenComment,
+                ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _qtyStepper()),
-              const SizedBox(width: 10),
-              _OrangeSaveButton(
-                label: saveLabel,
-                enabled: canSave,
-                isLoading: _saving,
-                onPressed: canSave ? _save : null,
-              ),
-            ],
-          ),
+          if (!widget.readOnly) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _qtyStepper()),
+                const SizedBox(width: 10),
+                _OrangeSaveButton(
+                  label: saveLabel,
+                  enabled: canSave,
+                  isLoading: _saving,
+                  onPressed: canSave ? _save : null,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

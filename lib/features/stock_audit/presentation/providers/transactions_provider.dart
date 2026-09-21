@@ -56,6 +56,7 @@ class TransactionsController extends StateNotifier<TransactionsState> {
   TransactionsController(this._repository) : super(const TransactionsState());
 
   final StockAuditRepository _repository;
+  int _loadGeneration = 0;
 
   Future<void> initialize({int? preferredStoreId}) async {
     final today = DateTime.now();
@@ -91,6 +92,7 @@ class TransactionsController extends StateNotifier<TransactionsState> {
   }
 
   Future<void> loadReport() async {
+    final generation = ++_loadGeneration;
     final storeId = state.selectedStoreId;
     final date = state.selectedDate;
     if (storeId == null || date == null) {
@@ -104,8 +106,11 @@ class TransactionsController extends StateNotifier<TransactionsState> {
         businessLocationId: storeId,
         date: _formatDate(date),
       );
+      if (generation != _loadGeneration) return;
       state = state.copyWith(report: report, isLoading: false);
     } on ApiException catch (e) {
+      if (generation != _loadGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         error: e.message,

@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parse.dart';
+
 class OrderShippingAddressModel {
   const OrderShippingAddressModel({
     this.name,
@@ -139,8 +141,8 @@ class OrderProductLineModel {
       type: json['type']?.toString(),
       comboProducts: comboRaw is List
           ? comboRaw
-              .whereType<Map<String, dynamic>>()
-              .map(OrderComboProductModel.fromJson)
+              .whereType<Map>()
+              .map((e) => OrderComboProductModel.fromJson(asJsonMap(e)!))
               .toList()
           : const [],
     );
@@ -187,12 +189,12 @@ class OrderListItemModel {
       sumQuantity: int.tryParse('${json['sum_quantity']}') ?? 0,
       firstProductImage: json['first_product_image']?.toString(),
       shippingAddress: OrderShippingAddressModel.fromJson(
-        json['shipping_address'] as Map<String, dynamic>?,
+        asJsonMap(json['shipping_address']),
       ),
       products: productsRaw is List
           ? productsRaw
-              .whereType<Map<String, dynamic>>()
-              .map(OrderProductLineModel.fromJson)
+              .whereType<Map>()
+              .map((e) => OrderProductLineModel.fromJson(asJsonMap(e)!))
               .toList()
           : const [],
     );
@@ -288,15 +290,15 @@ class OrderDetailModel {
       rtoReturnOtp: json['rto_return_otp']?.toString(),
       multiplePickupOtp: json['multiple_pickup_otp'],
       shippingAddress: OrderShippingAddressModel.fromJson(
-        json['shipping_address'] as Map<String, dynamic>?,
+        asJsonMap(json['shipping_address']),
       ),
       deliveryPartner: OrderDeliveryPartnerModel.fromJson(
-        json['delivery_partner'] as Map<String, dynamic>?,
+        asJsonMap(json['delivery_partner']),
       ),
       products: productsRaw is List
           ? productsRaw
-              .whereType<Map<String, dynamic>>()
-              .map(OrderProductLineModel.fromJson)
+              .whereType<Map>()
+              .map((e) => OrderProductLineModel.fromJson(asJsonMap(e)!))
               .toList()
           : const [],
     );
@@ -313,10 +315,11 @@ class CancelReasonModel {
     if (json is String) {
       return CancelReasonModel(id: index + 1, reason: json);
     }
-    if (json is Map<String, dynamic>) {
+    if (json is Map) {
+      final map = asJsonMap(json)!;
       return CancelReasonModel(
-        id: int.tryParse('${json['id'] ?? json['reason_id'] ?? index + 1}'),
-        reason: (json['reason'] ?? json['label'] ?? json['name'] ?? '').toString(),
+        id: int.tryParse('${map['id'] ?? map['reason_id'] ?? index + 1}'),
+        reason: (map['reason'] ?? map['label'] ?? map['name'] ?? '').toString(),
       );
     }
     return CancelReasonModel(id: index + 1, reason: '');
@@ -391,21 +394,17 @@ class OrderListResultModel {
   final OrderPaginationModel pagination;
 
   factory OrderListResultModel.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>?;
+    final data = asJsonMap(json['data']);
     final ordersRaw = data?['order'];
     return OrderListResultModel(
       orders: ordersRaw is List
           ? ordersRaw
-              .whereType<Map<String, dynamic>>()
-              .map(OrderListItemModel.fromJson)
+              .whereType<Map>()
+              .map((e) => OrderListItemModel.fromJson(asJsonMap(e)!))
               .toList()
           : const [],
-      stats: OrderListStatsModel.fromJson(
-        json['count'] as Map<String, dynamic>?,
-      ),
-      pagination: OrderPaginationModel.fromJson(
-        json['pagination'] as Map<String, dynamic>?,
-      ),
+      stats: OrderListStatsModel.fromJson(asJsonMap(json['count'])),
+      pagination: OrderPaginationModel.fromJson(asJsonMap(json['pagination'])),
     );
   }
 }

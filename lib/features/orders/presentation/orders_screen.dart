@@ -31,14 +31,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 
   Future<void> _bootstrap() async {
-    if (_initialized) return;
+    if (!mounted || _initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
     await ref.read(ordersControllerProvider.notifier).initialize();
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients) return;
     final pos = _scrollController.position;
     if (pos.pixels >= pos.maxScrollExtent - 220) {
       ref.read(ordersControllerProvider.notifier).loadMore();

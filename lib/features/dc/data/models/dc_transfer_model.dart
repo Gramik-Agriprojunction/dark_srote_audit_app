@@ -23,12 +23,14 @@ class DcSummaryModel {
     required this.incomingTransfers,
     required this.receivedTransfers,
     required this.outgoingTransfers,
+    required this.transferredTransfers,
     required this.totalTransfers,
   });
 
   final int incomingTransfers;
   final int receivedTransfers;
   final int outgoingTransfers;
+  final int transferredTransfers;
   final int totalTransfers;
 
   factory DcSummaryModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,9 @@ class DcSummaryModel {
       incomingTransfers: _int(json['incomingTransfers'] ?? json['incoming_transfers']),
       receivedTransfers: _int(json['receivedTransfers'] ?? json['received_transfers']),
       outgoingTransfers: _int(json['outgoingTransfers'] ?? json['outgoing_transfers']),
+      transferredTransfers: _int(
+        json['transferredTransfers'] ?? json['transferred_transfers'],
+      ),
       totalTransfers: _int(json['totalTransfers'] ?? json['total_transfers']),
     );
   }
@@ -75,6 +80,7 @@ class DcProductLineModel {
     required this.receivedQty,
     required this.remainingQty,
     required this.outgoingQty,
+    required this.transferredQty,
     required this.uom,
   });
 
@@ -86,6 +92,7 @@ class DcProductLineModel {
   final num receivedQty;
   final num remainingQty;
   final num outgoingQty;
+  final num transferredQty;
   final String uom;
 
   num get totalQty => incomingQty;
@@ -115,6 +122,12 @@ class DcProductLineModel {
             json['remainingQuantity'],
       ),
       outgoingQty: _num(json['outgoingQty'] ?? json['outgoing_qty']),
+      transferredQty: _num(
+        json['transferredQty'] ??
+            json['transferred_qty'] ??
+            json['dispatched_quantity'] ??
+            json['dispatchedQuantity'],
+      ),
       uom: (json['uom'] ?? 'Units').toString(),
     );
   }
@@ -131,10 +144,12 @@ class DcTransferModel {
     required this.receivedQty,
     required this.remainingQty,
     required this.outgoingQty,
+    required this.transferredQty,
     required this.totalQty,
     required this.productCount,
     required this.products,
     this.inboundPickingId,
+    this.outboundPickingId,
     this.type,
     this.from,
     this.to,
@@ -149,10 +164,12 @@ class DcTransferModel {
   final num receivedQty;
   final num remainingQty;
   final num outgoingQty;
+  final num transferredQty;
   final num totalQty;
   final int productCount;
   final List<DcProductLineModel> products;
   final int? inboundPickingId;
+  final int? outboundPickingId;
   final String? type;
   final DcLocationRefModel? from;
   final DcLocationRefModel? to;
@@ -169,10 +186,16 @@ class DcTransferModel {
       receivedQty: _num(json['receivedQty'] ?? json['received_qty']),
       remainingQty: _num(json['remainingQty'] ?? json['remaining_qty']),
       outgoingQty: _num(json['outgoingQty'] ?? json['outgoing_qty']),
+      transferredQty: _num(
+        json['transferredQty'] ?? json['transferred_qty'],
+      ),
       totalQty: _num(json['totalQty'] ?? json['total_qty'] ?? json['incomingQty']),
       productCount: _int(json['productCount'] ?? json['product_count']),
       inboundPickingId: _intOrNull(
         json['inboundPickingId'] ?? json['inbound_picking_id'],
+      ),
+      outboundPickingId: _intOrNull(
+        json['outboundPickingId'] ?? json['outbound_picking_id'],
       ),
       type: json['type']?.toString(),
       from: DcLocationRefModel.fromJson(json['from'] as Map<String, dynamic>?),

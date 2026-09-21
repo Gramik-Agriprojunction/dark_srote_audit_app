@@ -107,6 +107,7 @@ class MyProductsController extends StateNotifier<MyProductsState> {
 
   final StockAuditRepository _repository;
   Timer? _searchDebounce;
+  int _fetchGeneration = 0;
 
   Future<void> initialize({int? preferredStoreId}) async {
     state = state.copyWith(isLoading: true, clearError: true, clearRows: true);
@@ -164,6 +165,7 @@ class MyProductsController extends StateNotifier<MyProductsState> {
   }
 
   Future<void> _fetch({required int page, bool loadMore = false}) async {
+    final generation = ++_fetchGeneration;
     final storeId = state.selectedStoreId;
     if (storeId == null) {
       state = state.copyWith(
@@ -195,6 +197,7 @@ class MyProductsController extends StateNotifier<MyProductsState> {
         page: page,
         limit: kAppPageSize,
       );
+      if (generation != _fetchGeneration) return;
 
       final merged = loadMore
           ? _mergeRows(state.rows, report.rows)
@@ -209,6 +212,8 @@ class MyProductsController extends StateNotifier<MyProductsState> {
         clearError: true,
       );
     } on ApiException catch (e) {
+      if (generation != _fetchGeneration) return;
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isLoadingMore: false,

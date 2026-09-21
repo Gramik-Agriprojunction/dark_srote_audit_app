@@ -1,6 +1,9 @@
 class RoleHelper {
   RoleHelper._();
 
+  static const viewOnlyMessage =
+      'SuperAdmin sirf view kar sakte hain. Koi action allowed nahi hai.';
+
   static String normalizeRoleName(String? roleName) {
     return (roleName ?? '').trim().toUpperCase().replaceAll(
       RegExp(r'[\s_-]+'),
@@ -15,6 +18,11 @@ class RoleHelper {
   static bool isSuperAdminRole(String? roleName) {
     return normalizeRoleName(roleName) == 'SUPERADMIN';
   }
+
+  /// SuperAdmin can browse every screen but must not mutate data.
+  static bool isViewOnlyRole(String? roleName) => isSuperAdminRole(roleName);
+
+  static bool canPerformActions(String? roleName) => !isViewOnlyRole(roleName);
 
   /// Stock Audit app login: Dark Store + SuperAdmin.
   static bool isStockAuditAllowedRole(String? roleName) {

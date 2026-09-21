@@ -42,8 +42,8 @@ class TransactionProductRow {
   final int rtoDeliveredQty;
   final int totalQty;
 
-  /// Net moved: pickup − RTO.
-  int get actualQty => pickupQty - rtoDeliveredQty;
+  /// Both Pickup and RTO rows: RTO − Pickup.
+  int get inventoryChangeQty => rtoDeliveredQty - pickupQty;
 
   factory TransactionProductRow.fromJson(Map<String, dynamic> json) {
     final imageRaw = json['image'] ?? json['thumbnailImg'] ?? json['thumbnail'];

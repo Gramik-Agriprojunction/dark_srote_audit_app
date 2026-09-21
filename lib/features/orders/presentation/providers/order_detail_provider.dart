@@ -75,16 +75,19 @@ class OrderDetailController extends StateNotifier<OrderDetailState> {
         clearMessages: true,
       );
     } on ApiException catch (e) {
+      if (e.message == 'Request cancelled') return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
         error: e.message,
       );
-    } catch (_) {
+    } catch (e) {
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
-        error: 'Connection error. Please try again.',
+        error: e is ApiException
+            ? e.message
+            : 'Something went wrong. Please try again.',
       );
     }
   }
@@ -115,7 +118,7 @@ class OrderDetailController extends StateNotifier<OrderDetailState> {
     } catch (_) {
       state = state.copyWith(
         isActionLoading: false,
-        error: 'Connection error. Please try again.',
+        error: 'Something went wrong. Please try again.',
       );
       return false;
     }
@@ -140,7 +143,7 @@ class OrderDetailController extends StateNotifier<OrderDetailState> {
     } catch (_) {
       state = state.copyWith(
         isActionLoading: false,
-        error: 'Connection error. Please try again.',
+        error: 'Something went wrong. Please try again.',
       );
       return false;
     }

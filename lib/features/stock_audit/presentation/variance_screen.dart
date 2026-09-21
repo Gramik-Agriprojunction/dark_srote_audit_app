@@ -49,14 +49,16 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
   }
 
   Future<void> _bootstrap() async {
-    if (_initialized) return;
+    if (!mounted || _initialized) return;
     _initialized = true;
     ref.read(authControllerProvider.notifier).touchActivity();
     final storage = ref.read(sessionStorageProvider);
     final preferredStoreId = await storage.getSelectedStoreId();
+    if (!mounted) return;
     await ref
         .read(varianceControllerProvider.notifier)
         .initialize(preferredStoreId: preferredStoreId);
+    if (!mounted) return;
     final selectedId = ref.read(varianceControllerProvider).selectedStoreId;
     if (selectedId != null) {
       await storage.saveSelectedStoreId(selectedId);
