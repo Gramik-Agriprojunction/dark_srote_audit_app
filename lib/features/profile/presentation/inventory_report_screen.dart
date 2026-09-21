@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -88,6 +90,7 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(inventoryReportControllerProvider);
     final auth = ref.watch(authControllerProvider);
     final allItems = state.model?.items ?? const <InventorySummaryItem>[];
@@ -118,13 +121,13 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
         body: Column(
           children: [
             ModuleHeader(
-              pageLabel: 'Report',
+              pageLabel: s.report,
               subtitle: warehouse.isNotEmpty
                   ? warehouse
-                  : 'Warehouse inventory summary',
+                  : s.warehouseInventorySummary,
               onBack: () => context.pop(),
               searchController: _searchController,
-              searchHint: 'Product ya SKU search karo...',
+              searchHint: s.searchProductSku,
               searchValue: searchQuery,
               onSearchChanged: (_) => setState(() {}),
               onClearSearch: () {
@@ -134,7 +137,7 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
               actions: [
                 ModuleHeaderAction(
                   icon: Icons.refresh_rounded,
-                  tooltip: 'Refresh',
+                  tooltip: s.refresh,
                   onTap: () => ref
                       .read(inventoryReportControllerProvider.notifier)
                       .load(refresh: true),
@@ -160,35 +163,35 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                           stats: [
                             ModuleStat(
                               icon: Icons.move_to_inbox_outlined,
-                              label: 'Received',
+                              label: s.received,
                               value: _fmt(receivedTotal),
                               background: AppColors.primary,
                               labelColor: const Color(0xFFFFE4D2),
                             ),
                             ModuleStat(
                               icon: Icons.outbox_outlined,
-                              label: 'Transferred Out',
+                              label: s.transferredOut,
                               value: _fmt(transferredTotal),
                               background: const Color(0xFFB45309),
                               labelColor: const Color(0xFFFED7AA),
                             ),
                             ModuleStat(
                               icon: Icons.local_shipping_outlined,
-                              label: 'Delivered',
+                              label: s.delivered,
                               value: _fmt(deliveredTotal),
                               background: const Color(0xFF1D4ED8),
                               labelColor: const Color(0xFFBFDBFE),
                             ),
                             ModuleStat(
                               icon: Icons.inventory_2_outlined,
-                              label: 'On Hand',
+                              label: s.onHand,
                               value: _fmt(onHandTotal),
                               background: AppColors.inStock,
                               labelColor: const Color(0xFFBBF7D0),
                             ),
                             ModuleStat(
                               icon: Icons.fact_check_outlined,
-                              label: 'Physical Stock',
+                              label: s.physicalStock,
                               value: _fmt(physicalTotal),
                               background: const Color(0xFF7C3AED),
                               labelColor: const Color(0xFFE9D5FF),
@@ -223,13 +226,12 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                         child: ModuleListLoadingBody(),
                       )
                     else if (state.error == null && allItems.isEmpty)
-                      const SliverFillRemaining(
+                      SliverFillRemaining(
                         hasScrollBody: false,
                         child: ModuleEmptyState(
                           icon: Icons.inventory_2_outlined,
-                          title: 'Koi inventory row nahi mila',
-                          message:
-                              'Is warehouse par inventory summary empty hai.',
+                          title: s.noInventoryRows,
+                          message: s.inventoryEmptyMessage,
                         ),
                       )
                     else if (state.error == null &&
@@ -239,9 +241,8 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                         hasScrollBody: false,
                         child: ModuleEmptyState(
                           icon: Icons.search_off_rounded,
-                          title: 'Koi matching product nahi mila',
-                          message:
-                              '"${searchQuery.trim()}" se koi product match nahi hua.',
+                          title: s.noMatchingInventoryProduct,
+                          message: s.searchNoMatch(searchQuery.trim()),
                         ),
                       )
                     else
@@ -250,6 +251,7 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
                           (context, index) => _InventoryProductCard(
                             item: items[index],
                             format: _fmt,
+                            strings: s,
                           ),
                           childCount: items.length,
                         ),
@@ -270,10 +272,12 @@ class _InventoryProductCard extends StatelessWidget {
   const _InventoryProductCard({
     required this.item,
     required this.format,
+    required this.strings,
   });
 
   final InventorySummaryItem item;
   final String Function(double) format;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +340,7 @@ class _InventoryProductCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _QtyCell(
-                      label: 'Received',
+                      label: strings.received,
                       value: format(item.receivedQty),
                       color: AppColors.primary,
                     ),
@@ -344,7 +348,7 @@ class _InventoryProductCard extends StatelessWidget {
                   _vDiv(),
                   Expanded(
                     child: _QtyCell(
-                      label: 'Transferred Out',
+                      label: strings.transferredOut,
                       value: format(item.transferredOutQty),
                       color: const Color(0xFFB45309),
                     ),
@@ -352,7 +356,7 @@ class _InventoryProductCard extends StatelessWidget {
                   _vDiv(),
                   Expanded(
                     child: _QtyCell(
-                      label: 'Delivered',
+                      label: strings.delivered,
                       value: format(item.customerDeliveredQty),
                       color: const Color(0xFF1D4ED8),
                     ),
@@ -360,7 +364,7 @@ class _InventoryProductCard extends StatelessWidget {
                   _vDiv(),
                   Expanded(
                     child: _QtyCell(
-                      label: 'On Hand',
+                      label: strings.onHand,
                       value: format(item.systemQuantityOnHand),
                       color: AppColors.inStock,
                     ),
@@ -389,7 +393,7 @@ class _InventoryProductCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'PHYSICAL STOCK',
+                    strings.physicalStockBadge,
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -455,14 +459,14 @@ class _QtyCell extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 7,
+            fontSize: ModuleTokens.tileMetricLabelFontSize,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.15,
+            height: 1.15,
             color: ModuleTokens.faintText,
           ),
         ),

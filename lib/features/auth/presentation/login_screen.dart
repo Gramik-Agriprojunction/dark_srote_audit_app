@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_assets.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_exception.dart';
@@ -103,9 +105,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _sendOtp({bool resend = false}) async {
+    final s = ref.read(appStringsProvider);
     setState(() => _error = null);
     if (!_validMobile) {
-      setState(() => _error = 'Valid 10-digit mobile number enter karein.');
+      setState(() => _error = s.invalidMobile);
       return;
     }
 
@@ -140,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Connection error. Dubara try karein.';
+        _error = ref.read(appStringsProvider).connectionError;
       });
     }
   }
@@ -155,6 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _verifyOtp() async {
     if (!_otpReady) return;
+    final s = ref.read(appStringsProvider);
     setState(() {
       _error = null;
       _loading = true;
@@ -168,7 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (auth.status != AuthStatus.authenticated) {
         setState(() {
           _loading = false;
-          _error = auth.error ?? 'Login failed';
+          _error = auth.error ?? s.loginFailed;
         });
         return;
       }
@@ -185,7 +189,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Connection error. Dubara try karein.';
+        _error = s.connectionError;
       });
     }
   }
@@ -203,6 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     // Login number screen stays light (no black field); OTP stays full orange.
     AppColors.apply(AppThemeMode.light);
 
@@ -217,6 +222,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _otpStep ? AppColors.primary : AppColors.background,
           body: _otpStep
               ? _OtpView(
+                  strings: s,
                   mobile: _mobile,
                   controller: _otpController,
                   loading: _loading,
@@ -230,6 +236,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onResend: () => _sendOtp(resend: true),
                 )
               : _LoginView(
+                  strings: s,
                   controller: _mobileController,
                   loading: _loading,
                   error: _error,
@@ -244,6 +251,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
 class _LoginView extends StatelessWidget {
   const _LoginView({
+    required this.strings,
     required this.controller,
     required this.loading,
     required this.error,
@@ -251,6 +259,7 @@ class _LoginView extends StatelessWidget {
     required this.onSend,
   });
 
+  final AppStrings strings;
   final TextEditingController controller;
   final bool loading;
   final String? error;
@@ -272,11 +281,12 @@ class _LoginView extends StatelessWidget {
               width: double.infinity,
               color: AppColors.primary,
               padding: EdgeInsets.fromLTRB(24, top + 40, 24, 48),
-              child: const _LoginBrandHeader(onOrange: true),
+              child: _LoginBrandHeader(strings: strings, onOrange: true),
             ),
             Transform.translate(
               offset: const Offset(0, -28),
               child: _LoginFormCard(
+                strings: strings,
                 controller: controller,
                 loading: loading,
                 error: error,
@@ -290,9 +300,9 @@ class _LoginView extends StatelessWidget {
                 text: TextSpan(
                   style: AuthTheme.caption(AppColors.textMuted),
                   children: [
-                    const TextSpan(text: 'Powered by '),
+                    TextSpan(text: '${strings.poweredBy} '),
                     TextSpan(
-                      text: 'Gramik',
+                      text: strings.brandGramik,
                       style: AuthTheme.caption(AppColors.textPrimary)
                           .copyWith(fontWeight: FontWeight.w700),
                     ),
@@ -309,6 +319,7 @@ class _LoginView extends StatelessWidget {
 
 class _LoginFormCard extends StatelessWidget {
   const _LoginFormCard({
+    required this.strings,
     required this.controller,
     required this.loading,
     required this.error,
@@ -316,6 +327,7 @@ class _LoginFormCard extends StatelessWidget {
     required this.onSend,
   });
 
+  final AppStrings strings;
   final TextEditingController controller;
   final bool loading;
   final String? error;
@@ -337,7 +349,7 @@ class _LoginFormCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Apna Number Daalo', style: AuthTheme.title()),
+          Text(strings.loginEnterNumber, style: AuthTheme.title()),
           const SizedBox(height: 20),
           Container(
             height: 52,
@@ -388,7 +400,7 @@ class _LoginFormCard extends StatelessWidget {
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                       ),
-                      hintText: 'Mobile Number',
+                      hintText: strings.mobileNumber,
                       hintStyle: AuthTheme.bodySm(AppColors.textMuted)
                           .copyWith(fontSize: 16),
                     ),
@@ -406,17 +418,17 @@ class _LoginFormCard extends StatelessWidget {
           ],
           const SizedBox(height: 18),
           _PrimaryButton(
-            label: AppConfig.skipSmsOtp ? 'Aage Badho  →' : 'OTP Bhejo  →',
+            label: AppConfig.skipSmsOtp ? strings.proceedWithoutOtp : strings.sendOtp,
             loading: loading,
             enabled: enabled,
             onPressed: onSend,
           ),
           const SizedBox(height: 28),
-          const _FeatureDot(text: 'Stock audit karo real-time'),
+          _FeatureDot(text: strings.loginFeatureAudit),
           const SizedBox(height: 10),
-          const _FeatureDot(text: 'Inventory variance track karo'),
+          _FeatureDot(text: strings.loginFeatureVariance),
           const SizedBox(height: 10),
-          const _FeatureDot(text: 'Pickup & RTO transactions dekho'),
+          _FeatureDot(text: strings.loginFeatureTransactions),
         ],
       ),
     );
@@ -472,8 +484,9 @@ class _LoginAmbientGlow extends StatelessWidget {
 }
 
 class _LoginBrandHeader extends StatelessWidget {
-  const _LoginBrandHeader({this.onOrange = false});
+  const _LoginBrandHeader({required this.strings, this.onOrange = false});
 
+  final AppStrings strings;
   final bool onOrange;
 
   @override
@@ -530,7 +543,7 @@ class _LoginBrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Gramik',
+          strings.brandGramik,
           style: AuthTheme.brandNameBold(titleColor).copyWith(
             fontSize: 28,
             fontWeight: FontWeight.w800,
@@ -538,7 +551,7 @@ class _LoginBrandHeader extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'StockShield',
+          strings.brandStockShield,
           style: AuthTheme.caption(subtitleColor).copyWith(fontSize: 13),
         ),
       ],
@@ -548,6 +561,7 @@ class _LoginBrandHeader extends StatelessWidget {
 
 class _OtpView extends StatelessWidget {
   const _OtpView({
+    required this.strings,
     required this.mobile,
     required this.controller,
     required this.loading,
@@ -561,6 +575,7 @@ class _OtpView extends StatelessWidget {
     required this.onResend,
   });
 
+  final AppStrings strings;
   final String mobile;
   final TextEditingController controller;
   final bool loading;
@@ -632,14 +647,12 @@ class _OtpView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'OTP Daalo',
+              strings.otpEnter,
               style: AuthTheme.otpTitle(Colors.white),
             ),
             const SizedBox(height: 6),
             Text(
-              otpSent
-                  ? 'Tumhare number pe OTP bheja hai'
-                  : 'SMS band hai — Master OTP se login karein',
+              otpSent ? strings.otpSentToNumber : strings.masterOtpLogin,
               style: AuthTheme.bodySm(Colors.white.withValues(alpha: 0.7)),
             ),
             const SizedBox(height: 10),
@@ -671,7 +684,7 @@ class _OtpView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'OTP nahi aaya? ',
+                    '${strings.otpNotReceived} ',
                     style: AuthTheme.bodySm(
                       Colors.white.withValues(alpha: 0.6),
                     ),
@@ -680,10 +693,10 @@ class _OtpView extends StatelessWidget {
                     onTap: resendSeconds == 0 && !loading ? onResend : null,
                     child: Text(
                       loading && resendSeconds == 0
-                          ? 'Bhej rahe hai...'
+                          ? strings.sending
                           : resendSeconds == 0
-                              ? 'Dubara Bhejo'
-                              : 'Dubara Bhejo (00:${resendSeconds.toString().padLeft(2, '0')})',
+                              ? strings.resendOtp
+                              : strings.resendOtpCountdown(resendSeconds),
                       style: AuthTheme.bodySm(Colors.white).copyWith(
                         fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
@@ -695,7 +708,7 @@ class _OtpView extends StatelessWidget {
             if (otpSent && expireSeconds > 0) ...[
               const SizedBox(height: 10),
               Text(
-                'OTP expire: 00:${expireSeconds.toString().padLeft(2, '0')}',
+                strings.otpExpiresIn(expireSeconds),
                 style: AuthTheme.caption(
                   Colors.white.withValues(alpha: 0.55),
                 ),
@@ -730,7 +743,7 @@ class _OtpView extends StatelessWidget {
                         ),
                       )
                     : Text(
-                        'Verify Karo',
+                        strings.verifyOtp,
                         style: AuthTheme.button(const Color(0xFFEC5800)),
                       ),
               ),

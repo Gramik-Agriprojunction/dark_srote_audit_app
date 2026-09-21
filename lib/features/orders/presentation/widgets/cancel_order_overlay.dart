@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/product_image_thumb.dart';
 import '../../data/models/order_model.dart';
 import '../utils/order_status_helper.dart';
@@ -10,6 +11,7 @@ import '../utils/order_status_helper.dart';
 class CancelOrderOverlay extends StatefulWidget {
   const CancelOrderOverlay({
     super.key,
+    required this.strings,
     required this.orderCode,
     required this.customerName,
     required this.customerPhone,
@@ -23,6 +25,7 @@ class CancelOrderOverlay extends StatefulWidget {
     required this.onConfirm,
   });
 
+  final AppStrings strings;
   final String orderCode;
   final String customerName;
   final String customerPhone;
@@ -69,8 +72,8 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(color: const Color(0x47F25146)),
                       ),
-                      child: const Text(
-                        'CANCEL',
+                      child: Text(
+                        widget.strings.cancelBadge,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -102,8 +105,8 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Cancel Order',
+                          Text(
+                            widget.strings.cancelOrder,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -126,7 +129,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                   padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                   children: [
                     _DarkCard(
-                      title: 'ORDER',
+                      title: widget.strings.sectionOrder,
                       child: Row(
                         children: [
                           Expanded(
@@ -149,7 +152,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                       ),
                     ),
                     _DarkCard(
-                      title: 'CUSTOMER',
+                      title: widget.strings.sectionCustomer,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -174,7 +177,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                     ),
                     if (widget.products.isNotEmpty)
                       _DarkCard(
-                        title: 'PRODUCTS (${widget.products.length})',
+                        title: widget.strings.sectionProducts(widget.products.length),
                         child: Column(
                           children: widget.products.take(4).map((p) {
                             return Padding(
@@ -210,7 +213,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                         ),
                       ),
                     _DarkCard(
-                      title: 'SELECT REASON',
+                      title: widget.strings.selectReason,
                       child: widget.isLoading
                           ? Center(
                               child: Padding(
@@ -305,7 +308,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('Keep Order', style: TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text(widget.strings.keepOrder, style: const TextStyle(fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),
@@ -325,7 +328,7 @@ class _CancelOrderOverlayState extends State<CancelOrderOverlay> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text('Cancel Order', style: TextStyle(fontWeight: FontWeight.w700)),
+                          child: Text(widget.strings.cancelOrder, style: const TextStyle(fontWeight: FontWeight.w700)),
                         ),
                       ),
                     ),

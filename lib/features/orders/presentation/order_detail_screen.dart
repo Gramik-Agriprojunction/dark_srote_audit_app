@@ -6,8 +6,9 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/theme_mode_provider.dart';
-import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
@@ -86,7 +87,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Future<void> _openCancelOverlay(OrderDetailModel order) async {
     if (ref.read(isViewOnlySessionProvider)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+        SnackBar(content: Text(ref.read(appStringsProvider).viewOnlyMessage)),
       );
       return;
     }
@@ -100,9 +101,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       barrierDismissible: false,
       barrierColor: Colors.black87,
       pageBuilder: (ctx, _, _) => CancelOrderOverlay(
+        strings: ref.read(appStringsProvider),
         orderCode: order.code.isNotEmpty ? order.code : '#${order.id}',
         customerName: order.shippingAddress.displayName.isEmpty
-            ? 'Customer'
+            ? ref.read(appStringsProvider).customer
             : order.shippingAddress.displayName,
         customerPhone: order.shippingAddress.phone ?? '',
         customerAddress: order.shippingAddress.fullAddress,
@@ -131,7 +133,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Future<void> _printReceipt(OrderDetailModel order) async {
     if (ref.read(isViewOnlySessionProvider)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+        SnackBar(content: Text(ref.read(appStringsProvider).viewOnlyMessage)),
       );
       return;
     }
@@ -147,7 +149,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         await ThermalPrinterService.printOrderReceipt(order);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Receipt printed')),
+          SnackBar(content: Text(ref.read(appStringsProvider).receiptPrinted)),
         );
       } on PrinterException catch (e) {
         if (!mounted) return;
@@ -189,7 +191,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         .load(refresh: true);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Receipt printed')),
+      SnackBar(content: Text(ref.read(appStringsProvider).receiptPrinted)),
     );
   }
 
@@ -197,6 +199,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget build(BuildContext context) {
     // Rebuild when theme mode changes (AppColors are not InheritedWidget).
     ref.watch(appThemeModeProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(orderDetailControllerProvider(widget.orderId));
     final order = state.order;
     final top = MediaQuery.paddingOf(context).top;
@@ -220,7 +223,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             _FixedNavBar(
               topPadding: navTop,
               backgroundColor: AppColors.textSecondary,
-              code: 'Order Details',
+              code: s.orderDetails,
+              notificationsTooltip: s.notifications,
               compactOpacity: 0,
               statusNavOpacity: 0,
               positioned: false,
@@ -240,7 +244,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                       onPressed: () => ref
                           .read(orderDetailControllerProvider(widget.orderId).notifier)
                           .load(),
-                      child: const Text('Try Again'),
+                      child: Text(s.tryAgain),
                     ),
                   ],
                 ),
@@ -320,7 +324,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           _DetailSectionCard(
                             statusColor: status.color,
                             icon: Icons.key_outlined,
-                            title: 'Pickup OTP',
+                            title: s.pickupOtp,
                             compact: true,
                             child: Column(
                               children: [
@@ -334,7 +338,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         _DetailSectionCard(
                           statusColor: status.color,
                           icon: Icons.account_tree_outlined,
-                          title: 'Order Progress',
+                          title: s.orderProgress,
                           child: _TimelineBlock(
                             order: order,
                             statusColor: AppColors.primary,
@@ -343,7 +347,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         _DetailSectionCard(
                           statusColor: status.color,
                           icon: Icons.person_outline,
-                          title: 'Customer',
+                          title: s.customer,
                           child: _CustomerBlock(
                             order: order,
                             onCall: () => _callPhone(order.shippingAddress.phone),
@@ -353,7 +357,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         _DetailSectionCard(
                           statusColor: status.color,
                           icon: Icons.shopping_bag_outlined,
-                          title: 'Items',
+                          title: s.items,
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
@@ -381,7 +385,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           _DetailSectionCard(
                             statusColor: status.color,
                             icon: Icons.pedal_bike_outlined,
-                            title: 'Delivery Partner',
+                            title: s.deliveryPartner,
                             child: _DeliveryPartnerBlock(
                               partner: order.deliveryPartner,
                               statusColor: AppColors.primary,
@@ -393,7 +397,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           _DetailSectionCard(
                             statusColor: status.color,
                             icon: Icons.key_outlined,
-                            title: otpList.length == 1 ? otpList.first.label : 'OTP',
+                            title: otpList.length == 1 ? otpList.first.label : s.otp,
                             child: Column(
                               children: [
                                 for (var i = 0; i < otpList.length; i++) ...[
@@ -407,7 +411,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         _DetailSectionCard(
                           statusColor: status.color,
                           icon: Icons.receipt_long_outlined,
-                          title: 'Payment Summary',
+                          title: s.paymentSummary,
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
@@ -450,6 +454,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               backgroundColor: AppColors.headerBg,
               code: code,
               showCopyIcon: true,
+              notificationsTooltip: s.notifications,
               statusLabel: status.label,
               statusIcon: statusIcon(order.orderStatus),
               amount: formatMoney(order.grandTotal),
@@ -463,6 +468,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 right: 0,
                 bottom: 0,
                 child: _BottomActionBar(
+                  strings: s,
                   bottomInset: bottom,
                   showPrintReceipt: showPrintReceipt,
                   showCancel: showCancel,
@@ -500,6 +506,7 @@ class _FixedNavBar extends StatelessWidget {
     required this.compactOpacity,
     required this.statusNavOpacity,
     required this.onBack,
+    this.notificationsTooltip,
     this.statusLabel,
     this.statusIcon,
     this.amount,
@@ -510,6 +517,7 @@ class _FixedNavBar extends StatelessWidget {
   final double topPadding;
   final Color backgroundColor;
   final String code;
+  final String? notificationsTooltip;
   final String? statusLabel;
   final IconData? statusIcon;
   final String? amount;
@@ -560,11 +568,12 @@ class _FixedNavBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                ModuleHeaderAction(
-                  icon: Icons.notifications_none_rounded,
-                  tooltip: 'Notifications',
-                  onTap: () {},
-                ),
+                if (notificationsTooltip != null)
+                  ModuleHeaderAction(
+                    icon: Icons.notifications_none_rounded,
+                    tooltip: notificationsTooltip,
+                    onTap: () {},
+                  ),
                 if (statusLabel != null && statusIcon != null) ...[
                   const SizedBox(width: 8),
                   Opacity(
@@ -1928,6 +1937,7 @@ class _RefRow extends StatelessWidget {
 
 class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
+    required this.strings,
     required this.bottomInset,
     required this.showPrintReceipt,
     required this.showCancel,
@@ -1939,6 +1949,7 @@ class _BottomActionBar extends StatelessWidget {
     this.onPickupOtp,
   });
 
+  final AppStrings strings;
   final double bottomInset;
   final bool showPrintReceipt;
   final bool showCancel;
@@ -1968,7 +1979,7 @@ class _BottomActionBar extends StatelessWidget {
               children: [
                 if (onPickupOtp != null) ...[
                   _BottomButton(
-                    label: 'Pickup OTP Dale',
+                    label: strings.pickupOtpTitle,
                     icon: Icons.key_outlined,
                     color: statusColor,
                     onTap: onPickupOtp!,
@@ -1976,7 +1987,7 @@ class _BottomActionBar extends StatelessWidget {
                   const SizedBox(height: 8),
                 ],
                 _BottomButton(
-                  label: 'Print Receipt',
+                  label: strings.printReceipt,
                   icon: Icons.print_outlined,
                   color: statusColor,
                   loading: loading,
@@ -1986,14 +1997,14 @@ class _BottomActionBar extends StatelessWidget {
             )
           : showCancel
               ? _BottomButton(
-                  label: 'Cancel Order',
+                  label: strings.cancelOrder,
                   icon: Icons.cancel_outlined,
                   color: const Color(0xFFF25146),
                   loading: loading,
                   onTap: onCancel,
                 )
               : _BottomButton(
-                  label: 'Go Back',
+                  label: strings.goBack,
                   icon: Icons.arrow_back_rounded,
                   color: statusColor,
                   onTap: onBack,

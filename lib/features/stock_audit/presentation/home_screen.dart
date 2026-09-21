@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_ui.dart';
@@ -102,6 +104,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final s = ref.watch(appStringsProvider);
     final viewOnly = ref.watch(isViewOnlySessionProvider);
     final audit = ref.watch(stockAuditControllerProvider);
     final changedCount = _changedCount(audit);
@@ -136,11 +139,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: auth.headerGreeting,
+            pageLabel: ref.watch(headerGreetingProvider),
             subtitle: storeSubtitle.isEmpty ? null : storeSubtitle,
             onLogout: _logout,
             searchController: audit.showProducts ? _searchController : null,
-            searchHint: 'Product ya SKU search karo...',
+            searchHint: s.searchProductSku,
             searchValue: audit.searchQuery,
             onSearchChanged: audit.showProducts ? notifier.setSearchQuery : null,
             onClearSearch: () => notifier.setSearchQuery(''),
@@ -157,7 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 slivers: [
                   if (audit.showProducts)
                     SliverToBoxAdapter(
-                      child: _statsRow(audit, notifier),
+                      child: _statsRow(audit, notifier, s),
                     ),
                   if (audit.error != null)
                     SliverToBoxAdapter(
@@ -176,10 +179,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: ModuleEmptyState(
                         icon: Icons.storefront_outlined,
                         title: audit.isLoadingLocations
-                            ? 'Locations load ho rahi hain'
-                            : 'Business location select karein',
-                        message:
-                            'Location choose karne ke baad store ke products yahan dikhenge.',
+                            ? s.loadingLocations
+                            : s.selectBusinessLocation,
+                        message: s.auditSelectLocationHint,
                       ),
                     )
                   else if (audit.isLoadingProducts)
@@ -197,11 +199,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       child: ModuleEmptyState(
                         icon: Icons.search_off_rounded,
                         title: audit.searchQuery.isNotEmpty
-                            ? 'No matching products'
-                            : _emptyTitle(audit.auditStatusFilter),
+                            ? s.noMatchingProducts
+                            : _emptyTitle(audit.auditStatusFilter, s),
                         message: audit.searchQuery.isNotEmpty
-                            ? 'Search clear karke dubara try karein.'
-                            : _emptyMessage(audit.auditStatusFilter),
+                            ? s.searchClearAndRetry
+                            : _emptyMessage(audit.auditStatusFilter, s),
                       ),
                     )
                   else
@@ -273,7 +275,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'variant pending save',
+                            s.variantsPendingSave(changedCount),
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -284,7 +286,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ],
                     ),
                     child: LoadingButton(
-                      label: audit.isSaving ? 'Saving...' : 'Save Stocks',
+                      label: audit.isSaving ? s.saving : s.saveStocks,
                       icon: Icons.cloud_upload_outlined,
                       isLoading: audit.isSaving,
                       onPressed: () => notifier.saveAllChanged(context),
@@ -297,7 +299,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _statsRow(StockAuditState audit, StockAuditController notifier) {
+  Widget _statsRow(
+    StockAuditState audit,
+    StockAuditController notifier,
+    AppStrings s,
+  ) {
     final filter = audit.auditStatusFilter;
     final total = audit.totalVariantCount;
     final audited = audit.auditedVariantCount;
@@ -309,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       stats: [
         ModuleStat(
           icon: Icons.inventory_2_rounded,
-          label: 'Total SKU',
+          label: s.totalSku,
           value: '$total',
           background: AppColors.primary,
           labelColor: AppColors.textMuted,
@@ -319,7 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         ModuleStat(
           icon: Icons.task_alt_rounded,
-          label: 'Audited',
+          label: s.audited,
           value: '$audited',
           background: AppColors.successText,
           labelColor: AppColors.textMuted,
@@ -329,7 +335,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         ModuleStat(
           icon: Icons.pending_actions_rounded,
-          label: 'Pending',
+          label: s.pending,
           value: '$pending',
           background: AppColors.warning,
           labelColor: AppColors.textMuted,
@@ -341,25 +347,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  String _emptyTitle(AuditStatusFilter filter) {
+  String _emptyTitle(AuditStatusFilter filter, AppStrings s) {
     switch (filter) {
       case AuditStatusFilter.audited:
-        return 'Aaj koi audit nahi hua';
+        return s.auditEmptyAuditedTitle;
       case AuditStatusFilter.pending:
-        return 'Aaj ke liye sab pending clear hai';
+        return s.auditEmptyPendingTitle;
       case AuditStatusFilter.all:
-        return 'Koi product nahi mila';
+        return s.noProductsFound;
     }
   }
 
-  String _emptyMessage(AuditStatusFilter filter) {
+  String _emptyMessage(AuditStatusFilter filter, AppStrings s) {
     switch (filter) {
       case AuditStatusFilter.audited:
-        return 'Aaj abhi tak kisi variant ka audit save nahi hua.';
+        return s.auditEmptyAuditedMessage;
       case AuditStatusFilter.pending:
-        return 'Aaj ke liye audit baaki sab SKU yahan dikhenge.';
+        return s.auditEmptyPendingMessage;
       case AuditStatusFilter.all:
-        return 'Is location par koi product nahi mila.';
+        return s.auditEmptyAllMessage;
     }
   }
 }

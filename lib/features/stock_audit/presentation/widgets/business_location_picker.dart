@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/app_language_provider.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/app_ui.dart';
 import '../../data/models/business_location_model.dart';
 
-class BusinessLocationPicker extends StatelessWidget {
+class BusinessLocationPicker extends ConsumerWidget {
   const BusinessLocationPicker({
     super.key,
     required this.locations,
@@ -18,16 +21,17 @@ class BusinessLocationPicker extends StatelessWidget {
   final ValueChanged<int?> onChanged;
   final bool isLoading;
 
-  BusinessLocationModel? get _selected =>
+  BusinessLocationModel? _selected(List<BusinessLocationModel> locations) =>
       locations.where((location) => location.id == selectedId).firstOrNull;
 
-  BusinessLocationModel? get _effectiveSelected {
-    if (_selected != null) return _selected;
+  BusinessLocationModel? _effectiveSelected(List<BusinessLocationModel> locations) {
+    final selected = _selected(locations);
+    if (selected != null) return selected;
     if (locations.length == 1) return locations.first;
     return null;
   }
 
-  Future<void> _openSearchSheet(BuildContext context) async {
+  Future<void> _openSearchSheet(BuildContext context, WidgetRef ref) async {
     if (locations.isEmpty) return;
 
     final picked = await showLocationPickerSheet(
@@ -40,15 +44,16 @@ class BusinessLocationPicker extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final selected = _effectiveSelected;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+    final selected = _effectiveSelected(locations);
     final parts = splitLocationLabel(selected?.label);
     final isSingleLocation = locations.length <= 1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const FieldLabel('Business Location', icon: Icons.place_outlined),
+        FieldLabel(s.businessLocation, icon: Icons.place_outlined),
         const SizedBox(height: 10),
         if (isSingleLocation)
           BusinessLocationReadOnly(
@@ -60,11 +65,11 @@ class BusinessLocationPicker extends StatelessWidget {
             value: parts.title,
             subtitle: parts.subtitle,
             placeholder: locations.isEmpty
-                ? 'No location available'
-                : 'Select location',
+                ? s.noLocationAvailable
+                : s.selectLocation,
             isLoading: isLoading,
             enabled: locations.isNotEmpty,
-            onTap: () => _openSearchSheet(context),
+            onTap: () => _openSearchSheet(context, ref),
           ),
       ],
     );
@@ -166,7 +171,7 @@ Future<LocationPickResult?> showLocationPickerSheet({
   );
 }
 
-class _LocationSearchSheet extends StatefulWidget {
+class _LocationSearchSheet extends ConsumerStatefulWidget {
   const _LocationSearchSheet({
     required this.locations,
     required this.selectedId,
@@ -178,15 +183,16 @@ class _LocationSearchSheet extends StatefulWidget {
   final bool includeAllOption;
 
   @override
-  State<_LocationSearchSheet> createState() => _LocationSearchSheetState();
+  ConsumerState<_LocationSearchSheet> createState() =>
+      _LocationSearchSheetState();
 }
 
-class _LocationSearchSheetState extends State<_LocationSearchSheet> {
+class _LocationSearchSheetState extends ConsumerState<_LocationSearchSheet> {
   String _query = '';
 
-  List<({int? id, String label})> get _options {
+  List<({int? id, String label})> _options(AppStrings s) {
     final all = <({int? id, String label})>[
-      if (widget.includeAllOption) (id: null, label: 'All Business Locations'),
+      if (widget.includeAllOption) (id: null, label: s.allBusinessLocations),
       ...widget.locations.map((l) => (id: l.id, label: l.label)),
     ];
     final term = _query.trim().toLowerCase();
@@ -198,27 +204,28 @@ class _LocationSearchSheetState extends State<_LocationSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final options = _options;
+    final s = ref.watch(appStringsProvider);
+    final options = _options(s);
 
     return AppSheet(
-      title: 'Business Location',
-      subtitle: 'Apna dark store select karein',
+      title: s.businessLocation,
+      subtitle: s.selectDarkstoreSubtitle,
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
             child: AppSearchField(
-              hintText: 'Search location...',
+              hintText: s.searchLocation,
               onChanged: (value) => setState(() => _query = value),
             ),
           ),
           Expanded(
             child: options.isEmpty
-                ? const AppEmptyState(
+                ? AppEmptyState(
                     icon: Icons.location_off_outlined,
-                    title: 'No location found',
-                    message: 'Search term badal kar dubara try karein.',
+                    title: s.noLocationFound,
+                    message: s.searchTermTryAgain,
                   )
                 : ListView.builder(
                     shrinkWrap: true,

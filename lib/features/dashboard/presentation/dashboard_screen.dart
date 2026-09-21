@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
@@ -45,6 +47,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(appThemeModeProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(dashboardControllerProvider);
     final data = state.data;
 
@@ -53,7 +56,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: data?.header.greeting ?? 'Dashboard',
+            pageLabel: data?.header.greeting ?? s.dashboard,
             subtitle: () {
               final storeName = (data?.header.storeName ?? '').trim();
               final storeCode = (data?.header.storeCode ?? '').trim();
@@ -66,7 +69,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }(),
             onLogout: _logout,
             searchController: _searchController,
-            searchHint: 'Product ya SKU search karo...',
+            searchHint: s.searchProductSku,
             searchValue: _searchController.text,
             onSearchChanged: (_) => setState(() {}),
             onClearSearch: () {
@@ -125,8 +128,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     tapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                  child: const Text(
-                                    'Retry',
+                                  child: Text(
+                                    s.retry,
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
@@ -139,6 +142,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         if (data != null) ...[
                           if (data.mismatchAlert.count > 0) ...[
                             _MismatchCard(
+                              strings: s,
                               alert: data.mismatchAlert,
                               onTap: () {
                                 ref
@@ -152,6 +156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             const SizedBox(height: 10),
                           ],
                           _AuditProgressCard(
+                            strings: s,
                             progress: data.auditProgress,
                             onTap: () {
                               ref
@@ -164,6 +169,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(height: 10),
                           _SummaryGrid(
+                            strings: s,
                             summary: data.summary,
                             onStockTap: () {
                               if (data.summary.stockMismatch > 0) {
@@ -180,7 +186,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           SizedBox(height: 16),
                           Text(
-                            'Quick Actions',
+                            s.quickActions,
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -188,13 +194,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const _QuickActionsRow(),
+                          _QuickActionsRow(strings: s),
                           SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Recent Orders',
+                                  s.recentOrders,
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700,
@@ -211,8 +217,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   tapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text(
-                                  'View All →',
+                                child: Text(
+                                  s.viewAll,
                                   style: TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
@@ -223,10 +229,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                           const SizedBox(height: 8),
                           if (data.recentOrders.isEmpty)
-                            const ModuleEmptyState(
+                            ModuleEmptyState(
                               icon: Icons.receipt_long_outlined,
-                              title: 'No recent orders',
-                              message: 'Orders yahan dikhenge',
+                              title: s.noRecentOrders,
+                              message: s.ordersWillAppearHere,
                             )
                           else
                             for (final order in data.recentOrders)
@@ -243,8 +249,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 }
 
 class _MismatchCard extends StatelessWidget {
-  const _MismatchCard({required this.alert, required this.onTap});
+  const _MismatchCard({
+    required this.strings,
+    required this.alert,
+    required this.onTap,
+  });
 
+  final AppStrings strings;
   final DashboardMismatchAlert alert;
   final VoidCallback onTap;
 
@@ -285,7 +296,7 @@ class _MismatchCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${alert.count} Product Mismatch Found',
+                  strings.productMismatchFound(alert.count),
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -298,7 +309,10 @@ class _MismatchCard extends StatelessWidget {
           if (first != null) ...[
             const SizedBox(height: 8),
             Text(
-              '${first.displayName} me ${first.difference} units ka mismatch paya gaya hai. Please verify physical count and approve.',
+              strings.mismatchDetailMessage(
+                first.displayName,
+                first.difference,
+              ),
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textPrimary,
@@ -351,10 +365,10 @@ class _MismatchCard extends StatelessWidget {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            _metric('System', _fmt(first.systemStock)),
-                            _metric('Physical', _fmt(first.physicalStock)),
+                            _metric(strings.system, _fmt(first.systemStock)),
+                            _metric(strings.physical, _fmt(first.physicalStock)),
                             _metric(
-                              'Diff',
+                              strings.diff,
                               '${first.difference}',
                               valueColor: const Color(0xFFDC2626),
                             ),
@@ -432,10 +446,12 @@ class _MismatchCard extends StatelessWidget {
 
 class _AuditProgressCard extends StatelessWidget {
   const _AuditProgressCard({
+    required this.strings,
     required this.progress,
     required this.onTap,
   });
 
+  final AppStrings strings;
   final DashboardAuditProgress progress;
   final VoidCallback onTap;
 
@@ -476,7 +492,7 @@ class _AuditProgressCard extends StatelessWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  "Today's Audit",
+                  strings.todaysAudit,
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -496,7 +512,10 @@ class _AuditProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${progress.auditedToday} of ${progress.totalSkus} SKU audited',
+            strings.skuAuditedProgress(
+              progress.auditedToday,
+              progress.totalSkus,
+            ),
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
@@ -519,10 +538,12 @@ class _AuditProgressCard extends StatelessWidget {
 
 class _SummaryGrid extends StatelessWidget {
   const _SummaryGrid({
+    required this.strings,
     required this.summary,
     required this.onStockTap,
   });
 
+  final AppStrings strings;
   final DashboardSummary summary;
   final VoidCallback onStockTap;
 
@@ -537,11 +558,11 @@ class _SummaryGrid extends StatelessWidget {
             icon: Icons.receipt_long_rounded,
             iconBg: AppColors.softOrange,
             iconColor: AppColors.primary,
-            title: 'Orders',
+            title: strings.orders,
             lines: [
-              _SummaryLine('${summary.ordersTotal} Total'),
+              _SummaryLine(strings.statTotal(summary.ordersTotal)),
               _SummaryLine(
-                '${summary.ordersPending} Pending',
+                strings.statPending(summary.ordersPending),
                 color: AppColors.primary,
               ),
             ],
@@ -554,11 +575,11 @@ class _SummaryGrid extends StatelessWidget {
             icon: Icons.inventory_2_rounded,
             iconBg: AppColors.softBlue,
             iconColor: const Color(0xFF2563EB),
-            title: 'Stock',
+            title: strings.stock,
             lines: [
-              _SummaryLine('${summary.stockTotalSkus} Total SKU'),
+              _SummaryLine(strings.statTotalSku(summary.stockTotalSkus)),
               _SummaryLine(
-                '${summary.stockMismatch} Mismatch',
+                strings.statMismatch(summary.stockMismatch),
                 color: summary.stockMismatch > 0
                     ? const Color(0xFFDC2626)
                     : null,
@@ -573,14 +594,14 @@ class _SummaryGrid extends StatelessWidget {
             icon: Icons.local_shipping_rounded,
             iconBg: AppColors.softGreen,
             iconColor: const Color(0xFF059669),
-            title: 'DC',
+            title: strings.dc,
             lines: [
               _SummaryLine(
-                '${summary.dcIncoming} Incoming',
+                strings.statIncoming(summary.dcIncoming),
                 color: const Color(0xFF059669),
               ),
               _SummaryLine(
-                '${summary.dcReceived} Received',
+                strings.statReceived(summary.dcReceived),
                 color: const Color(0xFF0284C7),
               ),
             ],
@@ -678,35 +699,37 @@ class _SummaryTile extends StatelessWidget {
 }
 
 class _QuickActionsRow extends StatelessWidget {
-  const _QuickActionsRow();
+  const _QuickActionsRow({required this.strings});
+
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
     final actions = <({IconData icon, String label, String route, Color bg, Color fg})>[
       (
         icon: Icons.add_box_rounded,
-        label: 'Stocks',
+        label: strings.stocks,
         route: '/my-products',
         bg: AppColors.softOrange,
         fg: AppColors.primary,
       ),
       (
         icon: Icons.receipt_long_rounded,
-        label: 'View Orders',
+        label: strings.viewOrders,
         route: '/orders',
         bg: AppColors.softPurple,
         fg: const Color(0xFF7C3AED),
       ),
       (
         icon: Icons.fact_check_rounded,
-        label: 'Start Audit',
+        label: strings.startAudit,
         route: '/audit',
         bg: AppColors.softGreen,
         fg: const Color(0xFF16A34A),
       ),
       (
         icon: Icons.local_shipping_rounded,
-        label: 'DC Transfers',
+        label: strings.dcTransfers,
         route: '/dc',
         bg: AppColors.softBlue,
         fg: const Color(0xFF0284C7),

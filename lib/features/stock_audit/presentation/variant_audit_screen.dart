@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_ui.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -96,8 +96,9 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
   }
 
   Future<void> _submit() async {
+    final s = ref.read(appStringsProvider);
     if (ref.read(isViewOnlySessionProvider)) {
-      setState(() => _error = RoleHelper.viewOnlyMessage);
+      setState(() => _error = s.viewOnlyMessage);
       return;
     }
     final detail = _detail;
@@ -109,8 +110,8 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
     if (damageQty > detail.auditQty) {
       setState(() {
         _error = detail.auditQty > 0
-            ? 'Damage qty cannot exceed audit quantity (${detail.auditQty} pcs)'
-            : 'Please update audit quantity before adding damage';
+            ? s.damageQtyExceedsAudit(detail.auditQty)
+            : s.updateAuditBeforeDamage;
       });
       return;
     }
@@ -136,7 +137,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
       if (!mounted) return;
       setState(() => _submitting = false);
       final message =
-          wasUpdated ? 'Successfully updated.' : 'Successfully saved.';
+          wasUpdated ? s.successfullyUpdated : s.successfullySaved;
       AppSnackBar.showSuccess(context, message);
 
       await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -157,6 +158,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final detail = _detail;
     final viewOnly = ref.watch(isViewOnlySessionProvider);
 
@@ -165,10 +167,10 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Audit Detail',
+            pageLabel: s.auditDetail,
             subtitle:
                 detail?.variantSku ??
-                (_loading ? 'Loading...' : 'Variant audit'),
+                (_loading ? s.loading : s.variantAudit),
             onBack: () => context.go('/audit?storeId=${widget.storeId}'),
             onLogout: _logout,
           ),
@@ -245,7 +247,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                             children: [
                               Expanded(
                                 child: _StatCell(
-                                  label: 'System Stock',
+                                  label: s.systemStock,
                                   value: '${detail.currentStock}',
                                 ),
                               ),
@@ -256,7 +258,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                               ),
                               Expanded(
                                 child: _StatCell(
-                                  label: 'Audit Qty',
+                                  label: s.auditQty,
                                   value: '${detail.auditQty}',
                                   valueColor: AppColors.primaryDark,
                                 ),
@@ -296,10 +298,9 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SectionHeading(
-                          title: 'Damage Quantity',
-                          subtitle:
-                              'Audit qty me se kitna stock damaged hai wo enter karein.',
+                        SectionHeading(
+                          title: s.damageQuantity,
+                          subtitle: s.damageQuantityHint,
                         ),
                         const SizedBox(height: 14),
                         Row(
@@ -345,8 +346,8 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                           ],
                         ),
                         const SizedBox(height: 18),
-                        const FieldLabel(
-                          'Comment',
+                        FieldLabel(
+                          s.comment,
                           icon: Icons.chat_bubble_outline_rounded,
                         ),
                         const SizedBox(height: 10),
@@ -357,8 +358,8 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
                           maxLines: 3,
                           maxLength: 1000,
                           style: const TextStyle(fontSize: 14, height: 1.4),
-                          decoration: const InputDecoration(
-                            hintText: 'Damage stock comment (optional)',
+                          decoration: InputDecoration(
+                            hintText: s.damageCommentHint,
                             counterText: '',
                           ),
                         ),
@@ -372,7 +373,7 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
           if (!_loading && detail != null && !viewOnly)
             StickyActionBar(
               child: LoadingButton(
-                label: _submitting ? 'Submitting...' : 'Submit',
+                label: _submitting ? s.submitting : s.submit,
                 icon: Icons.check_rounded,
                 isLoading: _submitting,
                 onPressed: _submitting ? null : _submit,
@@ -420,11 +421,14 @@ class _StatCell extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label.toUpperCase(),
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 9.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
+            fontSize: ModuleTokens.tileMetricLabelFontSize,
+            fontWeight: FontWeight.w700,
+            height: 1.15,
             color: AppColors.textMuted,
           ),
         ),

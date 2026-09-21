@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/role_helper.dart';
+import '../../../../core/l10n/app_language_provider.dart';
 import '../../../../core/widgets/app_ui.dart';
 import '../../../../core/widgets/loading_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -19,7 +19,7 @@ Future<void> showCommentSheet({
 }) {
   if (ref.read(isViewOnlySessionProvider)) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(RoleHelper.viewOnlyMessage)),
+      SnackBar(content: Text(ref.read(appStringsProvider).viewOnlyMessage)),
     );
     return Future.value();
   }
@@ -78,9 +78,10 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
   }
 
   Future<void> _submit() async {
+    final s = ref.read(appStringsProvider);
     final comment = _controller.text.trim();
     if (comment.isEmpty) {
-      setState(() => _error = 'Comment likh kar submit karein.');
+      setState(() => _error = s.commentRequired);
       return;
     }
 
@@ -111,8 +112,10 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
+
     return AppSheet(
-      title: 'Add Comment',
+      title: s.addComment,
       subtitle: '${widget.productName} — ${widget.variantLabel}',
       maxHeightFactor: 0.7,
       child: SingleChildScrollView(
@@ -126,8 +129,8 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
               maxLength: 1000,
               autofocus: true,
               style: const TextStyle(fontSize: 14.5, height: 1.4),
-              decoration: const InputDecoration(
-                hintText: 'Enter comment for this variant',
+              decoration: InputDecoration(
+                hintText: s.commentHint,
                 counterText: '',
               ),
             ),
@@ -159,7 +162,7 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
               children: [
                 Expanded(
                   child: LoadingButton(
-                    label: 'Cancel',
+                    label: s.cancel,
                     secondary: true,
                     onPressed: _submitting
                         ? null
@@ -170,7 +173,7 @@ class _CommentSheetState extends ConsumerState<_CommentSheet> {
                 Expanded(
                   flex: 2,
                   child: LoadingButton(
-                    label: 'Save Comment',
+                    label: s.saveComment,
                     isLoading: _submitting,
                     onPressed: _submit,
                   ),

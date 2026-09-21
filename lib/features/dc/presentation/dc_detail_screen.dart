@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/loading_button.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -30,6 +31,7 @@ class DcDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(dcControllerProvider);
     final transfer = state.transferById(transferId);
     final formatter = NumberFormat.decimalPattern('en_IN');
@@ -47,15 +49,17 @@ class DcDetailScreen extends ConsumerWidget {
         body: Column(
           children: [
             ModuleHeader(
-              pageLabel: _isOutgoingMode ? 'Outgoing Detail' : 'DC Detail',
+              pageLabel: _isOutgoingMode
+                  ? s.outgoingDeliveryDetail
+                  : s.incomingDeliveryDetail,
               onBack: () => context.go('/dc?tab=$tab'),
               onLogout: logout,
             ),
-            const Expanded(
+            Expanded(
               child: ModuleEmptyState(
                 icon: Icons.search_off_rounded,
-                title: 'Transfer not found',
-                message: 'List refresh karke dubara try karein.',
+                title: s.transferNotFound,
+                message: s.refreshListAndRetry,
               ),
             ),
           ],
@@ -80,7 +84,7 @@ class DcDetailScreen extends ConsumerWidget {
             ModuleHeader(
               pageLabel: transfer.reference.isNotEmpty
                   ? transfer.reference
-                  : 'Transfer #${transfer.transferId}',
+                  : s.transferNumber(transfer.transferId),
               subtitle: _isOutgoingMode
                   ? (transfer.to?.warehouse ?? transfer.from?.warehouse)
                   : transfer.from?.warehouse,
@@ -99,14 +103,14 @@ class DcDetailScreen extends ConsumerWidget {
                         ? [
                             ModuleStat(
                               icon: Icons.call_made_rounded,
-                              label: 'Outgoing Qty',
+                              label: s.outgoingQty,
                               value: formatter.format(transfer.outgoingQty),
                               background: const Color(0xFF1D4ED8),
                               labelColor: const Color(0xFFBFDBFE),
                             ),
                             ModuleStat(
                               icon: Icons.check_circle_outline_rounded,
-                              label: 'Transferred Qty',
+                              label: s.transferredQty,
                               value: formatter.format(transfer.transferredQty),
                               background: const Color(0xFF7C3AED),
                               labelColor: const Color(0xFFE9D5FF),
@@ -116,14 +120,14 @@ class DcDetailScreen extends ConsumerWidget {
                             ? [
                                 ModuleStat(
                                   icon: Icons.call_made_rounded,
-                                  label: 'Outgoing Qty',
+                                  label: s.outgoingQty,
                                   value: formatter.format(transfer.outgoingQty),
                                   background: accent,
                                   labelColor: const Color(0xFFBFDBFE),
                                 ),
                                 ModuleStat(
                                   icon: Icons.check_circle_outline_rounded,
-                                  label: 'Transferred Qty',
+                                  label: s.transferredQty,
                                   value: formatter
                                       .format(transfer.transferredQty),
                                   background: AppColors.primary,
@@ -133,14 +137,14 @@ class DcDetailScreen extends ConsumerWidget {
                             : [
                                 ModuleStat(
                                   icon: Icons.call_received_rounded,
-                                  label: 'Incoming Qty',
+                                  label: s.incomingQty,
                                   value: formatter.format(transfer.incomingQty),
                                   background: const Color(0xFF15803D),
                                   labelColor: const Color(0xFFBBF7D0),
                                 ),
                                 ModuleStat(
                                   icon: Icons.check_circle_outline_rounded,
-                                  label: 'Received Qty',
+                                  label: s.receivedQty,
                                   value: formatter.format(transfer.receivedQty),
                                   background: AppColors.primary,
                                   labelColor: const Color(0xFFFFE4D2),
@@ -152,7 +156,7 @@ class DcDetailScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
                       child: Text(
-                        'To: ${transfer.to!.warehouse}',
+                        s.toWarehouse(transfer.to!.warehouse ?? ''),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -165,7 +169,7 @@ class DcDetailScreen extends ConsumerWidget {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
                       child: Text(
-                        'From: ${transfer.from!.warehouse}',
+                        s.fromWarehouse(transfer.from!.warehouse ?? ''),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -174,11 +178,10 @@ class DcDetailScreen extends ConsumerWidget {
                       ),
                     ),
                   if (transfer.products.isEmpty)
-                    const ModuleEmptyState(
+                    ModuleEmptyState(
                       icon: Icons.inventory_2_outlined,
-                      title: 'Koi product line nahi',
-                      message:
-                          'Is transfer me product detail available nahi hai.',
+                      title: s.noProductLines,
+                      message: s.noProductDetail,
                     )
                   else
                     ...transfer.products.map(
@@ -319,10 +322,10 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Connection error. Dubara try karein.'),
+        SnackBar(
+          content: Text(ref.read(appStringsProvider).connectionError),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: Color(0xFFB91C1C),
+          backgroundColor: const Color(0xFFB91C1C),
         ),
       );
     }
@@ -330,6 +333,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final canSave = _canSave;
     final pickingMissing = widget.showSaveActions &&
         (_activePickingId == null || _activePickingId! <= 0);
@@ -365,7 +369,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                     ? [
                         Expanded(
                           child: _Metric(
-                            label: 'Outgoing',
+                            label: s.outgoing,
                             value: widget.formatter
                                 .format(widget.product.outgoingQty),
                             color: const Color(0xFF1D4ED8),
@@ -378,7 +382,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         ),
                         Expanded(
                           child: _Metric(
-                            label: 'Transferred Qty',
+                            label: s.transferredQty,
                             value: widget.formatter
                                 .format(widget.product.transferredQty),
                             color: const Color(0xFF7C3AED),
@@ -389,7 +393,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         ? [
                             Expanded(
                               child: _Metric(
-                                label: 'Outgoing',
+                                label: s.outgoing,
                                 value: widget.formatter
                                     .format(widget.product.outgoingQty),
                                 color: widget.accent,
@@ -402,7 +406,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             ),
                             Expanded(
                               child: _Metric(
-                                label: 'Transferred Qty',
+                                label: s.transferredQty,
                                 value: widget.formatter
                                     .format(widget.product.transferredQty),
                                 color: AppColors.primary,
@@ -412,7 +416,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                         : [
                             Expanded(
                               child: _Metric(
-                                label: 'Incoming',
+                                label: s.incoming,
                                 value: widget.formatter
                                     .format(widget.product.incomingQty),
                                 color: const Color(0xFF15803D),
@@ -425,7 +429,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                             ),
                             Expanded(
                               child: _Metric(
-                                label: 'Received',
+                                label: s.received,
                                 value: widget.formatter
                                     .format(widget.product.receivedQty),
                                 color: AppColors.primary,
@@ -436,7 +440,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
             ),
             const SizedBox(height: 6),
             Text(
-              'UOM: ${widget.product.uom}',
+              '${s.uom}: ${widget.product.uom}',
               style: TextStyle(
                 fontSize: 10.5,
                 color: ModuleTokens.faintText,
@@ -447,8 +451,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                 const SizedBox(height: 8),
                 Text(
                   widget.isOutgoingMode
-                      ? 'Outbound picking id missing — save unavailable'
-                      : 'Inbound picking id missing — save unavailable',
+                      ? s.outboundPickingMissing
+                      : s.inboundPickingMissing,
                   style: const TextStyle(
                     fontSize: 10.5,
                     color: Color(0xFFB91C1C),
@@ -465,8 +469,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         labelText: widget.isOutgoingMode
-                            ? 'Transferred qty'
-                            : 'Received qty',
+                            ? s.transferredQtyLabel
+                            : s.receivedQtyLabel,
                         isDense: true,
                       ),
                       onChanged: (_) => setState(() {}),
@@ -476,7 +480,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                   SizedBox(
                     width: 110,
                     child: LoadingButton(
-                      label: _saved ? 'Saved' : 'Save',
+                      label: _saved ? s.saved : s.save,
                       isLoading: _saving,
                       onPressed: canSave ? _save : null,
                     ),
@@ -507,12 +511,14 @@ class _Metric extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 8,
+            fontSize: ModuleTokens.tileMetricLabelFontSize,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
+            height: 1.15,
             color: ModuleTokens.faintText,
           ),
         ),

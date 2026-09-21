@@ -63,14 +63,49 @@ class DcController extends StateNotifier<DcState> {
   int _loadGeneration = 0;
   DcFetchQuery _query = DcFetchQuery.incoming;
 
-  Future<void> initialize({DcFetchQuery query = DcFetchQuery.incoming}) =>
-      _load(refresh: false, query: query);
+  Future<void> initialize({DcFetchQuery query = DcFetchQuery.incoming}) async {
+    await _load(refresh: false, query: query);
+    await _prefetchOutboundPeerSummary(query.key);
+  }
 
-  Future<void> refresh({DcFetchQuery? query}) =>
-      _load(refresh: true, query: query ?? _query);
+  Future<void> refresh({DcFetchQuery? query}) async {
+    final activeQuery = query ?? _query;
+    await _load(refresh: true, query: activeQuery);
+    await _prefetchOutboundPeerSummary(activeQuery.key);
+  }
 
-  Future<void> loadWithQuery(DcFetchQuery query) =>
-      _load(refresh: true, query: query);
+  Future<void> loadWithQuery(DcFetchQuery query) async {
+    await _load(refresh: true, query: query);
+    await _prefetchOutboundPeerSummary(query.key);
+  }
+
+  /// Outgoing tile needs Transferred count (and vice versa) without switching list.
+  Future<void> _prefetchOutboundPeerSummary(String primaryKey) async {
+    if (primaryKey != 'out' && primaryKey != 'transferred') return;
+
+    final summary = state.summary;
+    if (primaryKey == 'out' && (summary?.transferredTransfers ?? 0) > 0) {
+      return;
+    }
+    if (primaryKey == 'transferred' && (summary?.outgoingTransfers ?? 0) > 0) {
+      return;
+    }
+
+    final peerQuery =
+        primaryKey == 'out' ? DcFetchQuery.transferred : DcFetchQuery.outgoing;
+
+    try {
+      final result = await _repository.fetchTransfers(query: peerQuery);
+      final merged = _mergeSummary(
+        queryKey: peerQuery.key,
+        next: result.summary,
+        previous: state.summary ?? result.summary,
+      );
+      state = state.copyWith(summary: merged);
+    } on ApiException {
+      // Keep primary list/summary if peer count prefetch fails.
+    }
+  }
 
   DcSummaryModel _mergeSummary({
     required String queryKey,
@@ -88,14 +123,20 @@ class DcController extends StateNotifier<DcState> {
           incomingTransfers: previous.incomingTransfers,
           receivedTransfers: previous.receivedTransfers,
           outgoingTransfers: next.outgoingTransfers,
-          transferredTransfers: previous.transferredTransfers,
+          transferredTransfers: pick(
+            next.transferredTransfers,
+            previous.transferredTransfers,
+          ),
           totalTransfers: next.totalTransfers,
         );
       case 'transferred':
         return DcSummaryModel(
           incomingTransfers: previous.incomingTransfers,
           receivedTransfers: previous.receivedTransfers,
-          outgoingTransfers: previous.outgoingTransfers,
+          outgoingTransfers: pick(
+            next.outgoingTransfers,
+            previous.outgoingTransfers,
+          ),
           transferredTransfers: next.transferredTransfers,
           totalTransfers: next.totalTransfers,
         );

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/app_strings.dart';
 
 /// Returns mismatch reason text, or null if user cancelled.
 Future<String?> showMismatchReasonDialog({
   required BuildContext context,
+  required AppStrings strings,
   required String productName,
   required String variantLabel,
   required int baselineQty,
@@ -27,7 +29,7 @@ Future<String?> showMismatchReasonDialog({
               borderRadius: BorderRadius.circular(16),
             ),
             title: Text(
-              'Mismatch reason chahiye',
+              strings.mismatchReasonRequired,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
@@ -49,10 +51,12 @@ Future<String?> showMismatchReasonDialog({
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Total physical: $baselineQty\n'
-                    'Inventory change qty: $inventoryChangeQty\n'
-                    'Expected update: $expectedQty\n'
-                    'Aapne enter kiya: $enteredQty',
+                    strings.mismatchSummary(
+                      baselineQty: baselineQty,
+                      inventoryChangeQty: inventoryChangeQty,
+                      expectedQty: expectedQty,
+                      enteredQty: enteredQty,
+                    ),
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.45,
@@ -61,7 +65,7 @@ Future<String?> showMismatchReasonDialog({
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Transaction ke hisaab se difference zyada hai. Reason likhiye:',
+                    strings.mismatchReasonPrompt,
                     style: TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textSecondary,
@@ -73,8 +77,8 @@ Future<String?> showMismatchReasonDialog({
                     maxLines: 3,
                     minLines: 2,
                     textInputAction: TextInputAction.done,
-                    decoration: const InputDecoration(
-                      hintText: 'Mismatch reason...',
+                    decoration: InputDecoration(
+                      hintText: strings.mismatchReasonHint,
                     ),
                   ),
                   if (errorText != null) ...[
@@ -93,18 +97,18 @@ Future<String?> showMismatchReasonDialog({
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(null),
-                child: const Text('Cancel'),
+                child: Text(strings.cancel),
               ),
               FilledButton(
                 onPressed: () {
                   final reason = controller.text.trim();
                   if (reason.isEmpty) {
-                    setState(() => errorText = 'Reason dena zaroori hai.');
+                    setState(() => errorText = strings.reasonRequired);
                     return;
                   }
                   Navigator.of(dialogContext).pop(reason);
                 },
-                child: const Text('Save with reason'),
+                child: Text(strings.saveWithReason),
               ),
             ],
           );

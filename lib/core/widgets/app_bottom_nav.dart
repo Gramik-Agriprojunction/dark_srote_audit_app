@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_colors.dart';
+import '../l10n/app_language_provider.dart';
 
 enum AppTab { dashboard, audit, orders, stock, transactions, dc, variance }
 
-class AppBottomNav extends StatelessWidget {
+class AppBottomNav extends ConsumerWidget {
   const AppBottomNav({
     super.key,
     required this.currentTab,
@@ -22,7 +24,9 @@ class AppBottomNav extends StatelessWidget {
   final VoidCallback onStockTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -36,7 +40,7 @@ class AppBottomNav extends StatelessWidget {
             children: [
               Expanded(
                 child: _NavItem(
-                  label: 'Home',
+                  label: s.navHome,
                   icon: Icons.dashboard_outlined,
                   activeIcon: Icons.dashboard_rounded,
                   isActive: currentTab == AppTab.dashboard,
@@ -45,7 +49,7 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Stock',
+                  label: s.navStock,
                   icon: Icons.inventory_2_outlined,
                   activeIcon: Icons.inventory_2_rounded,
                   isActive: currentTab == AppTab.stock,
@@ -54,7 +58,7 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Orders',
+                  label: s.navOrders,
                   icon: Icons.receipt_long_outlined,
                   activeIcon: Icons.receipt_long_rounded,
                   isActive: currentTab == AppTab.orders,
@@ -63,7 +67,7 @@ class AppBottomNav extends StatelessWidget {
               ),
               Expanded(
                 child: _NavItem(
-                  label: 'Audit',
+                  label: s.navAudit,
                   icon: Icons.fact_check_outlined,
                   activeIcon: Icons.fact_check_rounded,
                   isActive: currentTab == AppTab.audit,
@@ -114,9 +118,10 @@ class _NavItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                 color: color,
+                height: 1.1,
               ),
             ),
           ],

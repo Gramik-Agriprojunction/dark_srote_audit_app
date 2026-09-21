@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_assets.dart';
 import '../constants/app_colors.dart';
+import '../l10n/app_language_provider.dart';
+import '../l10n/app_strings.dart';
 import 'app_brand_header.dart';
 import 'app_ui.dart';
 
@@ -20,6 +23,11 @@ class ModuleTokens {
   static Color get mutedText => AppColors.textSecondary;
   static Color get strongText => AppColors.textPrimary;
   static Color get faintText => AppColors.textMuted;
+
+  /// Caption labels on coloured stat tiles / metric strips.
+  /// Sized for Devanagari + Latin at the same visual weight.
+  static const double tileLabelFontSize = 11;
+  static const double tileMetricLabelFontSize = 11;
 
   static const listPadding = EdgeInsets.symmetric(horizontal: 10);
 
@@ -43,7 +51,7 @@ class ModuleTokens {
 }
 
 /// Compact orange header sheet with Gramik brand, actions and optional search.
-class ModuleHeader extends StatelessWidget {
+class ModuleHeader extends ConsumerWidget {
   const ModuleHeader({
     super.key,
     this.pageLabel,
@@ -88,14 +96,14 @@ class ModuleHeader extends StatelessWidget {
 
   bool get _hasSearch => searchController != null && onSearchChanged != null;
 
-  List<Widget> _trailingActions(BuildContext context) {
+  List<Widget> _trailingActions(BuildContext context, AppStrings s) {
     final items = <Widget>[...actions];
     // Darkstore zip: person icon opens Profile screen (not a logout popup).
     if (onLogout != null) {
       items.add(
         ModuleHeaderAction(
           icon: Icons.person_rounded,
-          tooltip: 'Profile',
+          tooltip: s.profile,
           onTap: () => context.push('/profile'),
         ),
       );
@@ -105,7 +113,7 @@ class ModuleHeader extends StatelessWidget {
         ModuleHeaderAction(
           icon: Icons.notifications_none_rounded,
           badgeCount: notificationCount,
-          tooltip: 'Notifications',
+          tooltip: s.notifications,
           onTap: onNotificationTap ?? () {},
         ),
       );
@@ -114,7 +122,8 @@ class ModuleHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: AppColors.headerBg,
@@ -142,7 +151,7 @@ class ModuleHeader extends StatelessWidget {
                 if (onBack != null)
                   ModuleHeaderAction(
                     icon: Icons.arrow_back_ios_new_rounded,
-                    tooltip: 'Back',
+                    tooltip: s.back,
                     onTap: onBack!,
                   )
                 else
@@ -155,7 +164,7 @@ class ModuleHeader extends StatelessWidget {
                     subtitle: subtitle,
                   ),
                 ),
-                for (final action in _trailingActions(context)) ...[
+                for (final action in _trailingActions(context, s)) ...[
                   const SizedBox(width: 8),
                   action,
                 ],
@@ -205,7 +214,7 @@ class ModuleHeader extends StatelessWidget {
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
-                          hintText: searchHint ?? 'Search...',
+                          hintText: searchHint ?? s.search,
                           hintStyle: TextStyle(
                             color: AppColors.isDark
                                 ? AppColors.textMuted
@@ -314,22 +323,22 @@ class ModuleHeaderAction extends StatelessWidget {
   }
 }
 
-Future<bool> confirmModuleLogout(BuildContext context) async {
+Future<bool> confirmModuleLogout(BuildContext context, AppStrings s) async {
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('Logout'),
-      content: const Text('Kya aap logout karna chahte hain?'),
+      title: Text(s.logoutQuestion),
+      content: Text(s.logoutConfirm),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(false),
-          child: const Text('Cancel'),
+          child: Text(s.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-          child: const Text('OK'),
+          child: Text(s.ok),
         ),
       ],
     ),
@@ -338,13 +347,15 @@ Future<bool> confirmModuleLogout(BuildContext context) async {
 }
 
 /// User icon that opens a menu with Logout (confirmation before sign-out).
-class ModuleUserMenuAction extends StatelessWidget {
+class ModuleUserMenuAction extends ConsumerWidget {
   const ModuleUserMenuAction({super.key, required this.onLogout});
 
   final Future<void> Function() onLogout;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 44),
       color: AppColors.cardBg,
@@ -353,7 +364,7 @@ class ModuleUserMenuAction extends StatelessWidget {
       onSelected: (value) async {
         if (value != 'logout') return;
         HapticFeedback.selectionClick();
-        final confirmed = await confirmModuleLogout(context);
+        final confirmed = await confirmModuleLogout(context, s);
         if (!context.mounted || !confirmed) return;
         await onLogout();
       },
@@ -366,7 +377,7 @@ class ModuleUserMenuAction extends StatelessWidget {
               Icon(Icons.logout_rounded, size: 18, color: Color(0xFFDC2626)),
               SizedBox(width: 10),
               Text(
-                'Logout',
+                s.logout,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -398,15 +409,17 @@ class ModuleUserMenuAction extends StatelessWidget {
 }
 
 /// Logout action using the Darkstore logout glyph.
-class ModuleLogoutAction extends StatelessWidget {
+class ModuleLogoutAction extends ConsumerWidget {
   const ModuleLogoutAction({super.key, required this.onTap});
 
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(appStringsProvider);
+
     return Tooltip(
-      message: 'Logout',
+      message: s.logout,
       child: Material(
         color: Colors.white.withValues(alpha: 0.15),
         shape: const CircleBorder(),
@@ -542,16 +555,15 @@ class _ModuleStatCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    stat.label.toUpperCase(),
+                    stat.label,
                     maxLines: 2,
                     softWrap: true,
-                    overflow: TextOverflow.clip,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: labelColor,
-                      fontSize: 7.5,
+                      fontSize: ModuleTokens.tileLabelFontSize,
                       height: 1.2,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.08,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

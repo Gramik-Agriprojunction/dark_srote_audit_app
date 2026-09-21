@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_colors.dart';
+import 'core/l10n/app_language.dart';
+import 'core/l10n/app_language_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'routing/app_router.dart';
@@ -12,6 +14,7 @@ class StockShieldApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(appThemeModeProvider);
+    final language = ref.watch(appLanguageProvider);
     final router = ref.watch(appRouterProvider);
     AppColors.apply(themeMode);
 
@@ -20,6 +23,12 @@ class StockShieldApp extends ConsumerWidget {
     ref.listen<AppThemeMode>(appThemeModeProvider, (prev, next) {
       if (prev == next) return;
       AppColors.apply(next);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        router.refresh();
+      });
+    });
+    ref.listen<AppLanguage>(appLanguageProvider, (prev, next) {
+      if (prev == next) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         router.refresh();
       });
@@ -41,7 +50,7 @@ class StockShieldApp extends ConsumerWidget {
           // Remount the navigator subtree so every open screen picks up
           // AppColors immediately — no pull-to-refresh needed.
           child: KeyedSubtree(
-            key: ValueKey(themeMode),
+            key: ValueKey('${themeMode.name}_${language.name}'),
             child: child ?? const SizedBox.shrink(),
           ),
         );

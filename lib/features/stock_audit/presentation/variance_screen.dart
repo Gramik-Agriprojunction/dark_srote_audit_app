@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/alert_banner.dart';
@@ -73,7 +75,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(appThemeModeProvider);
-    final auth = ref.watch(authControllerProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(varianceControllerProvider);
     final formatter = NumberFormat.decimalPattern('en_IN');
     final notifier = ref.read(varianceControllerProvider.notifier);
@@ -83,8 +85,8 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Variance',
-            subtitle: auth.headerGreeting,
+            pageLabel: s.variance,
+            subtitle: ref.watch(headerGreetingProvider),
             onLogout: _logout,
           ),
           Expanded(
@@ -102,14 +104,14 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                       stats: [
                         ModuleStat(
                           icon: Icons.compare_arrows_rounded,
-                          label: 'Total Backlog',
+                          label: s.totalBacklog,
                           value: formatter.format(state.meta.total),
                           background: AppColors.primary,
                           labelColor: const Color(0xFFFFE4D2),
                         ),
                         ModuleStat(
                           icon: Icons.visibility_outlined,
-                          label: 'Showing',
+                          label: s.showing,
                           value: formatter.format(state.rows.length),
                           background: const Color(0xFF1D4ED8),
                           labelColor: const Color(0xFFBFDBFE),
@@ -121,7 +123,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                     child: ModuleChipsRow(
                       chips: [
                         ModuleChip(
-                          label: 'All Backlog',
+                          label: s.allBacklog,
                           icon: Icons.list_alt_rounded,
                           tone: AppColors.primary,
                           isActive: state.typeFilter == VarianceTypeFilter.all,
@@ -129,7 +131,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                               notifier.setTypeFilter(VarianceTypeFilter.all),
                         ),
                         ModuleChip(
-                          label: 'Minus',
+                          label: s.minus,
                           icon: Icons.trending_down_rounded,
                           tone: const Color(0xFFB91C1C),
                           isActive: state.typeFilter == VarianceTypeFilter.minus,
@@ -137,7 +139,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                               notifier.setTypeFilter(VarianceTypeFilter.minus),
                         ),
                         ModuleChip(
-                          label: 'Plus',
+                          label: s.plus,
                           icon: Icons.trending_up_rounded,
                           tone: const Color(0xFF15803D),
                           isActive: state.typeFilter == VarianceTypeFilter.plus,
@@ -162,23 +164,21 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                       child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.selectedStoreId == null)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.storefront_outlined,
-                        title: 'Darkstore select karein',
-                        message:
-                            'Variance dekhne ke liye pehle business location choose karein.',
+                        title: s.selectDarkstoreFirst,
+                        message: s.varianceSelectLocationMessage,
                       ),
                     )
                   else if (state.rows.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.compare_arrows_rounded,
-                        title: 'Koi backlog nahi mila',
-                        message:
-                            'Is location par abhi koi minus/plus backlog nahi hai.',
+                        title: s.noBacklogFound,
+                        message: s.noBacklogForLocationMessage,
                       ),
                     )
                   else
@@ -187,6 +187,7 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
                         (context, index) => _VarianceRowCard(
                           row: state.rows[index],
                           formatter: formatter,
+                          strings: s,
                         ),
                         childCount: state.rows.length,
                       ),
@@ -216,10 +217,15 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
 }
 
 class _VarianceRowCard extends StatelessWidget {
-  const _VarianceRowCard({required this.row, required this.formatter});
+  const _VarianceRowCard({
+    required this.row,
+    required this.formatter,
+    required this.strings,
+  });
 
   final VarianceRowModel row;
   final NumberFormat formatter;
+  final AppStrings strings;
 
   Color get _accent {
     switch (row.type) {
@@ -241,11 +247,11 @@ class _VarianceRowCard extends StatelessWidget {
   String get _typeLabel {
     switch (row.type) {
       case VarianceType.minus:
-        return 'Minus';
+        return strings.minus;
       case VarianceType.plus:
-        return 'Plus';
+        return strings.plus;
       case VarianceType.equal:
-        return 'Equal';
+        return strings.equal;
     }
   }
 
@@ -306,11 +312,10 @@ class _VarianceRowCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'BACKLOG',
+                    strings.backlog,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: ModuleTokens.tileMetricLabelFontSize,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
                       color: accent.withValues(alpha: 0.75),
                     ),
                   ),

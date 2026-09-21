@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -24,6 +26,7 @@ class DcListScreen extends ConsumerStatefulWidget {
 
 class _DcListScreenState extends ConsumerState<DcListScreen> {
   bool _initialized = false;
+  late final _DcListFlow _flow;
   _DcListTab _activeTab = _DcListTab.incoming;
 
   bool _isIncomingTransfer(DcTransferModel transfer) =>
@@ -56,18 +59,46 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
     }
   }
 
+  List<_DcListTab> get _flowTabs {
+    switch (_flow) {
+      case _DcListFlow.incoming:
+        return const [_DcListTab.incoming, _DcListTab.received];
+      case _DcListFlow.outgoing:
+        return const [_DcListTab.outgoing, _DcListTab.transferred];
+    }
+  }
+
+  _DcListFlow _flowFromInitialTab(String tab) {
+    switch (tab) {
+      case 'outgoing':
+      case 'transferred':
+        return _DcListFlow.outgoing;
+      default:
+        return _DcListFlow.incoming;
+    }
+  }
+
+  _DcListTab _tabFromName(String tab) {
+    switch (tab) {
+      case 'received':
+        return _DcListTab.received;
+      case 'outgoing':
+        return _DcListTab.outgoing;
+      case 'transferred':
+        return _DcListTab.transferred;
+      default:
+        return _DcListTab.incoming;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    if (widget.initialTab == 'received') {
-      _activeTab = _DcListTab.received;
-    } else if (widget.initialTab == 'outgoing') {
-      _activeTab = _DcListTab.outgoing;
-    } else if (widget.initialTab == 'transferred') {
-      _activeTab = _DcListTab.transferred;
-    } else {
-      _activeTab = _DcListTab.incoming;
-    }
+    _flow = _flowFromInitialTab(widget.initialTab);
+    final requestedTab = _tabFromName(widget.initialTab);
+    _activeTab = _flowTabs.contains(requestedTab)
+        ? requestedTab
+        : _flowTabs.first;
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
@@ -100,9 +131,109 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
     if (mounted) context.go('/login');
   }
 
+  String _pageLabel(AppStrings s) => _flow == _DcListFlow.incoming
+      ? s.incomingDelivery
+      : s.outgoingDelivery;
+
+  List<ModuleStat> _buildStats({
+    required AppStrings s,
+    required NumberFormat formatter,
+    required DcSummaryModel? summary,
+  }) {
+    if (summary == null) return const [];
+
+    ModuleStat statForTab(_DcListTab tab) {
+      switch (tab) {
+        case _DcListTab.incoming:
+          return ModuleStat(
+            icon: Icons.call_received_rounded,
+            label: s.incoming,
+            value: formatter.format(summary.incomingTransfers),
+            background: const Color(0xFF15803D),
+            labelColor: const Color(0xFFBBF7D0),
+            isActive: _activeTab == _DcListTab.incoming,
+            onTap: () => _switchTab(_DcListTab.incoming),
+          );
+        case _DcListTab.received:
+          return ModuleStat(
+            icon: Icons.check_circle_outline_rounded,
+            label: s.received,
+            value: formatter.format(summary.receivedTransfers),
+            background: AppColors.primary,
+            labelColor: const Color(0xFFFFE4D2),
+            isActive: _activeTab == _DcListTab.received,
+            onTap: () => _switchTab(_DcListTab.received),
+          );
+        case _DcListTab.outgoing:
+          return ModuleStat(
+            icon: Icons.call_made_rounded,
+            label: s.outgoing,
+            value: formatter.format(summary.outgoingTransfers),
+            background: const Color(0xFF1D4ED8),
+            labelColor: const Color(0xFFBFDBFE),
+            isActive: _activeTab == _DcListTab.outgoing,
+            onTap: () => _switchTab(_DcListTab.outgoing),
+          );
+        case _DcListTab.transferred:
+          return ModuleStat(
+            icon: Icons.swap_horiz_rounded,
+            label: s.transferred,
+            value: formatter.format(summary.transferredTransfers),
+            background: const Color(0xFF7C3AED),
+            labelColor: const Color(0xFFE9D5FF),
+            isActive: _activeTab == _DcListTab.transferred,
+            onTap: () => _switchTab(_DcListTab.transferred),
+          );
+      }
+    }
+
+    return _flowTabs.map(statForTab).toList();
+  }
+
+  List<ModuleChip> _buildChips(AppStrings s) {
+    ModuleChip chipForTab(_DcListTab tab) {
+      switch (tab) {
+        case _DcListTab.incoming:
+          return ModuleChip(
+            label: s.incoming,
+            icon: Icons.inbox_outlined,
+            tone: const Color(0xFF15803D),
+            isActive: _activeTab == _DcListTab.incoming,
+            onTap: () => _switchTab(_DcListTab.incoming),
+          );
+        case _DcListTab.received:
+          return ModuleChip(
+            label: s.received,
+            icon: Icons.check_circle_outline_rounded,
+            tone: AppColors.primary,
+            isActive: _activeTab == _DcListTab.received,
+            onTap: () => _switchTab(_DcListTab.received),
+          );
+        case _DcListTab.outgoing:
+          return ModuleChip(
+            label: s.outgoing,
+            icon: Icons.outbox_outlined,
+            tone: const Color(0xFF1D4ED8),
+            isActive: _activeTab == _DcListTab.outgoing,
+            onTap: () => _switchTab(_DcListTab.outgoing),
+          );
+        case _DcListTab.transferred:
+          return ModuleChip(
+            label: s.transferred,
+            icon: Icons.swap_horiz_rounded,
+            tone: const Color(0xFF7C3AED),
+            isActive: _activeTab == _DcListTab.transferred,
+            onTap: () => _switchTab(_DcListTab.transferred),
+          );
+      }
+    }
+
+    return _flowTabs.map(chipForTab).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authControllerProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(dcControllerProvider);
     final formatter = NumberFormat.decimalPattern('en_IN');
     final summary = state.summary;
@@ -113,8 +244,8 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'DC Transfers',
-            subtitle: auth.headerGreeting,
+            pageLabel: _pageLabel(s),
+            subtitle: ref.watch(headerGreetingProvider),
             onLogout: _logout,
             bottom: state.warehouse?.code != null
                 ? Align(
@@ -159,87 +290,15 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
                     SliverToBoxAdapter(
                       child: ModuleStatsRow(
                         itemWidth: 118,
-                        stats: [
-                          ModuleStat(
-                            icon: Icons.call_received_rounded,
-                            label: 'Incoming',
-                            value: formatter.format(summary.incomingTransfers),
-                            background: const Color(0xFF15803D),
-                            labelColor: const Color(0xFFBBF7D0),
-                            isActive: _activeTab == _DcListTab.incoming,
-                            onTap: () => _switchTab(_DcListTab.incoming),
-                          ),
-                          ModuleStat(
-                            icon: Icons.check_circle_outline_rounded,
-                            label: 'Received',
-                            value: formatter.format(summary.receivedTransfers),
-                            background: AppColors.primary,
-                            labelColor: const Color(0xFFFFE4D2),
-                            isActive: _activeTab == _DcListTab.received,
-                            onTap: () => _switchTab(_DcListTab.received),
-                          ),
-                          ModuleStat(
-                            icon: Icons.call_made_rounded,
-                            label: 'Outgoing',
-                            value: formatter.format(
-                              _activeTab == _DcListTab.outgoing
-                                  ? state.transfers.length
-                                  : summary.outgoingTransfers,
-                            ),
-                            background: const Color(0xFF1D4ED8),
-                            labelColor: const Color(0xFFBFDBFE),
-                            isActive: _activeTab == _DcListTab.outgoing,
-                            onTap: () => _switchTab(_DcListTab.outgoing),
-                          ),
-                          ModuleStat(
-                            icon: Icons.swap_horiz_rounded,
-                            label: 'Transferred',
-                            value: formatter.format(
-                              _activeTab == _DcListTab.transferred
-                                  ? state.transfers.length
-                                  : summary.transferredTransfers,
-                            ),
-                            background: const Color(0xFF7C3AED),
-                            labelColor: const Color(0xFFE9D5FF),
-                            isActive: _activeTab == _DcListTab.transferred,
-                            onTap: () => _switchTab(_DcListTab.transferred),
-                          ),
-                        ],
+                        stats: _buildStats(
+                          s: s,
+                          formatter: formatter,
+                          summary: summary,
+                        ),
                       ),
                     ),
                   SliverToBoxAdapter(
-                    child: ModuleChipsRow(
-                      chips: [
-                        ModuleChip(
-                          label: 'Incoming',
-                          icon: Icons.inbox_outlined,
-                          tone: const Color(0xFF15803D),
-                          isActive: _activeTab == _DcListTab.incoming,
-                          onTap: () => _switchTab(_DcListTab.incoming),
-                        ),
-                        ModuleChip(
-                          label: 'Received',
-                          icon: Icons.check_circle_outline_rounded,
-                          tone: AppColors.primary,
-                          isActive: _activeTab == _DcListTab.received,
-                          onTap: () => _switchTab(_DcListTab.received),
-                        ),
-                        ModuleChip(
-                          label: 'Outgoing',
-                          icon: Icons.outbox_outlined,
-                          tone: const Color(0xFF1D4ED8),
-                          isActive: _activeTab == _DcListTab.outgoing,
-                          onTap: () => _switchTab(_DcListTab.outgoing),
-                        ),
-                        ModuleChip(
-                          label: 'Transferred',
-                          icon: Icons.swap_horiz_rounded,
-                          tone: const Color(0xFF7C3AED),
-                          isActive: _activeTab == _DcListTab.transferred,
-                          onTap: () => _switchTab(_DcListTab.transferred),
-                        ),
-                      ],
-                    ),
+                    child: ModuleChipsRow(chips: _buildChips(s)),
                   ),
                   if (state.error != null)
                     SliverToBoxAdapter(
@@ -260,8 +319,8 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: _emptyIcon,
-                        title: _emptyTitle,
-                        message: _emptyMessage,
+                        title: _emptyTitle(s),
+                        message: _emptyMessage(s),
                       ),
                     )
                   else if (visibleTransfers.isEmpty)
@@ -269,8 +328,8 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: _emptyIcon,
-                        title: _emptyTitle,
-                        message: _emptyMessage,
+                        title: _emptyTitle(s),
+                        message: _emptyMessage(s),
                       ),
                     )
                   else
@@ -282,13 +341,12 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
                             transfer: transfer,
                             formatter: formatter,
                             mode: _activeTab,
+                            strings: s,
                             onTap: () {
                               if (transfer.transferId <= 0) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Transfer id missing — detail open nahi ho sakta.',
-                                    ),
+                                  SnackBar(
+                                    content: Text(s.transferIdMissing),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -333,32 +391,34 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
     }
   }
 
-  String get _emptyTitle {
+  String _emptyTitle(AppStrings s) {
     switch (_activeTab) {
       case _DcListTab.received:
-        return 'Koi received transfer nahi';
+        return s.dcEmptyReceivedTitle;
       case _DcListTab.outgoing:
-        return 'Koi outgoing transfer nahi';
+        return s.dcEmptyOutgoingTitle;
       case _DcListTab.transferred:
-        return 'Koi transferred transfer nahi';
+        return s.dcEmptyTransferredTitle;
       case _DcListTab.incoming:
-        return 'Koi incoming transfer nahi';
+        return s.dcEmptyIncomingTitle;
     }
   }
 
-  String get _emptyMessage {
+  String _emptyMessage(AppStrings s) {
     switch (_activeTab) {
       case _DcListTab.received:
-        return 'Abhi tak koi DC transfer receive nahi hui.';
+        return s.dcEmptyReceivedMessage;
       case _DcListTab.outgoing:
-        return 'Is darkstore se abhi koi pending outgoing transfer nahi hai.';
+        return s.dcEmptyOutgoingMessage;
       case _DcListTab.transferred:
-        return 'Is darkstore se abhi koi completed outgoing transfer nahi hai.';
+        return s.dcEmptyTransferredMessage;
       case _DcListTab.incoming:
-        return 'Is darkstore par abhi koi pending incoming transfer nahi hai.';
+        return s.dcEmptyIncomingMessage;
     }
   }
 }
+
+enum _DcListFlow { incoming, outgoing }
 
 enum _DcListTab { incoming, received, outgoing, transferred }
 
@@ -367,12 +427,14 @@ class _TransferCard extends StatelessWidget {
     required this.transfer,
     required this.formatter,
     required this.mode,
+    required this.strings,
     required this.onTap,
   });
 
   final DcTransferModel transfer;
   final NumberFormat formatter;
   final _DcListTab mode;
+  final AppStrings strings;
   final VoidCallback onTap;
 
   Color get _statusColor {
@@ -403,15 +465,15 @@ class _TransferCard extends StatelessWidget {
   String get _statusLabel {
     switch (mode) {
       case _DcListTab.outgoing:
-        return 'Outgoing';
+        return strings.outgoing;
       case _DcListTab.transferred:
-        return 'Transferred';
+        return strings.transferred;
       case _DcListTab.received:
       case _DcListTab.incoming:
         switch (transfer.state.toLowerCase()) {
           case 'executed':
           case 'done':
-            return 'Received';
+            return strings.received;
           default:
             return transfer.state.isNotEmpty ? transfer.state : '—';
         }
@@ -442,7 +504,7 @@ class _TransferCard extends StatelessWidget {
                       Text(
                         transfer.reference.isNotEmpty
                             ? transfer.reference
-                            : 'Transfer #${transfer.transferId}',
+                            : strings.transferNumber(transfer.transferId),
                         style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
@@ -453,7 +515,7 @@ class _TransferCard extends StatelessWidget {
                           (transfer.to?.warehouse ?? '').isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
-                          'To: ${transfer.to!.warehouse}',
+                          strings.toWarehouse(transfer.to!.warehouse ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -464,7 +526,7 @@ class _TransferCard extends StatelessWidget {
                       ] else if ((transfer.from?.warehouse ?? '').isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
-                          'From: ${transfer.from!.warehouse}',
+                          strings.fromWarehouse(transfer.from!.warehouse ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -495,12 +557,12 @@ class _TransferCard extends StatelessWidget {
                   Expanded(
                     child: _QtyCell(
                       label: showTransferredQty
-                          ? 'Transferred Qty'
+                          ? strings.transferredQty
                           : showOutgoingQty
-                              ? 'Outgoing'
+                              ? strings.outgoing
                               : showReceivedQty
-                                  ? 'Received'
-                                  : 'Incoming',
+                                  ? strings.received
+                                  : strings.incoming,
                       value: formatter.format(
                         showTransferredQty
                             ? transfer.transferredQty
@@ -523,7 +585,7 @@ class _TransferCard extends StatelessWidget {
                     ),
                     Expanded(
                       child: _QtyCell(
-                        label: 'Remaining',
+                        label: strings.remaining,
                         value: formatter.format(transfer.remainingQty),
                         color: const Color(0xFFB45309),
                       ),
@@ -555,12 +617,14 @@ class _QtyCell extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 8,
+            fontSize: ModuleTokens.tileMetricLabelFontSize,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
+            height: 1.15,
             color: ModuleTokens.faintText,
           ),
         ),

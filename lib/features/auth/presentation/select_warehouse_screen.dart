@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../stock_audit/data/models/business_location_model.dart';
@@ -59,17 +60,19 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
       });
     } catch (_) {
       if (!mounted) return;
+      final s = ref.read(appStringsProvider);
       setState(() {
         _loading = false;
-        _error = 'Locations load nahi ho payi. Dubara try karein.';
+        _error = s.locationsLoadFailed;
       });
     }
   }
 
   Future<void> _continue() async {
+    final s = ref.read(appStringsProvider);
     final id = _selectedId;
     if (id == null || id <= 0) {
-      setState(() => _error = 'Pehle warehouse choose karein');
+      setState(() => _error = s.selectWarehouseFirst);
       return;
     }
     setState(() {
@@ -94,8 +97,9 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final user = ref.watch(authControllerProvider).user;
-    final name = (user?.name ?? user?.fullName ?? 'SuperAdmin').trim();
+    final name = (user?.name ?? user?.fullName ?? s.superAdmin).trim();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -119,10 +123,10 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Select Warehouse',
-                          style: TextStyle(
+                          s.selectWarehouse,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -134,21 +138,21 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('Logout'),
+                        child: Text(s.logout),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Namaste, $name',
+                    s.greetingWithUser(name),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.9),
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Dashboard dekhne se pehle warehouse choose karein.',
+                    s.selectWarehouseSubtitle,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withValues(alpha: 0.75),
@@ -176,10 +180,10 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                           const SizedBox(height: 10),
                         ],
                         if (_locations.isEmpty)
-                          const ModuleEmptyState(
+                          ModuleEmptyState(
                             icon: Icons.store_mall_directory_outlined,
-                            title: 'No warehouse found',
-                            message: 'Active business location nahi mili',
+                            title: s.noWarehouseFound,
+                            message: s.noActiveLocation,
                           )
                         else
                           BusinessLocationPicker(
@@ -214,9 +218,9 @@ class _SelectWarehouseScreenState extends ConsumerState<SelectWarehouseScreen> {
                                       color: AppColors.cardBg,
                                     ),
                                   )
-                                : const Text(
-                                    'Continue',
-                                    style: TextStyle(
+                                : Text(
+                                    s.continueLabel,
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
                                     ),

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -108,7 +110,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authControllerProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(myProductsControllerProvider);
     final rows = state.rows;
     final formatter = NumberFormat.decimalPattern('en_IN');
@@ -127,11 +129,11 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Stock',
-            subtitle: auth.headerGreeting,
+            pageLabel: s.stock,
+            subtitle: ref.watch(headerGreetingProvider),
             onLogout: _logout,
             searchController: _searchController,
-            searchHint: 'Product ya SKU search karo...',
+            searchHint: s.searchProductSku,
             searchValue: state.searchQuery,
             onSearchChanged: notifier.setSearch,
             onClearSearch: () => notifier.setSearch(''),
@@ -147,7 +149,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                 ),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _statsRow(state, formatter, notifier),
+                    child: _statsRow(state, formatter, notifier, s),
                   ),
                   if (state.error != null)
                     SliverToBoxAdapter(
@@ -169,11 +171,11 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                       child: ModuleEmptyState(
                         icon: Icons.inventory_2_outlined,
                         title: state.searchQuery.isNotEmpty
-                            ? 'Koi matching SKU nahi mila'
-                            : _emptyTitle(state.statusFilter),
+                            ? s.noMatchingSku
+                            : _emptyTitle(state.statusFilter, s),
                         message: state.searchQuery.isNotEmpty
-                            ? '"${state.searchQuery}" se koi product match nahi hua.'
-                            : _emptyMessage(state.statusFilter),
+                            ? s.searchNoMatch(state.searchQuery)
+                            : _emptyMessage(state.statusFilter, s),
                       ),
                     )
                   else
@@ -183,6 +185,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                           key: ValueKey('${rows[index].sku}-$index'),
                           row: rows[index],
                           formatter: formatter,
+                          strings: s,
                         ),
                         childCount: rows.length,
                       ),
@@ -207,13 +210,14 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     MyProductsState state,
     NumberFormat formatter,
     MyProductsController notifier,
+    AppStrings s,
   ) {
     final filter = state.statusFilter;
     return ModuleStatsRow(
       stats: [
         ModuleStat(
           icon: Icons.inventory_2_rounded,
-          label: 'Total SKU',
+          label: s.totalSku,
           value: formatter.format(state.totalSkuCount),
           background: AppColors.primary,
           labelColor: const Color(0xFFFFE4D2),
@@ -222,7 +226,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
         ),
         ModuleStat(
           icon: Icons.check_circle_outline_rounded,
-          label: 'Matched',
+          label: s.matched,
           value: formatter.format(state.matchedCount),
           background: const Color(0xFF15803D),
           labelColor: const Color(0xFFBBF7D0),
@@ -231,7 +235,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
         ),
         ModuleStat(
           icon: Icons.trending_down_rounded,
-          label: 'Short',
+          label: s.short,
           value: formatter.format(state.shortCount),
           background: const Color(0xFFB91C1C),
           labelColor: const Color(0xFFFECACA),
@@ -240,7 +244,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
         ),
         ModuleStat(
           icon: Icons.trending_up_rounded,
-          label: 'Excess',
+          label: s.excess,
           value: formatter.format(state.excessCount),
           background: const Color(0xFFB45309),
           labelColor: const Color(0xFFFED7AA),
@@ -251,38 +255,44 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     );
   }
 
-  String _emptyTitle(StockStatusFilter filter) {
+  String _emptyTitle(StockStatusFilter filter, AppStrings s) {
     switch (filter) {
       case StockStatusFilter.matched:
-        return 'Koi matched SKU nahi mila';
+        return s.stockEmptyMatchedTitle;
       case StockStatusFilter.short:
-        return 'Koi short SKU nahi mila';
+        return s.stockEmptyShortTitle;
       case StockStatusFilter.excess:
-        return 'Koi excess SKU nahi mila';
+        return s.stockEmptyExcessTitle;
       case StockStatusFilter.all:
-        return 'Koi audited SKU nahi mila';
+        return s.stockEmptyAuditedTitle;
     }
   }
 
-  String _emptyMessage(StockStatusFilter filter) {
+  String _emptyMessage(StockStatusFilter filter, AppStrings s) {
     switch (filter) {
       case StockStatusFilter.matched:
-        return 'Is filter par koi matched stock audit nahi hai.';
+        return s.stockEmptyMatchedMessage;
       case StockStatusFilter.short:
-        return 'Is filter par koi short stock audit nahi hai.';
+        return s.stockEmptyShortMessage;
       case StockStatusFilter.excess:
-        return 'Is filter par koi excess stock audit nahi hai.';
+        return s.stockEmptyExcessMessage;
       case StockStatusFilter.all:
-        return 'Is location par abhi tak koi stock audit nahi hua hai.';
+        return s.stockEmptyAllMessage;
     }
   }
 }
 
 class _ProductCard extends StatelessWidget {
-  const _ProductCard({super.key, required this.row, required this.formatter});
+  const _ProductCard({
+    super.key,
+    required this.row,
+    required this.formatter,
+    required this.strings,
+  });
 
   final ProductMismatchRow row;
   final NumberFormat formatter;
+  final AppStrings strings;
 
   Color get _statusColor {
     switch (row.status) {
@@ -298,11 +308,11 @@ class _ProductCard extends StatelessWidget {
   String get _statusLabel {
     switch (row.status) {
       case ReconStatus.matched:
-        return 'Matched';
+        return strings.matched;
       case ReconStatus.excess:
-        return 'Excess';
+        return strings.excess;
       case ReconStatus.short:
-        return 'Short';
+        return strings.short;
     }
   }
 
@@ -357,19 +367,19 @@ class _ProductCard extends StatelessWidget {
             _MetricStrip(
               cells: [
                 _MetricCell(
-                  label: 'System',
+                  label: strings.system,
                   value: formatter.format(row.systemStock),
                 ),
                 _MetricCell(
-                  label: 'Total Physical',
+                  label: strings.totalPhysical,
                   value: formatter.format(row.totalPhysicalStock),
                 ),
                 _MetricCell(
-                  label: 'Usable',
+                  label: strings.usable,
                   value: formatter.format(row.physicalStock),
                 ),
                 _MetricCell(
-                  label: 'Damage',
+                  label: strings.damage,
                   value: formatter.format(row.damageStock),
                   valueColor: hasDamage ? const Color(0xFFB91C1C) : null,
                 ),
@@ -387,11 +397,10 @@ class _ProductCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'DIFFERENCE',
+                    strings.difference,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: ModuleTokens.tileMetricLabelFontSize,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
                       color: statusColor.withValues(alpha: 0.75),
                     ),
                   ),
@@ -503,14 +512,14 @@ class _MetricStrip extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    cells[i].label.toUpperCase(),
+                    cells[i].label,
                     textAlign: TextAlign.center,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 8,
+                      fontSize: ModuleTokens.tileMetricLabelFontSize,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
+                      height: 1.15,
                       color: ModuleTokens.faintText,
                     ),
                   ),
@@ -521,7 +530,7 @@ class _MetricStrip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.2,
                       color: cells[i].valueColor ?? ModuleTokens.strongText,

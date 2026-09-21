@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/scroll_pagination_footer.dart';
@@ -66,6 +68,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(ordersControllerProvider);
     final notifier = ref.read(ordersControllerProvider.notifier);
 
@@ -81,12 +84,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Orders',
-            subtitle: ref.watch(authControllerProvider).headerGreeting,
+            pageLabel: s.orders,
+            subtitle: ref.watch(headerGreetingProvider),
             onLogout: _logout,
             notificationCount: state.stats.notificationCount,
             searchController: _searchController,
-            searchHint: 'Order search karo...',
+            searchHint: s.orderSearchHint,
             searchValue: state.search,
             onSearchChanged: notifier.setSearch,
             onClearSearch: notifier.clearSearch,
@@ -106,21 +109,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       stats: [
                         ModuleStat(
                           icon: Icons.receipt_long_rounded,
-                          label: 'Total Orders',
+                          label: s.totalOrders,
                           value: '${state.stats.totalOrders}',
                           background: AppColors.primary,
                           labelColor: const Color(0xFFFFE4D2),
                         ),
                         ModuleStat(
                           icon: Icons.schedule_rounded,
-                          label: 'Pending',
+                          label: s.pending,
                           value: '${state.stats.pending}',
                           background: const Color(0xFFB45309),
                           labelColor: const Color(0xFFFED7AA),
                         ),
                         ModuleStat(
                           icon: Icons.payments_outlined,
-                          label: 'Total Value',
+                          label: s.totalValue,
                           value: formatMoney(state.stats.totalValue),
                           background: const Color(0xFF1D4ED8),
                           labelColor: const Color(0xFFBFDBFE),
@@ -132,7 +135,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     child: ModuleChipsRow(
                       chips: OrderFilterTab.tabs.map((tab) {
                         return ModuleChip(
-                          label: tab.label,
+                          label: _tabLabel(tab, s),
                           icon: tabIcon(tab.id),
                           tone: tabToneBg(tab.id),
                           isActive: state.activeTab == tab,
@@ -157,12 +160,12 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.orders.isEmpty)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.receipt_long_outlined,
-                        title: 'No orders found',
-                        message: 'Try another filter or pull to refresh',
+                        title: s.noOrdersFound,
+                        message: s.tryAnotherFilter,
                       ),
                     )
                   else
@@ -201,5 +204,26 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         ],
       ),
     );
+  }
+}
+
+String _tabLabel(OrderFilterTab tab, AppStrings s) {
+  switch (tab) {
+    case OrderFilterTab.all:
+      return s.filterAll;
+    case OrderFilterTab.pending:
+      return s.pending;
+    case OrderFilterTab.pickup:
+      return s.filterPickup;
+    case OrderFilterTab.reschedule:
+      return s.filterReschedule;
+    case OrderFilterTab.cancelled:
+      return s.cancelled;
+    case OrderFilterTab.disputed:
+      return s.filterDisputed;
+    case OrderFilterTab.delivered:
+      return s.delivered;
+    case OrderFilterTab.rto:
+      return s.filterRto;
   }
 }

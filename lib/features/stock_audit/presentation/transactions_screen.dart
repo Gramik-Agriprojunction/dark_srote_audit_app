@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
@@ -58,7 +60,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       initialDate: current,
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
-      helpText: 'Select date',
+      helpText: ref.read(appStringsProvider).selectDate,
     );
     if (!mounted || picked == null) return;
     await ref.read(transactionsControllerProvider.notifier).setDate(picked);
@@ -66,7 +68,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authControllerProvider);
+    final s = ref.watch(appStringsProvider);
     final state = ref.watch(transactionsControllerProvider);
     final report = state.report;
     final selectedDate = state.selectedDate ?? DateTime.now();
@@ -79,8 +81,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'Transactions',
-            subtitle: auth.headerGreeting,
+            pageLabel: s.register,
+            subtitle: ref.watch(headerGreetingProvider),
             onLogout: _logout,
             bottom: _DatePill(
               label: dateLabel,
@@ -103,7 +105,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       stats: [
                         ModuleStat(
                           icon: Icons.local_shipping_outlined,
-                          label: 'Pickup Orders',
+                          label: s.pickupOrders,
                           value: formatter.format(
                             report?.summary.pickupOrders ?? 0,
                           ),
@@ -112,7 +114,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ),
                         ModuleStat(
                           icon: Icons.undo_rounded,
-                          label: 'RTO Delivered',
+                          label: s.rtoDelivered,
                           value: formatter.format(
                             report?.summary.rtoDeliveredOrders ?? 0,
                           ),
@@ -121,7 +123,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ),
                         ModuleStat(
                           icon: Icons.inventory_2_outlined,
-                          label: 'Inventory Change Qty',
+                          label: s.inventoryChangeQty,
                           value: formatter.format(
                             products.fold<int>(
                               0,
@@ -133,7 +135,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ),
                         ModuleStat(
                           icon: Icons.category_outlined,
-                          label: 'SKU Moved',
+                          label: s.skuMoved,
                           value: formatter.format(products.length),
                           background: const Color(0xFF1D4ED8),
                           labelColor: const Color(0xFFBFDBFE),
@@ -156,13 +158,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       child: ModuleListLoadingBody(showStats: false),
                     )
                   else if (state.selectedStoreId == null)
-                    const SliverFillRemaining(
+                    SliverFillRemaining(
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.storefront_outlined,
-                        title: 'Darkstore select karein',
-                        message:
-                            'Transactions dekhne ke liye pehle business location choose karein.',
+                        title: s.selectDarkstoreFirst,
+                        message: s.registerSelectLocationMessage,
                       ),
                     )
                   else if (products.isEmpty)
@@ -170,9 +171,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       hasScrollBody: false,
                       child: ModuleEmptyState(
                         icon: Icons.receipt_long_outlined,
-                        title: 'Koi transaction nahi mila',
-                        message:
-                            '$dateLabel par is location par koi pickup ya RTO delivered order nahi mila.',
+                        title: s.noRegisterRecord,
+                        message: s.registerEmptyForDate(dateLabel),
                       ),
                     )
                   else
@@ -181,6 +181,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         (context, index) => _TransactionProductCard(
                           row: products[index],
                           formatter: formatter,
+                          strings: s,
                         ),
                         childCount: products.length,
                       ),
@@ -262,10 +263,15 @@ class _DatePill extends StatelessWidget {
 }
 
 class _TransactionProductCard extends StatelessWidget {
-  const _TransactionProductCard({required this.row, required this.formatter});
+  const _TransactionProductCard({
+    required this.row,
+    required this.formatter,
+    required this.strings,
+  });
 
   final TransactionProductRow row;
   final NumberFormat formatter;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -318,7 +324,7 @@ class _TransactionProductCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 ModuleStatusPill(
-                  label: hasRto ? 'RTO' : 'Pickup',
+                  label: hasRto ? strings.filterRto : strings.pickup,
                   color: statusColor,
                 ),
               ],
@@ -335,7 +341,7 @@ class _TransactionProductCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _QtyCell(
-                      label: 'Pickup Qty',
+                      label: strings.pickupQty,
                       value: formatter.format(row.pickupQty),
                       color: const Color(0xFF1D4ED8),
                     ),
@@ -347,7 +353,7 @@ class _TransactionProductCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _QtyCell(
-                      label: 'RTO Qty',
+                      label: strings.rtoQty,
                       value: formatter.format(row.rtoDeliveredQty),
                       color: const Color(0xFFB45309),
                     ),
@@ -359,7 +365,7 @@ class _TransactionProductCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: _QtyCell(
-                      label: 'Inventory Change Qty',
+                      label: strings.inventoryChangeQty,
                       value: formatter.format(row.inventoryChangeQty),
                       color: inventoryChangeColor,
                     ),
@@ -407,14 +413,14 @@ class _QtyCell extends StatelessWidget {
     return Column(
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 7.5,
+            fontSize: ModuleTokens.tileMetricLabelFontSize,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
+            height: 1.15,
             color: ModuleTokens.faintText,
           ),
         ),

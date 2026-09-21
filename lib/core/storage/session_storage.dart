@@ -20,6 +20,7 @@ class SessionStorage {
   static const _storeLabelKey = 'gramik_mobile_store_label';
   static const _lastActivityKey = 'gramik_last_activity_ms';
   static const _themeModeKey = 'app_theme_mode';
+  static const _languageKey = 'app_language';
 
   Future<String?> getAccessToken() async => _prefs.getString(_tokenKey);
 
@@ -92,5 +93,11 @@ class SessionStorage {
 
   Future<void> saveThemeMode(String mode) async {
     await _prefs.setString(_themeModeKey, mode);
+  }
+
+  String? getLanguage() => _prefs.getString(_languageKey);
+
+  Future<void> saveLanguage(String code) async {
+    await _prefs.setString(_languageKey, code);
   }
 }

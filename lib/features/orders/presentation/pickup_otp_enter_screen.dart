@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../auth/presentation/widgets/otp_pin_input.dart';
 
 /// UI-only screen to enter Pickup OTP (no API yet).
-class PickupOtpEnterScreen extends StatefulWidget {
+class PickupOtpEnterScreen extends ConsumerStatefulWidget {
   const PickupOtpEnterScreen({
     super.key,
     required this.orderId,
@@ -18,10 +20,11 @@ class PickupOtpEnterScreen extends StatefulWidget {
   final String? orderCode;
 
   @override
-  State<PickupOtpEnterScreen> createState() => _PickupOtpEnterScreenState();
+  ConsumerState<PickupOtpEnterScreen> createState() =>
+      _PickupOtpEnterScreenState();
 }
 
-class _PickupOtpEnterScreenState extends State<PickupOtpEnterScreen> {
+class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
   final _otpController = TextEditingController();
 
   @override
@@ -52,11 +55,11 @@ class _PickupOtpEnterScreenState extends State<PickupOtpEnterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final code = (widget.orderCode ?? '').trim();
-    final subtitle = code.isNotEmpty
-        ? code
-        : 'Order #${widget.orderId}';
+    final subtitle =
+        code.isNotEmpty ? code : s.orderNumber(widget.orderId);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -72,9 +75,9 @@ class _PickupOtpEnterScreenState extends State<PickupOtpEnterScreen> {
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            'Pickup OTP Dale',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          title: Text(
+            s.pickupOtpTitle,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
         body: SafeArea(
@@ -84,7 +87,7 @@ class _PickupOtpEnterScreenState extends State<PickupOtpEnterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Pickup OTP enter karein',
+                  s.pickupOtpEnter,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 18,
@@ -126,7 +129,7 @@ class _PickupOtpEnterScreenState extends State<PickupOtpEnterScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: const Text('Submit'),
+                    child: Text(s.submit),
                   ),
                 ),
               ],

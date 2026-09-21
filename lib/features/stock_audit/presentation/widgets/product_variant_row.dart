@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/l10n/app_language_provider.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/widgets/product_image_thumb.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/utils/audit_qty_helper.dart';
@@ -166,11 +168,12 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
   @override
   Widget build(BuildContext context) {
     ref.watch(appThemeModeProvider);
+    final s = ref.watch(appStringsProvider);
     final pcsQty = AuditQtyHelper.displayPcsQty(widget.variant);
     final updatedLabel = DateFormatter.formatAuditUpdatedAt(
       widget.variant.auditUpdatedAt,
     );
-    final saveLabel = _isRecent ? 'Update' : 'Save';
+    final saveLabel = _isRecent ? s.update : s.save;
     final hasComment = (widget.variant.auditComment ?? '').trim().isNotEmpty;
     final (title, category) = _splitName(widget.product.name);
     final canSave = _canSave;
@@ -231,7 +234,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                           bg: AppColors.fieldBg,
                         ),
                         _Pill(
-                          label: '$pcsQty Pcs',
+                          label: s.piecesCount(pcsQty),
                           fg: pcsQty > 0
                               ? AppColors.successText
                               : AppColors.errorText,
@@ -244,7 +247,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                         ),
                         if (hasComment)
                           _Pill(
-                            label: 'Note',
+                            label: s.note,
                             fg: AppColors.warning,
                             bg: AppColors.auditRecentBg,
                             icon: Icons.sticky_note_2_outlined,
@@ -262,7 +265,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Updated $updatedLabel',
+                            s.updatedAt(updatedLabel),
                             style: TextStyle(
                               fontSize: 11,
                               color: AppColors.textMuted,
@@ -276,6 +279,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
               ),
               if (!widget.readOnly)
                 _RowMenuButton(
+                  strings: s,
                   onDamage: widget.onOpenDamage,
                   onComment: widget.onOpenComment,
                 ),
@@ -490,8 +494,13 @@ class _StepButton extends StatelessWidget {
 }
 
 class _RowMenuButton extends StatelessWidget {
-  const _RowMenuButton({required this.onDamage, required this.onComment});
+  const _RowMenuButton({
+    required this.strings,
+    required this.onDamage,
+    required this.onComment,
+  });
 
+  final AppStrings strings;
   final VoidCallback onDamage;
   final VoidCallback onComment;
 
@@ -524,7 +533,7 @@ class _RowMenuButton extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Update Damage Qty',
+                strings.updateDamageQty,
                 style: TextStyle(color: AppColors.textPrimary),
               ),
             ],
@@ -542,7 +551,7 @@ class _RowMenuButton extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Comment',
+                strings.comment,
                 style: TextStyle(color: AppColors.textPrimary),
               ),
             ],

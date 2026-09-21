@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language.dart';
+import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/utils/role_helper.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -32,10 +35,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final state = ref.read(profileControllerProvider);
     if (state.isLoggingOut) return;
 
+    final s = ref.read(appStringsProvider);
     final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black54,
-      builder: (ctx) => const _LogoutConfirmDialog(),
+      builder: (ctx) => _LogoutConfirmDialog(strings: s),
     );
     if (!mounted || confirmed != true) return;
 
@@ -58,6 +62,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
     final selectedStore =
         (ref.watch(authControllerProvider).selectedStoreLabel ?? '').trim();
+    final s = ref.watch(appStringsProvider);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -68,6 +73,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         body: Column(
           children: [
             _ProfileHeader(
+              strings: s,
               onBack: () => context.pop(),
               onNotifications: () {},
             ),
@@ -106,7 +112,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                             ),
                           _HeroCard(
-                            name: name.isEmpty ? 'Retailer' : name,
+                            strings: s,
+                            name: name.isEmpty ? s.retailer : name,
                             phone: phone.isEmpty ? '--' : phone,
                             retailerId: retailerId,
                             address: selectedStore.isNotEmpty
@@ -118,22 +125,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             cancelled: p.cancelled,
                           ),
                           const SizedBox(height: 14),
-                          const _SectionLabel('Appearance'),
+                          _SectionLabel(s.appearance),
                           _ThemeModeCard(
+                            strings: s,
                             mode: ref.watch(appThemeModeProvider),
                             onChanged: (mode) => ref
                                 .read(appThemeModeProvider.notifier)
                                 .setMode(mode),
                           ),
                           const SizedBox(height: 14),
-                          const _SectionLabel('Menu'),
+                          _LanguageCard(
+                            strings: s,
+                            language: ref.watch(appLanguageProvider),
+                            onChanged: (language) => ref
+                                .read(appLanguageProvider.notifier)
+                                .setLanguage(language),
+                          ),
+                          const SizedBox(height: 14),
+                          _SectionLabel(s.menu),
                           _WhiteCard(
                             children: [
                               _InfoRow(
                                 icon: Icons.dashboard_rounded,
                                 iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,
-                                label: 'Dashboard',
+                                label: s.dashboard,
                                 value: '',
                                 onTap: () => context.go('/dashboard'),
                               ),
@@ -142,7 +158,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.inventory_2_rounded,
                                 iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,
-                                label: 'Stock',
+                                label: s.stock,
                                 value: '',
                                 onTap: () => context.go('/my-products'),
                               ),
@@ -151,7 +167,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.receipt_long_rounded,
                                 iconBg: AppColors.softBlue,
                                 iconColor: const Color(0xFF2563EB),
-                                label: 'Orders',
+                                label: s.orders,
                                 value: '',
                                 onTap: () => context.go('/orders'),
                               ),
@@ -160,7 +176,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.swap_horiz_rounded,
                                 iconBg: AppColors.softPurple,
                                 iconColor: const Color(0xFF7C3AED),
-                                label: 'Transaction',
+                                label: s.register,
                                 value: '',
                                 onTap: () => context.push('/transactions'),
                               ),
@@ -169,7 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.fact_check_rounded,
                                 iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,
-                                label: 'Audit',
+                                label: s.audit,
                                 value: '',
                                 onTap: () => context.go('/audit'),
                               ),
@@ -178,25 +194,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.compare_arrows_rounded,
                                 iconBg: AppColors.softGreen,
                                 iconColor: AppColors.successText,
-                                label: 'Variance',
+                                label: s.variance,
                                 value: '',
                                 onTap: () => context.push('/variance'),
                               ),
                               const _RowDivider(),
                               _InfoRow(
-                                icon: Icons.local_shipping_rounded,
+                                icon: Icons.call_received_rounded,
                                 iconBg: AppColors.softBlue,
                                 iconColor: const Color(0xFF0284C7),
-                                label: 'DC',
+                                label: s.incomingDelivery,
                                 value: '',
-                                onTap: () => context.push('/dc'),
+                                onTap: () => context.push('/dc?tab=incoming'),
+                              ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.call_made_rounded,
+                                iconBg: AppColors.softGreen,
+                                iconColor: const Color(0xFF15803D),
+                                label: s.outgoingDelivery,
+                                value: '',
+                                onTap: () => context.push('/dc?tab=outgoing'),
                               ),
                               const _RowDivider(),
                               _InfoRow(
                                 icon: Icons.assessment_outlined,
                                 iconBg: AppColors.softPurple,
                                 iconColor: const Color(0xFF7C3AED),
-                                label: 'Report',
+                                label: s.report,
                                 value: '',
                                 onTap: () => context.push('/report'),
                               ),
@@ -206,7 +231,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   icon: Icons.store_mall_directory_rounded,
                                   iconBg: AppColors.softOrange,
                                   iconColor: AppColors.primary,
-                                  label: 'Change Warehouse',
+                                  label: s.changeWarehouse,
                                   value: '',
                                   onTap: () async {
                                     await ref
@@ -256,7 +281,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           )
                         : const Icon(Icons.logout_rounded, size: 18),
-                    label: const Text('Logout'),
+                    label: Text(s.logout),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFEF4444),
                       foregroundColor: Colors.white,
@@ -281,10 +306,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
+    required this.strings,
     required this.onBack,
     required this.onNotifications,
   });
 
+  final AppStrings strings;
   final VoidCallback onBack;
   final VoidCallback onNotifications;
 
@@ -302,12 +329,12 @@ class _ProfileHeader extends StatelessWidget {
         children: [
           ModuleHeaderAction(
             icon: Icons.chevron_left_rounded,
-            tooltip: 'Back',
+            tooltip: strings.back,
             onTap: onBack,
           ),
           Expanded(
             child: Text(
-              'Profile',
+              strings.profile,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -320,7 +347,7 @@ class _ProfileHeader extends StatelessWidget {
           ),
           ModuleHeaderAction(
             icon: Icons.notifications_none_rounded,
-            tooltip: 'Notifications',
+            tooltip: strings.notifications,
             onTap: onNotifications,
           ),
         ],
@@ -331,6 +358,7 @@ class _ProfileHeader extends StatelessWidget {
 
 class _HeroCard extends StatelessWidget {
   const _HeroCard({
+    required this.strings,
     required this.name,
     required this.phone,
     required this.retailerId,
@@ -341,6 +369,7 @@ class _HeroCard extends StatelessWidget {
     required this.cancelled,
   });
 
+  final AppStrings strings;
   final String name;
   final String phone;
   final String retailerId;
@@ -485,25 +514,25 @@ class _HeroCard extends StatelessWidget {
             children: [
               _HeroStat(
                 value: totalOrders,
-                label: 'Total',
+                label: strings.total,
                 color: AppColors.textPrimary,
               ),
               _vDiv(),
               _HeroStat(
                 value: delivered,
-                label: 'Delivered',
+                label: strings.delivered,
                 color: AppColors.successText,
               ),
               _vDiv(),
               _HeroStat(
                 value: pending,
-                label: 'Pending',
+                label: strings.pending,
                 color: AppColors.warning,
               ),
               _vDiv(),
               _HeroStat(
                 value: cancelled,
-                label: 'Cancelled',
+                label: strings.cancelled,
                 color: AppColors.errorText,
               ),
             ],
@@ -547,10 +576,10 @@ class _HeroStat extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            label.toUpperCase(),
+            label,
             style: TextStyle(
-              fontSize: 10,
-              letterSpacing: 0.5,
+              fontSize: ModuleTokens.tileMetricLabelFontSize,
+              fontWeight: FontWeight.w600,
               color: AppColors.textMuted,
             ),
           ),
@@ -584,10 +613,12 @@ class _SectionLabel extends StatelessWidget {
 
 class _ThemeModeCard extends StatelessWidget {
   const _ThemeModeCard({
+    required this.strings,
     required this.mode,
     required this.onChanged,
   });
 
+  final AppStrings strings;
   final AppThemeMode mode;
   final ValueChanged<AppThemeMode> onChanged;
 
@@ -605,7 +636,7 @@ class _ThemeModeCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Theme',
+            strings.theme,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -617,7 +648,7 @@ class _ThemeModeCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _ThemeChip(
-                  label: 'Default',
+                  label: strings.themeDefault,
                   icon: Icons.wb_sunny_outlined,
                   selected: mode == AppThemeMode.light,
                   onTap: () => onChanged(AppThemeMode.light),
@@ -626,7 +657,7 @@ class _ThemeModeCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _ThemeChip(
-                  label: 'Dark',
+                  label: strings.themeDark,
                   icon: Icons.dark_mode_outlined,
                   selected: mode == AppThemeMode.dark,
                   onTap: () => onChanged(AppThemeMode.dark),
@@ -640,21 +671,84 @@ class _ThemeModeCard extends StatelessWidget {
   }
 }
 
+class _LanguageCard extends StatelessWidget {
+  const _LanguageCard({
+    required this.strings,
+    required this.language,
+    required this.onChanged,
+  });
+
+  final AppStrings strings;
+  final AppLanguage language;
+  final ValueChanged<AppLanguage> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.language,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ThemeChip(
+                  label: strings.languageEnglish,
+                  icon: Icons.language_rounded,
+                  selected: language == AppLanguage.en,
+                  onTap: () => onChanged(AppLanguage.en),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ThemeChip(
+                  label: strings.languageHindi,
+                  leadingText: 'अ',
+                  selected: language == AppLanguage.hi,
+                  onTap: () => onChanged(AppLanguage.hi),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ThemeChip extends StatelessWidget {
   const _ThemeChip({
     required this.label,
-    required this.icon,
     required this.selected,
     required this.onTap,
-  });
+    this.icon,
+    this.leadingText,
+  }) : assert(icon != null || leadingText != null);
 
   final String label;
-  final IconData icon;
+  final IconData? icon;
+  final String? leadingText;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final accent = selected ? AppColors.primary : AppColors.textMuted;
     return Material(
       color: selected ? AppColors.primarySoft : AppColors.fieldBg,
       shape: RoundedRectangleBorder(
@@ -672,11 +766,18 @@ class _ThemeChip extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                size: 16,
-                color: selected ? AppColors.primary : AppColors.textMuted,
-              ),
+              if (leadingText != null)
+                Text(
+                  leadingText!,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                    color: accent,
+                  ),
+                )
+              else
+                Icon(icon, size: 16, color: accent),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -795,7 +896,9 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _LogoutConfirmDialog extends StatelessWidget {
-  const _LogoutConfirmDialog();
+  const _LogoutConfirmDialog({required this.strings});
+
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -826,7 +929,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Text(
-              'Logout?',
+              strings.logoutQuestion,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -835,7 +938,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
             ),
             SizedBox(height: 4),
             Text(
-              'Kya aap logout karna chahte ho?',
+              strings.logoutConfirm,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
@@ -854,9 +957,9 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        strings.cancel,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -875,9 +978,9 @@ class _LogoutConfirmDialog extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Logout',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        strings.logout,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

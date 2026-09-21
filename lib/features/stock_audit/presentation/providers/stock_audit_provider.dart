@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/app_language_provider.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../../core/utils/audit_transaction_mismatch_helper.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -346,9 +347,11 @@ class StockAuditController extends StateNotifier<StockAuditState> {
       }
     }
 
+    final strings = ProviderScope.containerOf(context).read(appStringsProvider);
     return showMismatchReasonDialog(
       context: context,
-      productName: productName ?? product?.name ?? 'Product',
+      strings: strings,
+      productName: productName ?? product?.name ?? strings.productLabel,
       variantLabel: variantLabel ?? variant.variantName,
       baselineQty: baselineQty,
       inventoryChangeQty: inventoryChangeQty,
