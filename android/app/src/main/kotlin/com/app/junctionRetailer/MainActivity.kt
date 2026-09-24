@@ -1,4 +1,4 @@
-package com.gramik.stock_audit
+package com.app.junctionRetailer
 
 import io.flutter.embedding.android.FlutterActivity
 

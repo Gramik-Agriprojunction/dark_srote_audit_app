@@ -35,7 +35,7 @@ class StockShieldApp extends ConsumerWidget {
     });
 
     return MaterialApp.router(
-      title: 'StockShield',
+      title: 'Gramik Darkstore',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.forMode(themeMode),
       scrollBehavior: const AppScrollBehavior(),

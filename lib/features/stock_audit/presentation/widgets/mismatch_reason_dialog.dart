@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/utils/audit_transaction_mismatch_helper.dart';
 
 /// Returns mismatch reason text, or null if user cancelled.
 Future<String?> showMismatchReasonDialog({
@@ -23,6 +24,7 @@ Future<String?> showMismatchReasonDialog({
 
       return StatefulBuilder(
         builder: (context, setState) {
+          final length = controller.text.trim().length;
           return AlertDialog(
             backgroundColor: AppColors.cardBg,
             shape: RoundedRectangleBorder(
@@ -76,9 +78,13 @@ Future<String?> showMismatchReasonDialog({
                     controller: controller,
                     maxLines: 3,
                     minLines: 2,
+                    maxLength: AuditTransactionMismatchHelper.reasonMaxLength,
                     textInputAction: TextInputAction.done,
+                    onChanged: (_) => setState(() => errorText = null),
                     decoration: InputDecoration(
                       hintText: strings.mismatchReasonHint,
+                      counterText:
+                          '$length / ${AuditTransactionMismatchHelper.reasonMinLength} min',
                     ),
                   ),
                   if (errorText != null) ...[
@@ -104,6 +110,10 @@ Future<String?> showMismatchReasonDialog({
                   final reason = controller.text.trim();
                   if (reason.isEmpty) {
                     setState(() => errorText = strings.reasonRequired);
+                    return;
+                  }
+                  if (!AuditTransactionMismatchHelper.isValidReason(reason)) {
+                    setState(() => errorText = strings.mismatchReasonMinLength);
                     return;
                   }
                   Navigator.of(dialogContext).pop(reason);

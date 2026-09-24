@@ -3,6 +3,9 @@ import '../../features/stock_audit/data/models/product_model.dart';
 class AuditTransactionMismatchHelper {
   AuditTransactionMismatchHelper._();
 
+  static const int reasonMinLength = 25;
+  static const int reasonMaxLength = 1000;
+
   static int baselineQty(ProductVariantModel variant) => variant.auditQty;
 
   static int expectedQty({
@@ -23,5 +26,11 @@ class AuditTransactionMismatchHelper {
           baselineQty: baselineQty,
           inventoryChangeQty: inventoryChangeQty,
         );
+  }
+
+  static bool isValidReason(String? reason) {
+    final trimmed = reason?.trim() ?? '';
+    return trimmed.length >= reasonMinLength &&
+        trimmed.length <= reasonMaxLength;
   }
 }

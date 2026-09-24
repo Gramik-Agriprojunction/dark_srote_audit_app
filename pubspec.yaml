@@ -1,5 +1,5 @@
 name: stock_audit
-description: StockShield — Gramik stock audit mobile app for Dark Store users.
+description: Gramik Darkstore — stock audit mobile app for Dark Store users.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -41,6 +41,7 @@ dependencies:
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
   print_bluetooth_thermal: ^1.2.4
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:

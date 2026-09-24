@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
 import '../../../core/widgets/module_ui.dart';
@@ -480,6 +481,25 @@ class _TransferCard extends StatelessWidget {
     }
   }
 
+  String? get _dateLine {
+    switch (mode) {
+      case _DcListTab.incoming:
+      case _DcListTab.outgoing:
+        final ready = DateFormatter.formatOdooDateTime(transfer.readyDate);
+        if (ready.isEmpty) return null;
+        return '${strings.readyDate}: $ready';
+      case _DcListTab.received:
+        final received = DateFormatter.formatOdooDateTime(transfer.receivedDate);
+        if (received.isEmpty) return null;
+        return '${strings.receivedDate}: $received';
+      case _DcListTab.transferred:
+        final transferred =
+            DateFormatter.formatOdooDateTime(transfer.transferredDate);
+        if (transferred.isEmpty) return null;
+        return '${strings.transferredDate}: $transferred';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final showReceivedQty = mode == _DcListTab.received;
@@ -531,6 +551,19 @@ class _TransferCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
+                            color: ModuleTokens.mutedText,
+                          ),
+                        ),
+                      ],
+                      if (_dateLine != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _dateLine!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                             color: ModuleTokens.mutedText,
                           ),
                         ),

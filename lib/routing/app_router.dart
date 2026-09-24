@@ -21,6 +21,7 @@ import '../features/orders/presentation/order_detail_screen.dart';
 import '../features/orders/presentation/orders_screen.dart';
 import '../features/orders/presentation/pickup_otp_enter_screen.dart';
 import '../features/profile/presentation/inventory_report_screen.dart';
+import '../features/profile/presentation/privacy_policy_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
@@ -153,6 +154,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => _stackPage(const ProfileScreen()),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        builder: (context, state) =>
+            _stackPage(const PrivacyPolicyScreen()),
       ),
       GoRoute(
         path: '/report',

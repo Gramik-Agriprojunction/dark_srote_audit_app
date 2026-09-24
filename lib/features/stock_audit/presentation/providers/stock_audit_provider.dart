@@ -378,8 +378,8 @@ class StockAuditController extends StateNotifier<StockAuditState> {
             'productId': productId,
             'variantId': variantId,
             'qty': qty,
-            if (mismatchReason != null && mismatchReason.trim().isNotEmpty)
-              'mismatchReason': mismatchReason.trim(),
+            if (AuditTransactionMismatchHelper.isValidReason(mismatchReason))
+              'mismatchReason': mismatchReason!.trim(),
           },
         ],
       );
@@ -434,15 +434,15 @@ class StockAuditController extends StateNotifier<StockAuditState> {
           baselineQty: AuditTransactionMismatchHelper.baselineQty(variant),
           inventoryChangeQty: inventoryChangeQtyFor(variant.id),
         )) {
-          if (reason == null || reason.trim().isEmpty) return false;
+          if (!AuditTransactionMismatchHelper.isValidReason(reason)) return false;
         }
 
         items.add({
           'productId': product.id,
           'variantId': variant.id,
           'qty': draft,
-          if (reason != null && reason.trim().isNotEmpty)
-            'mismatchReason': reason.trim(),
+          if (AuditTransactionMismatchHelper.isValidReason(reason))
+            'mismatchReason': reason!.trim(),
         });
       }
     }

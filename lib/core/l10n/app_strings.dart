@@ -60,6 +60,7 @@ class AppStrings {
   String get themeDark => _t('Dark', 'डार्क');
   String get language => _t('Language', 'भाषा');
   String get languageSetting => _t('Language Setting', 'भाषा सेटिंग');
+  String get privacyPolicy => _t('Privacy Policy', 'प्राइवेसी पॉलिसी');
   String get languageEnglish => 'English';
   String get languageHindi => 'हिंदी';
   String get languageEn => 'En';
@@ -241,6 +242,9 @@ class AppStrings {
   String get receivedQty => _t('Received Qty', 'प्राप्त मात्रा');
   String get transferredQty => _t('Transferred Qty', 'ट्रांसफर मात्रा');
   String get remaining => _t('Remaining', 'शेष');
+  String get readyDate => _t('Ready date', 'रेडी डेट');
+  String get receivedDate => _t('Received date', 'प्राप्त डेट');
+  String get transferredDate => _t('Transferred date', 'ट्रांसफर्ड डेट');
   String get incomingDeliveryDetail =>
       _t('Incoming Delivery Detail', 'आने वाली डिलीवरी विवरण');
   String get outgoingDeliveryDetail =>
@@ -305,7 +309,7 @@ class AppStrings {
 
   // ── Auth extras ──
   String get proceedWithoutOtp => _t('Aage Badho →', 'आगे बढ़ें →');
-  String get brandStockShield => 'StockShield';
+  String get brandStockShield => 'Gramik Darkstore';
   String get poweredBy => _t('Powered by', 'द्वारा संचालित');
   String get loginFeatureAudit =>
       _t('Stock audit karo real-time', 'रियल-टाइम स्टॉक ऑडिट करें');
@@ -454,9 +458,16 @@ class AppStrings {
         'Transaction ke hisaab se difference zyada hai. Reason likhiye:',
         'लेनदेन के अनुसार अंतर ज़्यादा है। कारण लिखें:',
       );
-  String get mismatchReasonHint => _t('Mismatch reason...', 'मिसमैच कारण...');
+  String get mismatchReasonHint => _t(
+        'Mismatch reason (min 25 characters)...',
+        'मिसमैच कारण (कम से कम 25 अक्षर)...',
+      );
   String get reasonRequired =>
       _t('Reason dena zaroori hai.', 'कारण देना ज़रूरी है।');
+  String get mismatchReasonMinLength => _t(
+        'Reason kam se kam 25 characters ka hona chahiye.',
+        'कारण कम से कम 25 अक्षर का होना चाहिए।',
+      );
   String get saveWithReason =>
       _t('Save with reason', 'कारण के साथ सेव');
   String get allBusinessLocations =>

@@ -134,7 +134,7 @@ class _ProductVariantRowState extends ConsumerState<ProductVariantRow> {
       baselineQty: AuditTransactionMismatchHelper.baselineQty(widget.variant),
       inventoryChangeQty: inventoryChangeQty,
     )) {
-      if (mismatchReason == null || mismatchReason.trim().isEmpty) {
+      if (!AuditTransactionMismatchHelper.isValidReason(mismatchReason)) {
         setState(() => _saving = false);
         return;
       }

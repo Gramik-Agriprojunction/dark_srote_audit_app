@@ -153,6 +153,9 @@ class DcTransferModel {
     this.type,
     this.from,
     this.to,
+    this.readyDate,
+    this.receivedDate,
+    this.transferredDate,
   });
 
   final int transferId;
@@ -173,6 +176,9 @@ class DcTransferModel {
   final String? type;
   final DcLocationRefModel? from;
   final DcLocationRefModel? to;
+  final String? readyDate;
+  final String? receivedDate;
+  final String? transferredDate;
 
   factory DcTransferModel.fromJson(Map<String, dynamic> json) {
     final productsRaw = json['products'];
@@ -200,6 +206,13 @@ class DcTransferModel {
       type: json['type']?.toString(),
       from: DcLocationRefModel.fromJson(json['from'] as Map<String, dynamic>?),
       to: DcLocationRefModel.fromJson(json['to'] as Map<String, dynamic>?),
+      readyDate: _stringOrNull(json['readyDate'] ?? json['ready_date']),
+      receivedDate: _stringOrNull(
+        json['receivedDate'] ?? json['received_date'],
+      ),
+      transferredDate: _stringOrNull(
+        json['transferredDate'] ?? json['transferred_date'],
+      ),
       products: productsRaw is List
           ? productsRaw
               .whereType<Map<String, dynamic>>()
@@ -252,6 +265,12 @@ int? _intOrNull(dynamic v) {
   if (v == null) return null;
   final n = int.tryParse('$v');
   return n;
+}
+
+String? _stringOrNull(dynamic v) {
+  if (v == null) return null;
+  final s = v.toString().trim();
+  return s.isEmpty ? null : s;
 }
 
 num _num(dynamic v) {
