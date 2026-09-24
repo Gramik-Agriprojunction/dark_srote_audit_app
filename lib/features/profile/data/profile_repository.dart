@@ -58,4 +58,9 @@ class ProfileRepository {
       // Local logout must proceed even if API fails.
     }
   }
+
+  /// Soft-deletes the logged-in user via `POST /api/v1/user/delete-account`.
+  Future<void> deleteAccount() async {
+    await _client.post('/user/delete-account');
+  }
 }

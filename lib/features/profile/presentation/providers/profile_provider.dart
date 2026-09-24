@@ -9,6 +9,7 @@ class ProfileState {
     this.isLoading = false,
     this.isRefreshing = false,
     this.isLoggingOut = false,
+    this.isDeletingAccount = false,
     this.error,
   });
 
@@ -16,6 +17,7 @@ class ProfileState {
   final bool isLoading;
   final bool isRefreshing;
   final bool isLoggingOut;
+  final bool isDeletingAccount;
   final String? error;
 
   ProfileState copyWith({
@@ -23,6 +25,7 @@ class ProfileState {
     bool? isLoading,
     bool? isRefreshing,
     bool? isLoggingOut,
+    bool? isDeletingAccount,
     String? error,
     bool clearError = false,
   }) {
@@ -31,6 +34,7 @@ class ProfileState {
       isLoading: isLoading ?? this.isLoading,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isLoggingOut: isLoggingOut ?? this.isLoggingOut,
+      isDeletingAccount: isDeletingAccount ?? this.isDeletingAccount,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -67,6 +71,17 @@ class ProfileController extends StateNotifier<ProfileState> {
     state = state.copyWith(isLoggingOut: true);
     await _repo.logout();
     state = state.copyWith(isLoggingOut: false);
+  }
+
+  Future<void> deleteAccount() async {
+    state = state.copyWith(isDeletingAccount: true, clearError: true);
+    try {
+      await _repo.deleteAccount();
+      state = state.copyWith(isDeletingAccount: false);
+    } catch (e) {
+      state = state.copyWith(isDeletingAccount: false, error: e.toString());
+      rethrow;
+    }
   }
 }
 

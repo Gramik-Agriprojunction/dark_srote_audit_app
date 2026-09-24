@@ -156,6 +156,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => _stackPage(const ProfileScreen()),
       ),
       GoRoute(
+        path: '/settings',
+        builder: (context, state) => _stackPage(const SettingsScreen()),
+      ),
+      GoRoute(
         path: '/privacy-policy',
         builder: (context, state) =>
             _stackPage(const PrivacyPolicyScreen()),

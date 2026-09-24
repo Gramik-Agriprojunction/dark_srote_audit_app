@@ -78,10 +78,19 @@ class AppStrings {
   String get incomingDelivery => _t('Incoming Delivery', 'आने वाली डिलीवरी');
   String get outgoingDelivery => _t('Outgoing Delivery', 'जाने वाली डिलीवरी');
   String get report => _t('Report', 'रिपोर्ट');
+  String get settings => _t('Settings', 'सेटिंग्स');
   String get changeWarehouse => _t('Change Warehouse', 'वेयरहाउस बदलें');
   String get logoutQuestion => _t('Logout?', 'लॉग आउट करें?');
   String get logoutConfirm =>
       _t('Kya aap logout karna chahte ho?', 'क्या आप लॉग आउट करना चाहते हैं?');
+  String get deleteAccount => _t('Delete Account', 'अकाउंट डिलीट करें');
+  String get deleteAccountQuestion =>
+      _t('Delete Account?', 'अकाउंट डिलीट करें?');
+  String get deleteAccountConfirm => _t(
+        'Kya aap apna account delete karna chahte ho? Ye action undo nahi hoga.',
+        'क्या आप अपना अकाउंट डिलीट करना चाहते हैं? यह वापस नहीं होगा।',
+      );
+  String get deleteAccountAction => _t('Delete', 'डिलीट');
 
   // ── Bottom nav ──
   String get navHome => _t('Home', 'होम');

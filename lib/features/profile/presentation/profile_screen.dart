@@ -48,22 +48,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await ref.read(authControllerProvider.notifier).logout();
   }
 
-  Future<void> _openLanguageSheet(AppStrings strings) async {
-    final selected = await showModalBottomSheet<AppLanguage>(
-      context: context,
-      backgroundColor: AppColors.cardBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (ctx) => _LanguageSheet(
-        strings: strings,
-        language: ref.read(appLanguageProvider),
-      ),
-    );
-    if (!mounted || selected == null) return;
-    await ref.read(appLanguageProvider.notifier).setLanguage(selected);
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(profileControllerProvider);
@@ -89,6 +73,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         body: Column(
           children: [
             _ProfileHeader(
+              title: s.profile,
               strings: s,
               onBack: () => context.pop(),
               onNotifications: () {},
@@ -139,15 +124,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             delivered: p.delivered,
                             pending: p.pending,
                             cancelled: p.cancelled,
-                          ),
-                          const SizedBox(height: 14),
-                          _SectionLabel(s.appearance),
-                          _ThemeModeCard(
-                            strings: s,
-                            mode: ref.watch(appThemeModeProvider),
-                            onChanged: (mode) => ref
-                                .read(appThemeModeProvider.notifier)
-                                .setMode(mode),
                           ),
                           const SizedBox(height: 14),
                           _SectionLabel(s.menu),
@@ -233,6 +209,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 value: '',
                                 onTap: () => context.push('/report'),
                               ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.settings_rounded,
+                                iconBg: AppColors.softOrange,
+                                iconColor: AppColors.primary,
+                                label: s.settings,
+                                value: '',
+                                onTap: () => context.push('/settings'),
+                              ),
                               if (isSuperAdmin) ...[
                                 const _RowDivider(),
                                 _InfoRow(
@@ -251,27 +236,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                   },
                                 ),
                               ],
-                              const _RowDivider(),
-                              _InfoRow(
-                                icon: Icons.translate_rounded,
-                                iconBg: AppColors.softOrange,
-                                iconColor: AppColors.primary,
-                                label: s.languageSetting,
-                                value: ref.watch(appLanguageProvider) ==
-                                        AppLanguage.hi
-                                    ? s.languageHi
-                                    : s.languageEn,
-                                onTap: () => _openLanguageSheet(s),
-                              ),
-                              const _RowDivider(),
-                              _InfoRow(
-                                icon: Icons.privacy_tip_outlined,
-                                iconBg: AppColors.softBlue,
-                                iconColor: const Color(0xFF0284C7),
-                                label: s.privacyPolicy,
-                                value: '',
-                                onTap: () => context.push('/privacy-policy'),
-                              ),
                             ],
                           ),
                         ],
@@ -333,16 +297,139 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 }
 
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  Future<void> _openDeleteAccountDialog() async {
+    final state = ref.read(profileControllerProvider);
+    if (state.isDeletingAccount || state.isLoggingOut) return;
+
+    final s = ref.read(appStringsProvider);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (ctx) => _DeleteAccountConfirmDialog(strings: s),
+    );
+    if (!mounted || confirmed != true) return;
+
+    try {
+      await ref.read(profileControllerProvider.notifier).deleteAccount();
+      if (!mounted) return;
+      await ref.read(authControllerProvider.notifier).logout();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+  Future<void> _openLanguageSheet(AppStrings strings) async {
+    final selected = await showModalBottomSheet<AppLanguage>(
+      context: context,
+      backgroundColor: AppColors.cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => _LanguageSheet(
+        strings: strings,
+        language: ref.read(appLanguageProvider),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    await ref.read(appLanguageProvider.notifier).setLanguage(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
+    final deleting = ref.watch(profileControllerProvider).isDeletingAccount;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: AppColors.headerBg,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: Column(
+          children: [
+            _ProfileHeader(
+              title: s.settings,
+              strings: s,
+              onBack: () => context.pop(),
+            ),
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(0, 14, 0, 24),
+                children: [
+                  _ThemeModeCard(
+                    strings: s,
+                    mode: ref.watch(appThemeModeProvider),
+                    onChanged: (mode) => ref
+                        .read(appThemeModeProvider.notifier)
+                        .setMode(mode),
+                  ),
+                  const SizedBox(height: 14),
+                  _WhiteCard(
+                    children: [
+                      _InfoRow(
+                        icon: Icons.translate_rounded,
+                        iconBg: AppColors.softOrange,
+                        iconColor: AppColors.primary,
+                        label: s.languageSetting,
+                        value: ref.watch(appLanguageProvider) == AppLanguage.hi
+                            ? s.languageHi
+                            : s.languageEn,
+                        onTap: () => _openLanguageSheet(s),
+                      ),
+                      const _RowDivider(),
+                      _InfoRow(
+                        icon: Icons.privacy_tip_outlined,
+                        iconBg: AppColors.softBlue,
+                        iconColor: const Color(0xFF0284C7),
+                        label: s.privacyPolicy,
+                        value: '',
+                        onTap: () => context.push('/privacy-policy'),
+                      ),
+                      const _RowDivider(),
+                      _InfoRow(
+                        icon: Icons.person_remove_outlined,
+                        iconBg: AppColors.errorBg,
+                        iconColor: const Color(0xFFEF4444),
+                        label: s.deleteAccount,
+                        value: '',
+                        onTap: deleting ? null : _openDeleteAccountDialog,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader({
+    required this.title,
     required this.strings,
     required this.onBack,
-    required this.onNotifications,
+    this.onNotifications,
   });
 
+  final String title;
   final AppStrings strings;
   final VoidCallback onBack;
-  final VoidCallback onNotifications;
+  final VoidCallback? onNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +450,7 @@ class _ProfileHeader extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              strings.profile,
+              title,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -377,7 +464,7 @@ class _ProfileHeader extends StatelessWidget {
           ModuleHeaderAction(
             icon: Icons.notifications_none_rounded,
             tooltip: strings.notifications,
-            onTap: onNotifications,
+            onTap: onNotifications ?? () {},
           ),
         ],
       ),
@@ -926,6 +1013,105 @@ class _InfoRow extends StatelessWidget {
 
     if (onTap == null) return row;
     return InkWell(onTap: onTap, child: row);
+  }
+}
+
+class _DeleteAccountConfirmDialog extends StatelessWidget {
+  const _DeleteAccountConfirmDialog({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.cardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppColors.border),
+      ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColors.errorBg,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person_remove_outlined,
+                size: 32,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              strings.deleteAccountQuestion,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              strings.deleteAccountConfirm,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.fieldBg,
+                        foregroundColor: AppColors.textSecondary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        strings.cancel,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        strings.deleteAccountAction,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
