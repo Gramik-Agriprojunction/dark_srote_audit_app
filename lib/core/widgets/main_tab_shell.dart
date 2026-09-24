@@ -3,8 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import 'app_bottom_nav.dart';
 
-/// Bottom-nav shell that keeps tab screens alive via [StatefulNavigationShell]
-/// (IndexedStack) so switching Home ↔ Stock ↔ Orders ↔ Audit feels instant.
+/// Bottom-nav shell. Tab screens stay alive; branch switch animation lives in
+/// [AnimatedIndexedStack] via [StatefulShellRoute.navigatorContainerBuilder].
 class MainTabShell extends StatelessWidget {
   const MainTabShell({super.key, required this.navigationShell});
 
