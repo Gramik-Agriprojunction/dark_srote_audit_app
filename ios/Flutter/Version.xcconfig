@@ -1,0 +1,3 @@
+// iOS-only version (Android uses pubspec.yaml 27.0.0+27).
+FLUTTER_BUILD_NAME=6.0
+FLUTTER_BUILD_NUMBER=6
