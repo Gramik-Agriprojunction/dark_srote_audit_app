@@ -21,11 +21,8 @@ class AuditTransactionMismatchHelper {
     required int baselineQty,
     required int inventoryChangeQty,
   }) {
-    return newQty !=
-        expectedQty(
-          baselineQty: baselineQty,
-          inventoryChangeQty: inventoryChangeQty,
-        );
+    // Mismatch reason dialog disabled — save without prompting.
+    return false;
   }
 
   static bool isValidReason(String? reason) {
