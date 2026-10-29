@@ -211,6 +211,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               const _RowDivider(),
                               _InfoRow(
+                                icon: Icons.receipt_long_rounded,
+                                iconBg: AppColors.softOrange,
+                                iconColor: AppColors.primary,
+                                label: 'SKU Stock Ledger',
+                                value: '',
+                                onTap: () => context.push('/preview/stock-ledger'),
+                              ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.groups_rounded,
+                                iconBg: const Color(0xFFDBEAFE),
+                                iconColor: const Color(0xFF1D4ED8),
+                                label: 'LMD Attendance',
+                                value: '',
+                                onTap: () =>
+                                    context.push('/preview/lmd-attendance'),
+                              ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.fact_check_rounded,
+                                iconBg: AppColors.softPurple,
+                                iconColor: const Color(0xFF7C3AED),
+                                label: 'DSE Audit Report',
+                                value: '',
+                                onTap: () =>
+                                    context.push('/preview/dse-audit-report'),
+                              ),
+                              const _RowDivider(),
+                              _InfoRow(
                                 icon: Icons.settings_rounded,
                                 iconBg: AppColors.softOrange,
                                 iconColor: AppColors.primary,

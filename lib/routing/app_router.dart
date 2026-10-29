@@ -26,6 +26,11 @@ import '../features/profile/presentation/privacy_policy_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
+import '../features/static_previews/presentation/dse_audit_report_preview_screen.dart';
+import '../features/static_previews/presentation/lmd_attendance_detail_screen.dart';
+import '../features/static_previews/presentation/lmd_attendance_preview_screen.dart';
+import '../features/static_previews/presentation/static_previews_hub_screen.dart';
+import '../features/static_previews/presentation/stock_ledger_preview_screen.dart';
 import 'page_transitions.dart';
 
 /// Forces the page to rebuild/remount when theme flips (needed because
@@ -254,6 +259,77 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/variance',
         pageBuilder: (context, state) =>
             _smoothStack(state, const VarianceScreen()),
+      ),
+      GoRoute(
+        path: '/preview',
+        pageBuilder: (context, state) =>
+            _smoothStack(state, const StaticPreviewsHubScreen()),
+      ),
+      GoRoute(
+        path: '/preview/stock-ledger',
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            return _smoothStack(
+              state,
+              StockLedgerPreviewScreen(
+                productName: '${extra['productName'] ?? 'Musturd 1666'}',
+                variantLabel: '${extra['variantLabel'] ?? '500-GM'}',
+                sku: '${extra['sku'] ?? 'MO-500'}',
+                storeName:
+                    '${extra['storeName'] ?? 'DS#31 - Unnao (Safipur) - Gramik'}',
+                imageUrl: extra['imageUrl']?.toString(),
+              ),
+            );
+          }
+          return _smoothStack(state, const StockLedgerPreviewScreen());
+        },
+      ),
+      GoRoute(
+        path: '/preview/lmd-attendance',
+        pageBuilder: (context, state) =>
+            _smoothStack(state, const LmdAttendancePreviewScreen()),
+      ),
+      GoRoute(
+        path: '/preview/lmd-attendance/detail',
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map && extra['day'] is LmdAttendanceDetailDay) {
+            return _smoothStack(
+              state,
+              LmdAttendanceDetailScreen(
+                day: extra['day'] as LmdAttendanceDetailDay,
+                employee: '${extra['employee'] ?? 'EMP001 - Ravi Singh'}',
+                monthLabel: '${extra['month'] ?? 'Oct 2026'}',
+              ),
+            );
+          }
+          return _smoothStack(
+            state,
+            const LmdAttendanceDetailScreen(
+              day: LmdAttendanceDetailDay(
+                title: 'Thursday, 8 Oct 2026',
+                status: LmdDetailStatus.present,
+                first: '10:20 AM',
+                last: '6:15 PM',
+                hours: '7h 55m',
+                audited: 112,
+                pending: 0,
+                matchPct: 100,
+                shortQty: 0,
+                excess: 0,
+                picked: 28,
+                transit: 12,
+                delivered: 6,
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/preview/dse-audit-report',
+        pageBuilder: (context, state) =>
+            _smoothStack(state, const DseAuditReportPreviewScreen()),
       ),
       GoRoute(
         path: '/variant-audit',

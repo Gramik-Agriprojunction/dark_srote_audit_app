@@ -14,12 +14,14 @@ class ProductMismatchRow {
     this.variantLabel,
     this.storeName,
     this.sku,
+    this.image,
   });
 
   final String productName;
   final String? variantLabel;
   final String? sku;
   final String? storeName;
+  final String? image;
   final int systemStock;
   final int totalPhysicalStock;
   final int physicalStock;
@@ -38,12 +40,15 @@ class ProductMismatchRow {
   factory ProductMismatchRow.fromJson(Map<String, dynamic> json) {
     final diff = _jsonInt(json['difference']);
     final auditRaw = json['auditUpdatedAt'] ?? json['audit_updated_at'];
+    final imageRaw =
+        json['image'] ?? json['thumbnail'] ?? json['productImage'] ?? json['product_image'];
     return ProductMismatchRow(
       productName: (json['productName'] ?? json['product_name'] ?? 'Product')
           .toString(),
       variantLabel: (json['variantLabel'] ?? json['variant_label'])?.toString(),
       sku: json['sku']?.toString(),
       storeName: (json['storeName'] ?? json['store_name'])?.toString(),
+      image: imageRaw?.toString(),
       systemStock: _jsonInt(json['systemStock'] ?? json['system_stock']),
       totalPhysicalStock: _jsonInt(
         json['totalPhysicalStock'] ?? json['total_physical_stock'],

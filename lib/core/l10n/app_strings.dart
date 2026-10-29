@@ -184,11 +184,23 @@ class AppStrings {
   String get update => _t('Update', 'अपडेट');
   String get matched => _t('Matched', 'मेल');
   String get short => _t('Short', 'कम');
+  String get shortage => _t('Shortage', 'कमी');
   String get excess => _t('Excess', 'अधिक');
   String get totalPhysical => _t('Total Physical', 'कुल फिज़िकल');
   String get usable => _t('Usable', 'उपयोगी');
   String get damage => _t('Damage', 'क्षतिग्रस्त');
   String get difference => _t('DIFFERENCE', 'अंतर');
+  String get liveStock => _t('Live Stock', 'लाइव स्टॉक');
+  String get liveStockRealtime =>
+      _t('Live Stock (Real-time)', 'लाइव स्टॉक (रियल-टाइम)');
+  String get stockUpdatesAutomatically => _t(
+        'Stock quantities update automatically.',
+        'स्टॉक मात्रा अपने आप अपडेट होती है।',
+      );
+  String get lastUpdatedLabel => _t('Last Updated', 'लास्ट अपडेट');
+  String get liveBadge => _t('LIVE', 'लाइव');
+  String updatedAgo(String relative) =>
+      _t('Updated $relative', '$relative अपडेट');
   String get addComment => _t('Add Comment', 'टिप्पणी जोड़ें');
   String get saveComment => _t('Save Comment', 'टिप्पणी सेव करें');
   String get commentHint =>

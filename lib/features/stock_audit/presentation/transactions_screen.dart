@@ -10,6 +10,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/widgets/alert_banner.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/app_date_pickers.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
@@ -55,10 +56,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }
 
   Future<void> _pickDate(DateTime current) async {
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await AppDatePickers.pickDate(
+      context,
       initialDate: current,
-      firstDate: DateTime(2024),
       lastDate: DateTime.now(),
       helpText: ref.read(appStringsProvider).selectDate,
     );
