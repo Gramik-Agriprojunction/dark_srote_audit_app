@@ -441,13 +441,21 @@ class _SearchFilterRow extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     onChanged: onChanged,
+                    cursorColor: PreviewTheme.orange,
                     style: TextStyle(
                       fontSize: 13,
                       color: PreviewTheme.text,
                     ),
                     decoration: InputDecoration(
                       isDense: true,
+                      filled: false,
+                      contentPadding: EdgeInsets.zero,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
                       hintText: 'Search Customer, Order No., Bucket...',
                       hintStyle: TextStyle(
                         fontSize: 13,
