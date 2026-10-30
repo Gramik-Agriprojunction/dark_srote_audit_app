@@ -98,6 +98,24 @@ class OrdersRepository {
     return body;
   }
 
+  Future<String> verifyPickupOtp({
+    required int orderId,
+    required String otp,
+  }) async {
+    await _ensureCanWrite();
+    final body = await _superAdminStoreBody();
+    body['order_id'] = orderId;
+    body['otp'] = otp.trim();
+    final json = await _client.post(
+      '/order/dark-store-pickup-verify-otp',
+      body: body,
+    );
+    return (json['message'] ??
+            json['msg'] ??
+            'Status updated as pickup')
+        .toString();
+  }
+
   Future<String> markReadyToPick(int orderId) async {
     await _ensureCanWrite();
     final body = await _superAdminStoreBody();

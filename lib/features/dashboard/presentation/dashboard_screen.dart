@@ -871,6 +871,12 @@ class _RecentOrderTile extends StatelessWidget {
                         spacing: 4,
                         runSpacing: 4,
                         children: [
+                          if (order.hasDemandId)
+                            _pill(
+                              kDemandOrderBadgeLabel,
+                              kDemandOrderBadgeFg,
+                              kDemandOrderBadgeBg,
+                            ),
                           _pill(
                             order.paymentStatus.toUpperCase(),
                             const Color(0xFFDC2626),

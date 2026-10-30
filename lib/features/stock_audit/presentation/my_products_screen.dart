@@ -148,8 +148,9 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
     }
 
     final notifier = ref.read(myProductsControllerProvider.notifier);
+    // Prefer latest audit timestamp from loaded rows (data), then client refresh.
     final lastUpdated =
-        _lastRefreshedAt ?? _latestRowUpdate(rows) ?? DateTime.now();
+        _latestRowUpdate(rows) ?? _lastRefreshedAt ?? DateTime.now();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -219,6 +220,7 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
                         (context, index) => _ProductCard(
                           key: ValueKey('${rows[index].sku}-$index'),
                           row: rows[index],
+                          businessLocationId: state.selectedStoreId,
                           formatter: formatter,
                           strings: s,
                         ),
@@ -431,11 +433,13 @@ class _ProductCard extends StatelessWidget {
   const _ProductCard({
     super.key,
     required this.row,
+    required this.businessLocationId,
     required this.formatter,
     required this.strings,
   });
 
   final ProductMismatchRow row;
+  final int? businessLocationId;
   final NumberFormat formatter;
   final AppStrings strings;
 
@@ -496,10 +500,10 @@ class _ProductCard extends StatelessWidget {
             'productName': row.productName,
             'variantLabel': variant.isNotEmpty ? variant : '—',
             'sku': skuLine.isNotEmpty ? skuLine : '—',
-            'storeName': store.isNotEmpty
-                ? store
-                : 'DS#31 - Unnao (Safipur) - Gramik',
+            'storeName': store.isNotEmpty ? store : 'Dark Store',
             'imageUrl': row.image,
+            'variantId': row.variantId,
+            'businessLocationId': businessLocationId,
           },
         );
       },
@@ -609,6 +613,10 @@ class _ProductCard extends StatelessWidget {
                       _MetricCell(
                         label: strings.system,
                         value: formatter.format(row.systemStock),
+                      ),
+                      _MetricCell(
+                        label: strings.onHand,
+                        value: formatter.format(row.onHandQty),
                       ),
                       _MetricCell(
                         label: strings.physical,

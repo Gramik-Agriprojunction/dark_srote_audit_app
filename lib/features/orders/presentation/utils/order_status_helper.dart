@@ -183,3 +183,8 @@ bool isPaidStatus(String? raw) {
   final s = (raw ?? '').trim().toLowerCase();
   return s == 'paid' || s == 'success' || s == 'completed';
 }
+
+const kDemandOrderBadgeLabel = 'DEMAND';
+
+const kDemandOrderBadgeFg = Color(0xFF4338CA);
+const kDemandOrderBadgeBg = Color(0xFFE0E7FF);

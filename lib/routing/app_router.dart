@@ -273,12 +273,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return _smoothStack(
               state,
               StockLedgerPreviewScreen(
-                productName: '${extra['productName'] ?? 'Musturd 1666'}',
-                variantLabel: '${extra['variantLabel'] ?? '500-GM'}',
-                sku: '${extra['sku'] ?? 'MO-500'}',
+                productName: '${extra['productName'] ?? 'Product'}',
+                variantLabel: '${extra['variantLabel'] ?? '—'}',
+                sku: '${extra['sku'] ?? '—'}',
                 storeName:
-                    '${extra['storeName'] ?? 'DS#31 - Unnao (Safipur) - Gramik'}',
+                    '${extra['storeName'] ?? 'Dark Store'}',
                 imageUrl: extra['imageUrl']?.toString(),
+                variantId: int.tryParse('${extra['variantId'] ?? ''}'),
+                businessLocationId:
+                    int.tryParse('${extra['businessLocationId'] ?? ''}'),
               ),
             );
           }

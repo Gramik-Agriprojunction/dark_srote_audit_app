@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_parse.dart';
+
 class DashboardModel {
   const DashboardModel({
     required this.header,
@@ -234,10 +236,14 @@ class DashboardRecentOrder {
     required this.orderStatus,
     this.createdAt,
     this.firstProductImage,
+    this.demandId,
   });
 
   final int id;
   final String code;
+  final int? demandId;
+
+  bool get hasDemandId => demandId != null && demandId! > 0;
   final String customerName;
   final String customerCity;
   final num grandTotal;
@@ -251,6 +257,7 @@ class DashboardRecentOrder {
     return DashboardRecentOrder(
       id: _asInt(json['id']),
       code: (json['code'] ?? '').toString(),
+      demandId: jsonDemandId(json['demandId'] ?? json['demand_id']),
       customerName: (json['customerName'] ?? 'Customer').toString(),
       customerCity: (json['customerCity'] ?? '').toString(),
       grandTotal: json['grandTotal'] is num

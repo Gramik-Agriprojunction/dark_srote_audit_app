@@ -9,6 +9,9 @@ import '../data/models/business_location_model.dart';
 import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
 import '../data/models/transaction_model.dart';
+import '../data/models/dse_attendance_model.dart';
+import '../data/models/dse_audit_report_model.dart';
+import '../data/models/product_stock_history_model.dart';
 import '../data/models/stock_reconciliation_model.dart';
 import '../data/models/variance_model.dart';
 import '../../../core/constants/app_pagination.dart';
@@ -158,6 +161,72 @@ class StockAuditRepository {
       },
     );
     return StockReconciliationReportModel.fromJson(requireJsonMap(json['data']));
+  }
+
+  Future<DseAttendanceReport> getDseAttendance({
+    required int businessLocationId,
+    required String month,
+    int? employeeUserId,
+  }) async {
+    final json = await _client.get(
+      '/dse-attendance',
+      query: {
+        'business_location_id': businessLocationId,
+        'month': month,
+        if (employeeUserId != null && employeeUserId > 0)
+          'employee_user_id': employeeUserId,
+      },
+    );
+    return DseAttendanceReport.fromJson(requireJsonMap(json['data']));
+  }
+
+  Future<DseAuditReport> getDseAuditReport({
+    required int businessLocationId,
+    required String month,
+    String search = '',
+    String status = 'all',
+    int? categoryId,
+    String? auditDate,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    final json = await _client.get(
+      '/dse-audit-report',
+      query: {
+        'business_location_id': businessLocationId,
+        'month': month,
+        if (search.trim().isNotEmpty) 'search': search.trim(),
+        if (status.trim().isNotEmpty && status != 'all') 'status': status,
+        if (categoryId != null && categoryId > 0) 'category_id': categoryId,
+        if (auditDate != null && auditDate.trim().isNotEmpty)
+          'audit_date': auditDate.trim(),
+        'page': page,
+        'limit': limit,
+      },
+    );
+    return DseAuditReport.fromJson(requireJsonMap(json['data']));
+  }
+
+  Future<ProductStockHistoryReport> getProductStockHistory({
+    required int businessLocationId,
+    required int variantId,
+    required String dateFrom,
+    required String dateTo,
+    int page = 1,
+    int limit = 200,
+  }) async {
+    final json = await _client.get(
+      '/product-stock-history',
+      query: {
+        'business_location_id': businessLocationId,
+        'variant_id': variantId,
+        'date_from': dateFrom,
+        'date_to': dateTo,
+        'page': page,
+        'limit': limit,
+      },
+    );
+    return ProductStockHistoryReport.fromJson(requireJsonMap(json['data']));
   }
 
   Future<VarianceReportModel> getVariance({

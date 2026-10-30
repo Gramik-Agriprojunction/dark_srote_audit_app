@@ -5,13 +5,17 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_date_pickers.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../stock_audit/data/models/dse_attendance_model.dart';
+import '../../stock_audit/data/stock_audit_repository.dart';
 import 'lmd_attendance_detail_screen.dart';
 import 'preview_theme.dart';
 
-/// Static DSE Attendance list — matches design mock (day cards + rules).
+/// DSE Attendance — daily audit attendance from `/dse-attendance`.
 class LmdAttendancePreviewScreen extends ConsumerStatefulWidget {
   const LmdAttendancePreviewScreen({super.key});
 
@@ -22,95 +26,101 @@ class LmdAttendancePreviewScreen extends ConsumerStatefulWidget {
 
 class _LmdAttendancePreviewScreenState
     extends ConsumerState<LmdAttendancePreviewScreen> {
-  static const _employees = <String>[
-    'EMP001 - Ravi Singh',
-    'EMP002 - Amit Kumar',
-    'EMP003 - Suresh Yadav',
-    'EMP004 - Priya Sharma',
-  ];
-
-  static const _days = <LmdAttendanceDetailDay>[
-    LmdAttendanceDetailDay(
-      title: 'Thursday, 8 Oct 2026',
-      status: LmdDetailStatus.present,
-      first: '10:20 AM',
-      last: '6:15 PM',
-      hours: '7h 55m',
-      audited: 112,
-      pending: 0,
-      matchPct: 100,
-      shortQty: 0,
-      excess: 0,
-      picked: 28,
-      transit: 12,
-      delivered: 6,
-    ),
-    LmdAttendanceDetailDay(
-      title: 'Wednesday, 7 Oct 2026',
-      status: LmdDetailStatus.halfDay,
-      first: '10:20 AM',
-      last: '7:25 PM',
-      hours: '9h 5m',
-      audited: 98,
-      pending: 0,
-      matchPct: 96,
-      shortQty: 3,
-      excess: 1,
-      picked: 22,
-      transit: 9,
-      delivered: 7,
-    ),
-    LmdAttendanceDetailDay(
-      title: 'Tuesday, 6 Oct 2026',
-      status: LmdDetailStatus.absent,
-      first: '9:25 AM',
-      last: '6:30 PM',
-      hours: '9h 5m',
-      audited: 56,
-      pending: 12,
-      matchPct: 85,
-      shortQty: 8,
-      excess: 4,
-      picked: 14,
-      transit: 6,
-      delivered: 3,
-    ),
-    LmdAttendanceDetailDay(
-      title: 'Monday, 5 Oct 2026',
-      status: LmdDetailStatus.absent,
-      note: 'No entries logged',
-      audited: 0,
-      pending: 0,
-      matchPct: 0,
-      shortQty: 0,
-      excess: 0,
-    ),
-    LmdAttendanceDetailDay(
-      title: 'Sunday, 4 Oct 2026',
-      status: LmdDetailStatus.holiday,
-      note: 'Full day Holiday',
-      audited: 0,
-      pending: 0,
-      matchPct: 0,
-      shortQty: 0,
-      excess: 0,
-    ),
-    LmdAttendanceDetailDay(
-      title: 'Saturday, 3 Oct 2026',
-      status: LmdDetailStatus.wop,
-      note: 'Work Off Permission (WOP)',
-      audited: 0,
-      pending: 0,
-      matchPct: 0,
-      shortQty: 0,
-      excess: 0,
-    ),
-  ];
-
-  String _employee = _employees.first;
-  DateTime _month = DateTime(2026, 10, 1);
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  int? _storeId;
+  int? _employeeId;
+  List<DseAttendanceEmployee> _employees = const [];
+  List<DseAttendanceDay> _days = const [];
+  bool _loading = true;
+  String? _error;
 
   String get _monthLabel => DateFormat('MMM yyyy').format(_month);
+  String get _monthApi => DateFormat('yyyy-MM').format(_month);
+
+  String get _employeeLabel {
+    if (_employees.isEmpty) return 'Employee';
+    final match = _employees.where((e) => e.id == _employeeId);
+    if (match.isNotEmpty) return match.first.label;
+    return _employees.first.label;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  Future<void> _bootstrap() async {
+    final storage = ref.read(sessionStorageProvider);
+    final preferred = await storage.getSelectedStoreId();
+    final repo = ref.read(stockAuditRepositoryProvider);
+    try {
+      final locations = await repo.getBusinessLocations();
+      int? storeId = preferred;
+      if (storeId == null || !locations.any((l) => l.id == storeId)) {
+        storeId = locations.length == 1 ? locations.first.id : preferred;
+      }
+      if (storeId == null && locations.isNotEmpty) {
+        storeId = locations.first.id;
+      }
+      if (!mounted) return;
+      setState(() => _storeId = storeId);
+      await _fetch();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e is ApiException ? e.message : e.toString();
+      });
+    }
+  }
+
+  Future<void> _fetch() async {
+    final storeId = _storeId;
+    if (storeId == null || storeId <= 0) {
+      setState(() {
+        _loading = false;
+        _error = 'Store select nahi hai. Pehle Stock tab se store choose karo.';
+        _days = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final report = await ref.read(stockAuditRepositoryProvider).getDseAttendance(
+            businessLocationId: storeId,
+            month: _monthApi,
+            employeeUserId: _employeeId,
+          );
+      if (!mounted) return;
+      setState(() {
+        _employees = report.employees;
+        _employeeId = report.selectedEmployeeId;
+        _days = report.days;
+        _loading = false;
+        _error = null;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.message;
+        _days = [];
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+        _days = [];
+      });
+    }
+  }
 
   Future<void> _pickMonth() async {
     HapticFeedback.selectionClick();
@@ -122,11 +132,13 @@ class _LmdAttendancePreviewScreenState
     );
     if (!mounted || picked == null) return;
     setState(() => _month = DateTime(picked.year, picked.month, 1));
+    await _fetch();
   }
 
   Future<void> _pickEmployee() async {
+    if (_employees.isEmpty) return;
     HapticFeedback.selectionClick();
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showModalBottomSheet<int>(
       context: context,
       backgroundColor: AppColors.cardBg,
       shape: const RoundedRectangleBorder(
@@ -160,24 +172,31 @@ class _LmdAttendancePreviewScreenState
                   ),
                 ),
               ),
-              for (final e in _employees)
-                ListTile(
-                  leading: Icon(
-                    Icons.person_outline_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: Text(
-                    e,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  trailing: e == _employee
-                      ? Icon(Icons.check_rounded, color: AppColors.primary)
-                      : null,
-                  onTap: () => Navigator.pop(ctx, e),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final e in _employees)
+                      ListTile(
+                        leading: Icon(
+                          Icons.person_outline_rounded,
+                          color: AppColors.primary,
+                        ),
+                        title: Text(
+                          e.label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        trailing: e.id == _employeeId
+                            ? Icon(Icons.check_rounded, color: AppColors.primary)
+                            : null,
+                        onTap: () => Navigator.pop(ctx, e.id),
+                      ),
+                  ],
                 ),
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -185,7 +204,8 @@ class _LmdAttendancePreviewScreenState
       },
     );
     if (!mounted || picked == null) return;
-    setState(() => _employee = picked);
+    setState(() => _employeeId = picked);
+    await _fetch();
   }
 
   @override
@@ -200,14 +220,13 @@ class _LmdAttendancePreviewScreenState
             pageLabel: 'DSE Attendance',
             subtitle: 'Dark Store Audit Attendance',
             onBack: () => context.pop(),
-            onLogout: () async {},
             showNotifications: true,
             bottom: Row(
               children: [
                 Expanded(
                   child: PreviewSelectField(
                     icon: Icons.person_outline_rounded,
-                    label: _employee,
+                    label: _employeeLabel,
                     onHeader: true,
                     onTap: _pickEmployee,
                   ),
@@ -225,27 +244,63 @@ class _LmdAttendancePreviewScreenState
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-              children: [
-                for (var i = 0; i < _days.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _DayCard(
-                    day: _days[i],
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      // Day card → same orange DSE list-style detail (not red).
-                      context.push('/preview/lmd-attendance/detail', extra: {
-                        'employee': _employee,
-                        'month': _monthLabel,
-                        'day': _days[i],
-                      });
-                    },
-                  ),
+            child: RefreshIndicator(
+              color: PreviewTheme.orange,
+              onRefresh: _fetch,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                children: [
+                  if (_loading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: PreviewTheme.red,
+                        ),
+                      ),
+                    )
+                  else if (_days.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Text(
+                        'Is month me koi attendance day nahi mila',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: PreviewTheme.textMuted,
+                        ),
+                      ),
+                    )
+                  else
+                    for (var i = 0; i < _days.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 12),
+                      _DayCard(
+                        day: LmdAttendanceDetailDay.fromDse(_days[i]),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          context.push('/preview/lmd-attendance/detail', extra: {
+                            'employee': _employeeLabel,
+                            'month': _monthLabel,
+                            'day': LmdAttendanceDetailDay.fromDse(_days[i]),
+                          });
+                        },
+                      ),
+                    ],
+                  const SizedBox(height: 14),
+                  const _RulesCard(),
                 ],
-                const SizedBox(height: 14),
-                const _RulesCard(),
-              ],
+              ),
             ),
           ),
         ],
@@ -321,21 +376,9 @@ class _DayCard extends StatelessWidget {
               if (showTimes)
                 Row(
                   children: [
-                    _meta(
-                      Icons.login_rounded,
-                      'First Activity',
-                      day.first!,
-                    ),
-                    _meta(
-                      Icons.logout_rounded,
-                      'Last Activity',
-                      day.last!,
-                    ),
-                    _meta(
-                      Icons.timer_outlined,
-                      'Working Hours',
-                      day.hours!,
-                    ),
+                    _meta(Icons.login_rounded, 'First Activity', day.first!),
+                    _meta(Icons.logout_rounded, 'Last Activity', day.last!),
+                    _meta(Icons.timer_outlined, 'Working Hours', day.hours!),
                   ],
                 )
               else

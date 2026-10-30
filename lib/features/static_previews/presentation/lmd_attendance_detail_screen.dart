@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../stock_audit/data/models/dse_attendance_model.dart';
 import 'preview_theme.dart';
 
 /// Day detail — clean report layout (readable KPIs, clear sections).
@@ -317,6 +318,38 @@ class LmdAttendanceDetailDay {
   final int picked;
   final int transit;
   final int delivered;
+
+  factory LmdAttendanceDetailDay.fromDse(DseAttendanceDay day) {
+    LmdDetailStatus status;
+    switch (day.status) {
+      case DseAttendanceStatus.present:
+        status = LmdDetailStatus.present;
+      case DseAttendanceStatus.halfDay:
+        status = LmdDetailStatus.halfDay;
+      case DseAttendanceStatus.holiday:
+        status = LmdDetailStatus.holiday;
+      case DseAttendanceStatus.wop:
+        status = LmdDetailStatus.wop;
+      case DseAttendanceStatus.absent:
+        status = LmdDetailStatus.absent;
+    }
+    return LmdAttendanceDetailDay(
+      title: day.title,
+      status: status,
+      first: day.firstActivity,
+      last: day.lastActivity,
+      hours: day.workingHours,
+      note: day.note,
+      audited: day.skuAudited,
+      pending: day.skuPending,
+      matchPct: day.matchPct,
+      shortQty: day.shortQty,
+      excess: day.excess,
+      picked: day.picked,
+      transit: day.transit,
+      delivered: day.delivered,
+    );
+  }
 
   (String, Color, Color) get badge {
     switch (status) {

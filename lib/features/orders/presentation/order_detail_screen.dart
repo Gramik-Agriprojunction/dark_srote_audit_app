@@ -262,10 +262,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final viewOnly = ref.watch(isViewOnlySessionProvider);
     final showPrintReceipt =
         !viewOnly && !order.isCounterSale && (isPending || isManifested);
+    final showPickupOtpEnter =
+        !viewOnly && order.hasDemandId && !order.isCounterSale && (isPending || isManifested);
     final showCancel =
         !viewOnly && order.isCounterSale && statusUpper == 'DELIVERED';
-    final showBottom = showPrintReceipt || showCancel || !isPending;
-    final topPickupOtps = collectTopPickupOtps(order);
+    final showBottom =
+        showPrintReceipt || showPickupOtpEnter || showCancel || !isPending;
+    final topPickupOtps =
+        order.hasDemandId ? const <OrderOtpEntry>[] : collectTopPickupOtps(order);
     final otpList = collectOrderOtps(order);
     final paid = isPaidStatus(order.paymentStatus);
     final payLabel = paymentLabel(order.paymentType);
@@ -292,7 +296,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 padding: EdgeInsets.only(
                   top: navTop + 44,
                   bottom: showBottom
-                      ? (showPrintReceipt ? 108 : 58) + bottom
+                      ? (showPrintReceipt && showPickupOtpEnter ? 108 : 58) +
+                          bottom
                       : 16 + bottom,
                 ),
                 children: [
@@ -305,6 +310,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     payLabel: payLabel,
                     items: order.sumQuantity,
                     paymentStatus: order.paymentStatus,
+                    hasDemand: order.hasDemandId,
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
@@ -474,11 +480,21 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   showCancel: showCancel,
                   statusColor: AppColors.primary,
                   loading: state.isActionLoading || _printBusy,
-                  onPickupOtp: showPrintReceipt
-                      ? () => context.push(
+                  onPickupOtp: showPickupOtpEnter
+                      ? () async {
+                          final picked = await context.push<bool>(
                             '/orders/${widget.orderId}/pickup-otp',
                             extra: code,
-                          )
+                          );
+                          if (picked == true && context.mounted) {
+                            await ref
+                                .read(
+                                  orderDetailControllerProvider(widget.orderId)
+                                      .notifier,
+                                )
+                                .load(refresh: true);
+                          }
+                        }
                       : null,
                   onPrintReceipt: () => _printReceipt(order),
                   onCancel: () => _openCancelOverlay(order),
@@ -707,6 +723,7 @@ class _HeroExpand extends StatelessWidget {
     required this.payLabel,
     required this.items,
     required this.paymentStatus,
+    this.hasDemand = false,
   });
 
   final Color backgroundColor;
@@ -717,6 +734,7 @@ class _HeroExpand extends StatelessWidget {
   final String payLabel;
   final int items;
   final String? paymentStatus;
+  final bool hasDemand;
 
   @override
   Widget build(BuildContext context) {
@@ -789,6 +807,12 @@ class _HeroExpand extends StatelessWidget {
                     runSpacing: 4,
                     alignment: WrapAlignment.end,
                     children: [
+                      if (hasDemand)
+                        _MetaPill(
+                          icon: Icons.local_shipping_outlined,
+                          label: kDemandOrderBadgeLabel,
+                          bg: const Color(0x734338CA),
+                        ),
                       _MetaPill(
                         icon: paid ? Icons.check_circle_outline : Icons.error_outline,
                         label: paid ? 'Paid' : paymentStatusPill(paymentStatus),
@@ -1995,7 +2019,14 @@ class _BottomActionBar extends StatelessWidget {
                 ),
               ],
             )
-          : showCancel
+          : onPickupOtp != null
+              ? _BottomButton(
+                  label: strings.pickupOtpTitle,
+                  icon: Icons.key_outlined,
+                  color: statusColor,
+                  onTap: onPickupOtp!,
+                )
+              : showCancel
               ? _BottomButton(
                   label: strings.cancelOrder,
                   icon: Icons.cancel_outlined,

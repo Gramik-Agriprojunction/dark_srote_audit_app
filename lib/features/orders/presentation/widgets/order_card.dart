@@ -145,6 +145,11 @@ class OrderCard extends StatelessWidget {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: [
+                                  if (order.hasDemandId)
+                                    _FootPill(
+                                      label: kDemandOrderBadgeLabel,
+                                      color: kDemandOrderBadgeFg,
+                                    ),
                                   _FootPill(label: payPill, color: payColor),
                                   _FootPill(
                                     label: paymentLabel(order.paymentType),

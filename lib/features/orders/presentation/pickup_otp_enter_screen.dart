@@ -6,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_language_provider.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/widgets/alert_banner.dart';
 import '../../auth/presentation/widgets/otp_pin_input.dart';
+import '../data/orders_repository.dart';
 
-/// UI-only screen to enter Pickup OTP (no API yet).
 class PickupOtpEnterScreen extends ConsumerStatefulWidget {
   const PickupOtpEnterScreen({
     super.key,
@@ -26,6 +28,8 @@ class PickupOtpEnterScreen extends ConsumerStatefulWidget {
 
 class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
   final _otpController = TextEditingController();
+  bool _submitting = false;
+  String? _error;
 
   @override
   void initState() {
@@ -45,12 +49,36 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
   }
 
   bool get _ready =>
-      _otpController.text.trim().length == AppConfig.otpLength;
+      _otpController.text.trim().length == AppConfig.otpLength && !_submitting;
 
-  void _onSubmit() {
+  Future<void> _onSubmit() async {
     if (!_ready) return;
-    // API will be wired later — UI only for now.
-    context.pop();
+    final otp = _otpController.text.trim();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(ordersRepositoryProvider).verifyPickupOtp(
+            orderId: widget.orderId,
+            otp: otp,
+          );
+      if (!mounted) return;
+      context.pop(true);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _error = ref.read(appStringsProvider).tryAgain;
+      });
+    }
   }
 
   @override
@@ -73,7 +101,7 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => context.pop(),
+            onPressed: _submitting ? null : () => context.pop(),
           ),
           title: Text(
             s.pickupOtpTitle,
@@ -104,6 +132,10 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
                     color: AppColors.textSecondary,
                   ),
                 ),
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  AlertBanner(message: _error!, isError: true),
+                ],
                 const SizedBox(height: 36),
                 OtpPinInput(
                   controller: _otpController,
@@ -129,7 +161,16 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: Text(s.submit),
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(s.submit),
                   ),
                 ),
               ],

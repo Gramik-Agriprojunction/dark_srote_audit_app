@@ -3,7 +3,9 @@ enum ReconStatus { matched, excess, short }
 class ProductMismatchRow {
   const ProductMismatchRow({
     required this.productName,
+    this.variantId,
     required this.systemStock,
+    this.onHandQty = 0,
     required this.totalPhysicalStock,
     required this.physicalStock,
     required this.damageStock,
@@ -18,11 +20,13 @@ class ProductMismatchRow {
   });
 
   final String productName;
+  final int? variantId;
   final String? variantLabel;
   final String? sku;
   final String? storeName;
   final String? image;
   final int systemStock;
+  final int onHandQty;
   final int totalPhysicalStock;
   final int physicalStock;
   final int damageStock;
@@ -42,14 +46,23 @@ class ProductMismatchRow {
     final auditRaw = json['auditUpdatedAt'] ?? json['audit_updated_at'];
     final imageRaw =
         json['image'] ?? json['thumbnail'] ?? json['productImage'] ?? json['product_image'];
+    final imageStr = imageRaw?.toString().trim();
     return ProductMismatchRow(
       productName: (json['productName'] ?? json['product_name'] ?? 'Product')
           .toString(),
+      variantId: _jsonIntOrNull(json['variantId'] ?? json['variant_id']),
       variantLabel: (json['variantLabel'] ?? json['variant_label'])?.toString(),
       sku: json['sku']?.toString(),
       storeName: (json['storeName'] ?? json['store_name'])?.toString(),
-      image: imageRaw?.toString(),
+      image: (imageStr != null &&
+              imageStr.isNotEmpty &&
+              imageStr.toLowerCase() != 'null')
+          ? imageStr
+          : null,
       systemStock: _jsonInt(json['systemStock'] ?? json['system_stock']),
+      onHandQty: _jsonInt(
+        json['onHandQty'] ?? json['on_hand_qty'] ?? json['onHand'],
+      ),
       totalPhysicalStock: _jsonInt(
         json['totalPhysicalStock'] ?? json['total_physical_stock'],
       ),
@@ -70,4 +83,10 @@ class ProductMismatchRow {
 int _jsonInt(dynamic value) {
   if (value is int) return value;
   return int.tryParse('$value') ?? 0;
+}
+
+int? _jsonIntOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  return int.tryParse('$value');
 }

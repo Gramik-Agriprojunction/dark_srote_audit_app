@@ -162,10 +162,14 @@ class OrderListItemModel {
     this.firstProductImage,
     this.shippingAddress = const OrderShippingAddressModel(),
     this.products = const [],
+    this.demandId,
   });
 
   final int id;
   final String code;
+  final int? demandId;
+
+  bool get hasDemandId => demandId != null && demandId! > 0;
   final double grandTotal;
   final String createdAt;
   final String orderStatus;
@@ -181,6 +185,7 @@ class OrderListItemModel {
     return OrderListItemModel(
       id: int.tryParse('${json['id']}') ?? 0,
       code: (json['code'] ?? '').toString(),
+      demandId: jsonDemandId(json['demand_id'] ?? json['demandId']),
       grandTotal: double.tryParse('${json['grand_total']}') ?? 0,
       createdAt: (json['created_at'] ?? '').toString(),
       orderStatus: (json['order_status'] ?? '').toString(),
@@ -230,10 +235,14 @@ class OrderDetailModel {
     this.shippingAddress = const OrderShippingAddressModel(),
     this.deliveryPartner = const OrderDeliveryPartnerModel(),
     this.products = const [],
+    this.demandId,
   });
 
   final int id;
   final String code;
+  final int? demandId;
+
+  bool get hasDemandId => demandId != null && demandId! > 0;
   final double grandTotal;
   final String createdAt;
   final String orderStatus;
@@ -267,6 +276,7 @@ class OrderDetailModel {
     return OrderDetailModel(
       id: int.tryParse('${json['id']}') ?? 0,
       code: (json['code'] ?? '').toString(),
+      demandId: jsonDemandId(json['demand_id'] ?? json['demandId']),
       grandTotal: double.tryParse('${json['grand_total']}') ?? 0,
       createdAt: (json['created_at'] ?? '').toString(),
       orderStatus: (json['order_status'] ?? '').toString(),

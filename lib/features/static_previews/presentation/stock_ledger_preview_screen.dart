@@ -5,21 +5,26 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_date_pickers.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
+import '../../stock_audit/data/models/product_stock_history_model.dart';
+import '../../stock_audit/data/stock_audit_repository.dart';
 import 'preview_theme.dart';
 
-/// SKU stock ledger — opened from Stock product card (static mock data).
+/// SKU stock ledger — Odoo product-stock-history via CRM backend.
 class StockLedgerPreviewScreen extends ConsumerStatefulWidget {
   const StockLedgerPreviewScreen({
     super.key,
-    this.productName = 'Musturd 1666',
-    this.variantLabel = '500-GM',
-    this.sku = 'MO-500',
-    this.storeName = 'DS#31 - Unnao (Safipur) - Gramik',
+    this.productName = 'Product',
+    this.variantLabel = '—',
+    this.sku = '—',
+    this.storeName = 'Dark Store',
     this.imageUrl,
+    this.variantId,
+    this.businessLocationId,
   });
 
   final String productName;
@@ -27,6 +32,8 @@ class StockLedgerPreviewScreen extends ConsumerStatefulWidget {
   final String sku;
   final String storeName;
   final String? imageUrl;
+  final int? variantId;
+  final int? businessLocationId;
 
   @override
   ConsumerState<StockLedgerPreviewScreen> createState() =>
@@ -35,135 +42,38 @@ class StockLedgerPreviewScreen extends ConsumerStatefulWidget {
 
 class _StockLedgerPreviewScreenState
     extends ConsumerState<StockLedgerPreviewScreen> {
-  static const _rows = <_LedgerRow>[
-    _LedgerRow(
-      '19-Sep-2026',
-      '16:24',
-      'Transit leg',
-      'IBT/2026/00539',
-      'LAVAKUSH YADAV BSO',
-      _Bucket.transit,
-      qty: null,
-      running: 36,
-    ),
-    _LedgerRow(
-      '19-Sep-2026',
-      '16:24',
-      'IN',
-      'IBT/2026/00539',
-      'Uttar Pradesh',
-      _Bucket.inStock,
-      qty: 36,
-      running: 36,
-    ),
-    _LedgerRow(
-      '20-Sep-2026',
-      '11:05',
-      'Cancelled',
-      'AGRI9928579588401',
-      'Phoolchandra',
-      _Bucket.cancelled,
-      qty: null,
-      running: 36,
-    ),
-    _LedgerRow(
-      '20-Sep-2026',
-      '14:12',
-      'Delivered',
-      'AGRI9928579588408',
-      'Ram Singh',
-      _Bucket.delivered,
-      qty: -1,
-      running: 35,
-    ),
-    _LedgerRow(
-      '21-Sep-2026',
-      '09:40',
-      'Delivered',
-      'AGRI9928579588412',
-      'Suresh Yadav',
-      _Bucket.delivered,
-      qty: -1,
-      running: 34,
-    ),
-    _LedgerRow(
-      '21-Sep-2026',
-      '16:18',
-      'Delivered',
-      'AGRI9928579588420',
-      'Anita Devi',
-      _Bucket.delivered,
-      qty: -1,
-      running: 33,
-    ),
-    _LedgerRow(
-      '22-Sep-2026',
-      '10:22',
-      'Delivered',
-      'AGRI9928579588431',
-      'Manoj Kumar',
-      _Bucket.delivered,
-      qty: -1,
-      running: 32,
-    ),
-    _LedgerRow(
-      '22-Sep-2026',
-      '15:05',
-      'Delivered',
-      'AGRI9928579588444',
-      'Geeta',
-      _Bucket.delivered,
-      qty: -14,
-      running: 18,
-    ),
-    _LedgerRow(
-      '23-Sep-2026',
-      '12:30',
-      'Delivered',
-      'AGRI9928579588450',
-      'Vikas',
-      _Bucket.delivered,
-      qty: -1,
-      running: 17,
-    ),
-    _LedgerRow(
-      '24-Sep-2026',
-      '11:10',
-      'RTO',
-      'AGRI9928579588455',
-      'Phoolchandra',
-      _Bucket.rto,
-      qty: 2,
-      running: 19,
-    ),
-    _LedgerRow(
-      '25-Sep-2026',
-      '13:45',
-      'Delivered',
-      'AGRI9928579588460',
-      'Ravi',
-      _Bucket.delivered,
-      qty: -2,
-      running: 17,
-    ),
-    _LedgerRow(
-      '26-Sep-2026',
-      '10:05',
-      'Delivered',
-      'AGRI9928579588466',
-      'Sunita',
-      _Bucket.delivered,
-      qty: -2,
-      running: 15,
-    ),
-  ];
+  static final _apiDateFmt = DateFormat('yyyy-MM-dd');
+  static final _displayDateFmt = DateFormat('d-MMM-yyyy');
+  static final _timeFmt = DateFormat('HH:mm');
 
-  DateTimeRange _range = DateTimeRange(
-    start: DateTime(2026, 9, 19),
-    end: DateTime(2026, 10, 23),
-  );
+  late DateTimeRange _range;
   final _searchCtrl = TextEditingController();
   String _query = '';
+
+  List<ProductStockHistoryRow> _rows = [];
+  ProductStockHistoryPagination _pagination =
+      const ProductStockHistoryPagination(
+    page: 1,
+    limit: 200,
+    total: 0,
+    hasMore: false,
+  );
+
+  bool _loading = false;
+  bool _loadingMore = false;
+  String? _error;
+  String? _resolvedImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final end = DateTime.now();
+    _range = DateTimeRange(
+      start: end.subtract(const Duration(days: 34)),
+      end: end,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetch(reset: true));
+  }
 
   String get _rangeLabel {
     final fmt = DateFormat('d MMM yyyy');
@@ -172,17 +82,85 @@ class _StockLedgerPreviewScreenState
 
   String get _skuLine => '${widget.variantLabel} | SKU: ${widget.sku}';
 
-  List<_LedgerRow> get _filtered {
+  bool get _canFetch =>
+      widget.variantId != null &&
+      widget.variantId! > 0 &&
+      widget.businessLocationId != null &&
+      widget.businessLocationId! > 0;
+
+  List<ProductStockHistoryRow> get _filtered {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return _rows;
     return _rows
         .where(
           (r) =>
-              r.orderNo.toLowerCase().contains(q) ||
+              r.orderNumber.toLowerCase().contains(q) ||
               r.customer.toLowerCase().contains(q) ||
               r.bucket.toLowerCase().contains(q),
         )
         .toList();
+  }
+
+  Future<void> _fetch({required bool reset}) async {
+    if (!_canFetch) {
+      setState(() {
+        _error = 'Product variant ya store select nahi hai.';
+        _rows = [];
+      });
+      return;
+    }
+
+    if (reset) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    } else {
+      setState(() => _loadingMore = true);
+    }
+
+    final page = reset ? 1 : _pagination.page + 1;
+
+    try {
+      final repo = ref.read(stockAuditRepositoryProvider);
+      final report = await repo.getProductStockHistory(
+        businessLocationId: widget.businessLocationId!,
+        variantId: widget.variantId!,
+        dateFrom: _apiDateFmt.format(_range.start),
+        dateTo: _apiDateFmt.format(_range.end),
+        page: page,
+        limit: 200,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _pagination = report.pagination;
+        _rows = reset ? report.rows : [..._rows, ...report.rows];
+        final img = report.productImage?.trim();
+        if (img != null && img.isNotEmpty) {
+          _resolvedImageUrl = img;
+        }
+        _loading = false;
+        _loadingMore = false;
+        _error = null;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+        _error = e.message;
+        if (reset) _rows = [];
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+        _error = e.toString();
+        if (reset) _rows = [];
+      });
+    }
   }
 
   Future<void> _pickRange() async {
@@ -193,6 +171,7 @@ class _StockLedgerPreviewScreenState
     );
     if (!mounted || picked == null) return;
     setState(() => _range = picked);
+    await _fetch(reset: true);
   }
 
   @override
@@ -217,9 +196,9 @@ class _StockLedgerPreviewScreenState
             showNotifications: false,
             actions: [
               ModuleHeaderAction(
-                icon: Icons.more_vert_rounded,
-                tooltip: 'More',
-                onTap: () {},
+                icon: Icons.refresh_rounded,
+                tooltip: 'Refresh',
+                onTap: _loading ? () {} : () => _fetch(reset: true),
               ),
             ],
             bottom: Row(
@@ -249,68 +228,117 @@ class _StockLedgerPreviewScreenState
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
-              children: [
-                _ProductSummaryCard(
-                  productName: widget.productName,
-                  skuLine: _skuLine,
-                  storeName: widget.storeName,
-                  imageUrl: widget.imageUrl,
-                ),
-                const SizedBox(height: 12),
-                PreviewSelectField(
-                  icon: Icons.calendar_month_rounded,
-                  label: _rangeLabel,
-                  onTap: _pickRange,
-                ),
-                const SizedBox(height: 10),
-                _SearchFilterRow(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v),
-                  onClear: () {
-                    _searchCtrl.clear();
-                    setState(() => _query = '');
-                  },
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: PreviewTheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: PreviewTheme.border),
-                    boxShadow: PreviewTheme.cardShadow,
+            child: RefreshIndicator(
+              color: PreviewTheme.orange,
+              onRefresh: () => _fetch(reset: true),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+                children: [
+                  _ProductSummaryCard(
+                    productName: widget.productName,
+                    skuLine: _skuLine,
+                    storeName: widget.storeName,
+                    imageUrl: widget.imageUrl ?? _resolvedImageUrl,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      const _TableHeader(),
-                      if (rows.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(28),
-                          child: Text(
-                            'No movements found',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: PreviewTheme.textMuted,
-                            ),
-                          ),
-                        )
-                      else
-                        for (var i = 0; i < rows.length; i++) ...[
-                          if (i > 0)
+                  const SizedBox(height: 12),
+                  PreviewSelectField(
+                    icon: Icons.calendar_month_rounded,
+                    label: _rangeLabel,
+                    onTap: _pickRange,
+                  ),
+                  const SizedBox(height: 10),
+                  _SearchFilterRow(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() => _query = v),
+                    onClear: () {
+                      _searchCtrl.clear();
+                      setState(() => _query = '');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  if (_loading && _rows.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 48),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_error != null && _rows.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: PreviewTheme.red,
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        color: PreviewTheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: PreviewTheme.border),
+                        boxShadow: PreviewTheme.cardShadow,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          const _TableHeader(),
+                          if (rows.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(28),
+                              child: Text(
+                                'No movements found',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: PreviewTheme.textMuted,
+                                ),
+                              ),
+                            )
+                          else
+                            for (var i = 0; i < rows.length; i++) ...[
+                              if (i > 0)
+                                Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: PreviewTheme.border,
+                                ),
+                              _TableRow(
+                                row: rows[i],
+                                displayDateFmt: _displayDateFmt,
+                                timeFmt: _timeFmt,
+                              ),
+                            ],
+                          if (_pagination.hasMore && _query.isEmpty) ...[
                             Divider(
                               height: 1,
                               thickness: 1,
                               color: PreviewTheme.border,
                             ),
-                          _TableRow(row: rows[i]),
+                            TextButton(
+                              onPressed: _loadingMore
+                                  ? null
+                                  : () => _fetch(reset: false),
+                              child: _loadingMore
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text('Load more'),
+                            ),
+                          ],
                         ],
-                    ],
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -464,45 +492,22 @@ class _SearchFilterRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (controller.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: onClear,
-                    child: Icon(
-                      Icons.cancel_rounded,
-                      size: 18,
-                      color: PreviewTheme.textMuted,
-                    ),
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    if (value.text.isEmpty) return const SizedBox.shrink();
+                    return GestureDetector(
+                      onTap: onClear,
+                      child: Icon(
+                        Icons.cancel_rounded,
+                        size: 18,
+                        color: PreviewTheme.textMuted,
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: PreviewTheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: PreviewTheme.border),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.filter_alt_rounded,
-                size: 18,
-                color: PreviewTheme.orange,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Filter',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: PreviewTheme.text,
-                ),
-              ),
-            ],
           ),
         ),
       ],
@@ -510,28 +515,16 @@ class _SearchFilterRow extends StatelessWidget {
   }
 }
 
-enum _Bucket { transit, inStock, cancelled, delivered, rto }
+enum _BucketStyle { transit, inStock, cancelled, delivered, rto, other }
 
-class _LedgerRow {
-  const _LedgerRow(
-    this.date,
-    this.time,
-    this.bucket,
-    this.orderNo,
-    this.customer,
-    this.style, {
-    required this.qty,
-    required this.running,
-  });
-
-  final String date;
-  final String time;
-  final String bucket;
-  final String orderNo;
-  final String customer;
-  final _Bucket style;
-  final int? qty;
-  final int running;
+_BucketStyle _bucketStyleFor(String bucket) {
+  final b = bucket.toLowerCase();
+  if (b.contains('transit')) return _BucketStyle.transit;
+  if (b == 'in') return _BucketStyle.inStock;
+  if (b.contains('cancel')) return _BucketStyle.cancelled;
+  if (b.contains('deliver')) return _BucketStyle.delivered;
+  if (b.contains('rto')) return _BucketStyle.rto;
+  return _BucketStyle.other;
 }
 
 class _TableHeader extends StatelessWidget {
@@ -569,34 +562,43 @@ class _TableHeader extends StatelessWidget {
 }
 
 class _TableRow extends StatelessWidget {
-  const _TableRow({required this.row});
-  final _LedgerRow row;
+  const _TableRow({
+    required this.row,
+    required this.displayDateFmt,
+    required this.timeFmt,
+  });
+
+  final ProductStockHistoryRow row;
+  final DateFormat displayDateFmt;
+  final DateFormat timeFmt;
 
   (Color bg, Color fg) get _pill {
-    switch (row.style) {
-      case _Bucket.transit:
+    switch (_bucketStyleFor(row.bucket)) {
+      case _BucketStyle.transit:
         return (
           AppColors.isDark ? const Color(0xFF2A2F3A) : const Color(0xFFEEF1F5),
           AppColors.isDark ? const Color(0xFFB0B8C4) : const Color(0xFF5B6573),
         );
-      case _Bucket.inStock:
+      case _BucketStyle.inStock:
         return (PreviewTheme.greenSoft, PreviewTheme.green);
-      case _Bucket.cancelled:
+      case _BucketStyle.cancelled:
         return (PreviewTheme.redSoft, PreviewTheme.red);
-      case _Bucket.delivered:
+      case _BucketStyle.delivered:
         return (
           AppColors.isDark ? const Color(0xFF3A1A2A) : const Color(0xFFFCE7F3),
           AppColors.isDark ? const Color(0xFFE88A9A) : const Color(0xFFBE185D),
         );
-      case _Bucket.rto:
+      case _BucketStyle.rto:
         return (PreviewTheme.greenSoft, PreviewTheme.green);
+      case _BucketStyle.other:
+        return (PreviewTheme.field, PreviewTheme.textSecondary);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final pill = _pill;
-    final qty = row.qty;
+    final qty = row.displayQty;
     final qtyColor = qty == null
         ? PreviewTheme.textMuted
         : qty >= 0
@@ -607,6 +609,15 @@ class _TableRow extends StatelessWidget {
         : qty > 0
             ? '+$qty'
             : '$qty';
+
+    final dt = row.dateIst?.toLocal();
+    final dateStr =
+        dt != null ? displayDateFmt.format(dt) : '—';
+    final timeStr = dt != null ? timeFmt.format(dt) : '';
+
+    final running = row.runningStock;
+    final runningText =
+        running == null ? '—' : running.round().toString();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
@@ -619,7 +630,7 @@ class _TableRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  row.date,
+                  dateStr,
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -627,14 +638,15 @@ class _TableRow extends StatelessWidget {
                     height: 1.2,
                   ),
                 ),
-                Text(
-                  row.time,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: PreviewTheme.textMuted,
-                    height: 1.2,
+                if (timeStr.isNotEmpty)
+                  Text(
+                    timeStr,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: PreviewTheme.textMuted,
+                      height: 1.2,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -664,7 +676,7 @@ class _TableRow extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              row.orderNo,
+              row.orderNumber,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -701,7 +713,7 @@ class _TableRow extends StatelessWidget {
           SizedBox(
             width: 48,
             child: Text(
-              '${row.running}',
+              runningText,
               textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: 12,
