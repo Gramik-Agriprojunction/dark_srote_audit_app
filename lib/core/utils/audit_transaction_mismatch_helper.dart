@@ -21,7 +21,7 @@ class AuditTransactionMismatchHelper {
     required int baselineQty,
     required int inventoryChangeQty,
   }) {
-    // Mismatch reason dialog disabled — save without prompting.
+    // Client popup temporarily disabled — backend may still validate reason.
     return false;
   }
 

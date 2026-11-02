@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/module_ui.dart';
 import '../../stock_audit/data/models/dse_attendance_model.dart';
@@ -34,7 +35,10 @@ class LmdAttendanceDetailScreen extends ConsumerWidget {
         children: [
           ModuleHeader(
             pageLabel: 'DSE Attendance',
-            subtitle: 'Dark Store Audit Attendance',
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onBack: () => context.pop(),
             showNotifications: false,
             bottom: Row(

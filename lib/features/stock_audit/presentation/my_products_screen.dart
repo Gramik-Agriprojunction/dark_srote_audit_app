@@ -158,7 +158,10 @@ class _MyProductsScreenState extends ConsumerState<MyProductsScreen> {
         children: [
           ModuleHeader(
             pageLabel: s.stock,
-            subtitle: ref.watch(headerGreetingProvider),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
             searchController: _searchController,
             searchHint: s.searchProductSku,

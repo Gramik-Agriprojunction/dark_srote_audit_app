@@ -56,8 +56,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: data?.header.greeting ?? s.dashboard,
+            pageLabel: s.navHome,
             subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              if (store.isNotEmpty) return store;
               final storeName = (data?.header.storeName ?? '').trim();
               final storeCode = (data?.header.storeCode ?? '').trim();
               if (storeName.isNotEmpty && storeCode.isNotEmpty) {

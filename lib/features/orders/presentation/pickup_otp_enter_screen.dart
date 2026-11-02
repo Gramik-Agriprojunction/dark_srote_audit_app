@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/alert_banner.dart';
+import '../../../core/widgets/module_ui.dart';
 import '../../auth/presentation/widgets/otp_pin_input.dart';
 import '../data/orders_repository.dart';
 
@@ -89,49 +90,48 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
     final subtitle =
         code.isNotEmpty ? code : s.orderNumber(widget.orderId);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light.copyWith(
-        statusBarColor: AppColors.headerBg,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.headerBg,
-          foregroundColor: AppColors.textPrimary,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: _submitting ? null : () => context.pop(),
+    final store = ref.watch(headerGreetingProvider);
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Column(
+        children: [
+          ModuleHeader(
+            pageLabel: s.pickupOtpTitle,
+            subtitle: store.isNotEmpty
+                ? store
+                : (code.isNotEmpty ? code : null),
+            onBack: () {
+              if (!_submitting) context.pop();
+            },
+            showNotifications: false,
           ),
-          title: Text(
-            s.pickupOtpTitle,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-        ),
-        body: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 28, 20, 16 + bottom),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  s.pickupOtpEnter,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20, 28, 20, 16 + bottom),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      s.pickupOtpEnter,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   AlertBanner(message: _error!, isError: true),
@@ -173,10 +173,12 @@ class _PickupOtpEnterScreenState extends ConsumerState<PickupOtpEnterScreen> {
                         : Text(s.submit),
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

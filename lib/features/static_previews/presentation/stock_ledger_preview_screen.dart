@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_date_pickers.dart';
@@ -191,7 +192,11 @@ class _StockLedgerPreviewScreenState
         children: [
           ModuleHeader(
             pageLabel: widget.productName,
-            subtitle: _skuLine,
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              if (store.isNotEmpty) return store;
+              return _skuLine;
+            }(),
             onBack: () => context.pop(),
             showNotifications: false,
             actions: [

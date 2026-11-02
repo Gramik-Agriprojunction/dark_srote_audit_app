@@ -48,8 +48,10 @@ class AppBrandMark extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(height: _hero ? 4 : 2),
-        Text('Dark Store', style: taglineStyle),
+        if (_hero) ...[
+          SizedBox(height: 4),
+          Text('Dark Store', style: taglineStyle),
+        ],
         if (pageLabel != null && pageLabel!.trim().isNotEmpty) ...[
           SizedBox(height: _hero ? 6 : 3),
           Text(
@@ -58,7 +60,7 @@ class AppBrandMark extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: _hero ? 13 : 12,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.95),
             ),
           ),
@@ -73,8 +75,8 @@ class AppBrandMark extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 10.5,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.72),
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.95),
             ),
           ),
         ],

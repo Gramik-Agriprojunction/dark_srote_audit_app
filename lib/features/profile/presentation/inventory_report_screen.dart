@@ -122,9 +122,13 @@ class _InventoryReportScreenState extends ConsumerState<InventoryReportScreen> {
           children: [
             ModuleHeader(
               pageLabel: s.report,
-              subtitle: warehouse.isNotEmpty
-                  ? warehouse
-                  : s.warehouseInventorySummary,
+              subtitle: () {
+                final store = ref.watch(headerGreetingProvider);
+                if (store.isNotEmpty) return store;
+                return warehouse.isNotEmpty
+                    ? warehouse
+                    : s.warehouseInventorySummary;
+              }(),
               onBack: () => context.pop(),
               searchController: _searchController,
               searchHint: s.searchProductSku,

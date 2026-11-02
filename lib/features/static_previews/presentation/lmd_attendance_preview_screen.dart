@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
@@ -218,7 +219,10 @@ class _LmdAttendancePreviewScreenState
         children: [
           ModuleHeader(
             pageLabel: 'DSE Attendance',
-            subtitle: 'Dark Store Audit Attendance',
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onBack: () => context.pop(),
             showNotifications: true,
             bottom: Row(

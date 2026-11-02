@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
@@ -388,7 +389,10 @@ class _DseAuditReportPreviewScreenState
         children: [
           ModuleHeader(
             pageLabel: 'DSE Audit Report',
-            subtitle: 'Dark Store Audit Report',
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onBack: () => context.pop(),
             showNotifications: false,
             bottom: Column(

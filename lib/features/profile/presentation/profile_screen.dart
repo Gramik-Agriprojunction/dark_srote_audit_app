@@ -72,11 +72,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _ProfileHeader(
-              title: s.profile,
-              strings: s,
+            ModuleHeader(
+              pageLabel: s.profile,
+              subtitle: selectedStore.isEmpty ? null : selectedStore,
               onBack: () => context.pop(),
-              onNotifications: () {},
+              showNotifications: true,
+              onNotificationTap: () {},
             ),
             Expanded(
               child: RefreshIndicator(
@@ -208,15 +209,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 label: s.report,
                                 value: '',
                                 onTap: () => context.push('/report'),
-                              ),
-                              const _RowDivider(),
-                              _InfoRow(
-                                icon: Icons.receipt_long_rounded,
-                                iconBg: AppColors.softOrange,
-                                iconColor: AppColors.primary,
-                                label: 'SKU Stock Ledger',
-                                value: '',
-                                onTap: () => context.push('/preview/stock-ledger'),
                               ),
                               const _RowDivider(),
                               _InfoRow(
@@ -387,10 +379,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _ProfileHeader(
-              title: s.settings,
-              strings: s,
+            ModuleHeader(
+              pageLabel: s.settings,
+              subtitle: () {
+                final store =
+                    (ref.watch(authControllerProvider).selectedStoreLabel ?? '')
+                        .trim();
+                return store.isEmpty ? null : store;
+              }(),
               onBack: () => context.pop(),
+              showNotifications: false,
             ),
             Expanded(
               child: ListView(
@@ -442,60 +440,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.title,
-    required this.strings,
-    required this.onBack,
-    this.onNotifications,
-  });
-
-  final String title;
-  final AppStrings strings;
-  final VoidCallback onBack;
-  final VoidCallback? onNotifications;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.headerBg,
-      padding: EdgeInsets.fromLTRB(
-        14,
-        MediaQuery.paddingOf(context).top + 8,
-        14,
-        12,
-      ),
-      child: Row(
-        children: [
-          ModuleHeaderAction(
-            icon: Icons.chevron_left_rounded,
-            tooltip: strings.back,
-            onTap: onBack,
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.isDark
-                    ? AppColors.textPrimary
-                    : Colors.white,
-              ),
-            ),
-          ),
-          ModuleHeaderAction(
-            icon: Icons.notifications_none_rounded,
-            tooltip: strings.notifications,
-            onTap: onNotifications ?? () {},
-          ),
-        ],
       ),
     );
   }

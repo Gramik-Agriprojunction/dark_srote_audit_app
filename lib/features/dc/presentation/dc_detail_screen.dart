@@ -52,6 +52,10 @@ class DcDetailScreen extends ConsumerWidget {
               pageLabel: _isOutgoingMode
                   ? s.outgoingDeliveryDetail
                   : s.incomingDeliveryDetail,
+              subtitle: () {
+                final store = ref.watch(headerGreetingProvider);
+                return store.isEmpty ? null : store;
+              }(),
               onBack: () => context.go('/dc?tab=$tab'),
               onLogout: logout,
             ),
@@ -85,9 +89,13 @@ class DcDetailScreen extends ConsumerWidget {
               pageLabel: transfer.reference.isNotEmpty
                   ? transfer.reference
                   : s.transferNumber(transfer.transferId),
-              subtitle: _isOutgoingMode
-                  ? (transfer.to?.warehouse ?? transfer.from?.warehouse)
-                  : transfer.from?.warehouse,
+              subtitle: () {
+                final store = ref.watch(headerGreetingProvider);
+                if (store.isNotEmpty) return store;
+                return _isOutgoingMode
+                    ? (transfer.to?.warehouse ?? transfer.from?.warehouse)
+                    : transfer.from?.warehouse;
+              }(),
               onBack: () => context.go('/dc?tab=$tab'),
               onLogout: logout,
             ),

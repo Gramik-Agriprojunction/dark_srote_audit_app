@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_language_provider.dart';
 import '../../../core/widgets/module_ui.dart';
 
 /// Hub to open static UI mocks (no API).
-class StaticPreviewsHubScreen extends StatelessWidget {
+class StaticPreviewsHubScreen extends ConsumerWidget {
   const StaticPreviewsHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
           ModuleHeader(
             pageLabel: 'UI Previews',
-            subtitle: 'Static screens · mock data',
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? 'Static screens · mock data' : store;
+            }(),
             onBack: () => context.pop(),
             showNotifications: false,
           ),

@@ -168,9 +168,12 @@ class _VariantAuditScreenState extends ConsumerState<VariantAuditScreen> {
         children: [
           ModuleHeader(
             pageLabel: s.auditDetail,
-            subtitle:
-                detail?.variantSku ??
-                (_loading ? s.loading : s.variantAudit),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              if (store.isNotEmpty) return store;
+              return detail?.variantSku ??
+                  (_loading ? s.loading : s.variantAudit);
+            }(),
             onBack: () => context.go('/audit?storeId=${widget.storeId}'),
             onLogout: _logout,
           ),

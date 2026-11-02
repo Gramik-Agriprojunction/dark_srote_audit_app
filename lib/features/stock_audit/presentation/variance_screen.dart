@@ -86,7 +86,10 @@ class _VarianceScreenState extends ConsumerState<VarianceScreen> {
         children: [
           ModuleHeader(
             pageLabel: s.variance,
-            subtitle: ref.watch(headerGreetingProvider),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
           ),
           Expanded(

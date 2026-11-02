@@ -82,7 +82,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         children: [
           ModuleHeader(
             pageLabel: s.register,
-            subtitle: ref.watch(headerGreetingProvider),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
             bottom: _DatePill(
               label: dateLabel,

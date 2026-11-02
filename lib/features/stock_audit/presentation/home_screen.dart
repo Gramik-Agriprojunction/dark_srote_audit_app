@@ -139,8 +139,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: ref.watch(headerGreetingProvider),
-            subtitle: storeSubtitle.isEmpty ? null : storeSubtitle,
+            pageLabel: s.audit,
+            subtitle: () {
+              if (storeSubtitle.isNotEmpty) return storeSubtitle;
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
             searchController: audit.showProducts ? _searchController : null,
             searchHint: s.searchProductSku,

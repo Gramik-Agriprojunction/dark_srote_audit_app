@@ -246,7 +246,10 @@ class _DcListScreenState extends ConsumerState<DcListScreen> {
         children: [
           ModuleHeader(
             pageLabel: _pageLabel(s),
-            subtitle: ref.watch(headerGreetingProvider),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
             bottom: state.warehouse?.code != null
                 ? Align(

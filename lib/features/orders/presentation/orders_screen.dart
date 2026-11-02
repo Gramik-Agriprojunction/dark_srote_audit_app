@@ -85,7 +85,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         children: [
           ModuleHeader(
             pageLabel: s.orders,
-            subtitle: ref.watch(headerGreetingProvider),
+            subtitle: () {
+              final store = ref.watch(headerGreetingProvider);
+              return store.isEmpty ? null : store;
+            }(),
             onLogout: _logout,
             notificationCount: state.stats.notificationCount,
             searchController: _searchController,

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../storage/session_storage.dart';
-import '../utils/role_helper.dart';
 import 'app_language.dart';
 import 'app_strings.dart';
 
@@ -15,14 +14,10 @@ final appStringsProvider = Provider<AppStrings>((ref) {
   return AppStrings(ref.watch(appLanguageProvider));
 });
 
+/// Store line under page title in ModuleHeader (bold). No "Namaste," prefix.
 final headerGreetingProvider = Provider<String>((ref) {
   final auth = ref.watch(authControllerProvider);
-  final s = ref.watch(appStringsProvider);
-  return s.authHeaderGreeting(
-    isSuperAdmin: RoleHelper.isSuperAdminRole(auth.user?.role?.name),
-    storeLabel: auth.selectedStoreLabel,
-    userName: auth.user?.displayName ?? '',
-  );
+  return (auth.selectedStoreLabel ?? '').trim();
 });
 
 class AppLanguageController extends StateNotifier<AppLanguage> {
