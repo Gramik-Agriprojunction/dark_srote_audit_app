@@ -27,7 +27,8 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/stock_audit/presentation/variant_audit_screen.dart';
 import '../features/static_previews/presentation/dse_audit_report_preview_screen.dart';
-import '../features/static_previews/presentation/lmd_attendance_detail_screen.dart';
+import '../features/static_previews/presentation/dse_attendance_detail_screen.dart';
+import '../features/static_previews/presentation/dse_attendance_preview_screen.dart';
 import '../features/static_previews/presentation/lmd_attendance_preview_screen.dart';
 import '../features/static_previews/presentation/static_previews_hub_screen.dart';
 import '../features/static_previews/presentation/stock_ledger_preview_screen.dart';
@@ -289,19 +290,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/preview/lmd-attendance',
+        path: '/preview/dse-attendance',
         pageBuilder: (context, state) =>
-            _smoothStack(state, const LmdAttendancePreviewScreen()),
+            _smoothStack(state, const DseAttendancePreviewScreen()),
       ),
       GoRoute(
-        path: '/preview/lmd-attendance/detail',
+        path: '/preview/dse-attendance/detail',
         pageBuilder: (context, state) {
           final extra = state.extra;
-          if (extra is Map && extra['day'] is LmdAttendanceDetailDay) {
+          if (extra is Map && extra['day'] is DseAttendanceDetailDay) {
             return _smoothStack(
               state,
-              LmdAttendanceDetailScreen(
-                day: extra['day'] as LmdAttendanceDetailDay,
+              DseAttendanceDetailScreen(
+                day: extra['day'] as DseAttendanceDetailDay,
                 employee: '${extra['employee'] ?? 'EMP001 - Ravi Singh'}',
                 monthLabel: '${extra['month'] ?? 'Oct 2026'}',
               ),
@@ -309,8 +310,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return _smoothStack(
             state,
-            const LmdAttendanceDetailScreen(
-              day: LmdAttendanceDetailDay(
+            const DseAttendanceDetailScreen(
+              day: DseAttendanceDetailDay(
                 title: 'Thursday, 8 Oct 2026',
                 status: LmdDetailStatus.present,
                 first: '10:20 AM',
@@ -328,6 +329,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           );
         },
+      ),
+      GoRoute(
+        path: '/preview/lmd-attendance',
+        pageBuilder: (context, state) =>
+            _smoothStack(state, const LmdAttendancePreviewScreen()),
       ),
       GoRoute(
         path: '/preview/dse-audit-report',

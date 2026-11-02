@@ -70,7 +70,7 @@ class ProductStockHistoryRow {
       bucket: (json['bucket'] ?? '').toString(),
       orderNumber: (json['order_number'] ?? json['orderNumber'] ?? '')
           .toString(),
-      customer: (json['customer'] ?? '').toString(),
+      customer: _dedupeCommaNames((json['customer'] ?? '').toString()),
       quantity: _jsonDouble(json['quantity']),
       transitQuantity: _jsonDouble(
         json['transit_quantity'] ?? json['transitQuantity'],
@@ -81,6 +81,24 @@ class ProductStockHistoryRow {
       affectsStock: json['affects_stock'] == true || json['affectsStock'] == true,
     );
   }
+}
+
+/// Odoo sometimes returns "Faizan, Faizan" (same name twice) — keep unique parts.
+String _dedupeCommaNames(String raw) {
+  final parts = raw
+      .split(',')
+      .map((p) => p.trim())
+      .where((p) => p.isNotEmpty)
+      .toList();
+  if (parts.length <= 1) return raw.trim();
+
+  final seen = <String>{};
+  final unique = <String>[];
+  for (final part in parts) {
+    final key = part.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    if (seen.add(key)) unique.add(part);
+  }
+  return unique.join(', ');
 }
 
 class ProductStockHistoryReport {

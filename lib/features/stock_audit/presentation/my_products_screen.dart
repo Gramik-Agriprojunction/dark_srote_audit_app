@@ -12,6 +12,7 @@ import '../../../core/widgets/module_ui.dart';
 import '../../../core/widgets/product_image_thumb.dart';
 import '../../../core/widgets/scroll_pagination_footer.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../static_previews/presentation/preview_theme.dart';
 import '../data/models/product_mismatch_model.dart';
 import 'providers/my_products_provider.dart';
 
@@ -491,7 +492,8 @@ class _ProductCard extends StatelessWidget {
     final skuLine = (row.sku ?? '').trim();
     final variant = (row.variantLabel ?? '').trim();
     final store = (row.storeName ?? '').trim();
-    final liveQty = row.totalPhysicalStock;
+    // Same source as Lens ON HAND QTY (warehouse on-hand).
+    final liveQty = row.onHandQty;
     final relative = _relativeAgo(row.auditUpdatedAt);
 
     return ModuleCard(
@@ -602,53 +604,68 @@ class _ProductCard extends StatelessWidget {
                       color: statusColor,
                       filled: false,
                     ),
+                    const SizedBox(height: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: ModuleTokens.faintText,
+                    ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: _MetricStrip(
-                    cells: [
-                      _MetricCell(
-                        label: strings.system,
-                        value: formatter.format(row.systemStock),
-                      ),
-                      _MetricCell(
-                        label: strings.onHand,
-                        value: formatter.format(row.onHandQty),
-                      ),
-                      _MetricCell(
-                        label: strings.physical,
-                        value: formatter.format(row.totalPhysicalStock),
-                      ),
-                      _MetricCell(
-                        label: strings.usable,
-                        value: formatter.format(row.physicalStock),
-                      ),
-                      _MetricCell(
-                        label: strings.damage,
-                        value: formatter.format(row.damageStock),
-                        valueColor:
-                            hasDamage ? _StockUi.shortage : null,
-                      ),
-                    ],
-                  ),
+                _StockMetricTile(
+                  label: strings.system,
+                  value: formatter.format(row.systemStock),
+                  accent: PreviewTheme.blue,
+                  soft: PreviewTheme.blueSoft,
                 ),
                 const SizedBox(width: 8),
-                _LiveStockBadge(
+                _StockMetricTile(
+                  label: strings.onHand,
+                  value: formatter.format(row.onHandQty),
+                  accent: PreviewTheme.textSecondary,
+                  soft: PreviewTheme.field,
+                ),
+                const SizedBox(width: 8),
+                _StockMetricTile(
+                  label: strings.physical,
+                  value: formatter.format(row.totalPhysicalStock),
+                  accent: PreviewTheme.text,
+                  soft: PreviewTheme.field,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _StockMetricTile(
+                  label: strings.usable,
+                  value: formatter.format(row.physicalStock),
+                  accent: PreviewTheme.green,
+                  soft: PreviewTheme.greenSoft,
+                ),
+                const SizedBox(width: 8),
+                _StockMetricTile(
+                  label: strings.damage,
+                  value: formatter.format(row.damageStock),
+                  accent: hasDamage
+                      ? _StockUi.shortage
+                      : PreviewTheme.textSecondary,
+                  soft: hasDamage
+                      ? PreviewTheme.redSoft
+                      : PreviewTheme.field,
+                ),
+                const SizedBox(width: 8),
+                _StockMetricTile(
                   label: strings.liveStock,
                   value: formatter.format(liveQty),
-                  color: statusColor,
-                ),
-                const SizedBox(width: 2),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 22,
-                  color: ModuleTokens.faintText,
+                  accent: statusColor,
+                  soft: statusColor.withValues(alpha: 0.12),
+                  emphasize: true,
                 ),
               ],
             ),
@@ -699,126 +716,81 @@ class _ProductCard extends StatelessWidget {
   }
 }
 
-class _LiveStockBadge extends StatelessWidget {
-  const _LiveStockBadge({
+class _StockMetricTile extends StatelessWidget {
+  const _StockMetricTile({
     required this.label,
     required this.value,
-    required this.color,
+    required this.accent,
+    required this.soft,
+    this.emphasize = false,
   });
 
   final String label;
   final String value;
-  final Color color;
+  final Color accent;
+  final Color soft;
+  final bool emphasize;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 72),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              height: 1.1,
-              color: color.withValues(alpha: 0.85),
-            ),
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: PreviewTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: emphasize
+                ? accent.withValues(alpha: 0.28)
+                : PreviewTheme.border,
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-              height: 1.1,
-              color: color,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 6,
+              offset: Offset(0, 2),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricCell {
-  const _MetricCell({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color? valueColor;
-}
-
-class _MetricStrip extends StatelessWidget {
-  const _MetricStrip({required this.cells});
-
-  final List<_MetricCell> cells;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      decoration: BoxDecoration(
-        color: AppColors.fieldBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ModuleTokens.cardBorder),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < cells.length; i++) ...[
-            if (i > 0)
-              Container(
-                width: 1,
-                height: 26,
-                color: ModuleTokens.cardBorder,
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              height: 3,
+              decoration: BoxDecoration(
+                color: soft,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: accent.withValues(alpha: 0.25)),
               ),
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    cells[i].label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: ModuleTokens.tileMetricLabelFontSize,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
-                      color: ModuleTokens.faintText,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    cells[i].value,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.2,
-                      color: cells[i].valueColor ?? ModuleTokens.strongText,
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+                color: PreviewTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: emphasize ? 16 : 15,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3,
+                color: accent,
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

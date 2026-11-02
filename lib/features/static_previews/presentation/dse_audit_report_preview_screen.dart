@@ -13,6 +13,7 @@ import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_date_pickers.dart';
 import '../../../core/widgets/module_ui.dart';
+import '../../../core/widgets/product_image_thumb.dart';
 import '../../stock_audit/data/models/dse_audit_report_model.dart';
 import '../../stock_audit/data/stock_audit_repository.dart';
 import 'preview_theme.dart';
@@ -30,15 +31,14 @@ class _DseAuditReportPreviewScreenState
     extends ConsumerState<DseAuditReportPreviewScreen> {
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
   int? _storeId;
+  String _storeName = 'Dark Store';
   final _searchCtrl = TextEditingController();
   Timer? _searchDebounce;
 
   String _status = 'all';
-  int? _categoryId;
   String? _auditDate;
 
   List<DseAuditReportRow> _rows = const [];
-  List<DseAuditReportCategory> _categories = const [];
   List<String> _dates = const [];
   DseAuditReportSummary _summary = const DseAuditReportSummary(
     skus: 0,
@@ -59,13 +59,6 @@ class _DseAuditReportPreviewScreenState
 
   String get _monthLabel => DateFormat('MMM yyyy').format(_month);
   String get _monthApi => DateFormat('yyyy-MM').format(_month);
-
-  String get _categoryLabel {
-    if (_categoryId == null) return 'All Category';
-    final match = _categories.where((c) => c.id == _categoryId);
-    if (match.isNotEmpty) return match.first.name;
-    return 'All Category';
-  }
 
   String get _statusLabel {
     switch (_status) {
@@ -116,8 +109,17 @@ class _DseAuditReportPreviewScreenState
       if (storeId == null && locations.isNotEmpty) {
         storeId = locations.first.id;
       }
+      final storeMatch = locations.where((l) => l.id == storeId);
+      final storeName = storeMatch.isNotEmpty
+          ? (storeMatch.first.label.trim().isNotEmpty
+              ? storeMatch.first.label
+              : (storeMatch.first.name ?? 'Dark Store'))
+          : 'Dark Store';
       if (!mounted) return;
-      setState(() => _storeId = storeId);
+      setState(() {
+        _storeId = storeId;
+        _storeName = storeName;
+      });
       await _fetch(reset: true);
     } catch (e) {
       if (!mounted) return;
@@ -159,14 +161,12 @@ class _DseAuditReportPreviewScreenState
             month: _monthApi,
             search: _searchCtrl.text,
             status: _status,
-            categoryId: _categoryId,
             auditDate: _auditDate,
             page: nextPage,
             limit: 20,
           );
       if (!mounted) return;
       setState(() {
-        _categories = report.categories;
         _dates = report.dates;
         _summary = report.summary;
         _meta = report.meta;
@@ -260,56 +260,6 @@ class _DseAuditReportPreviewScreenState
     await _fetch(reset: true);
   }
 
-  Future<void> _pickCategory() async {
-    HapticFeedback.selectionClick();
-    final picked = await showModalBottomSheet<int?>(
-      context: context,
-      backgroundColor: AppColors.cardBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                title: Text(
-                  'All Category',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: PreviewTheme.text,
-                  ),
-                ),
-                trailing: _categoryId == null
-                    ? Icon(Icons.check_rounded, color: PreviewTheme.orange)
-                    : null,
-                onTap: () => Navigator.pop(ctx, -1),
-              ),
-              for (final c in _categories)
-                ListTile(
-                  title: Text(
-                    c.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: PreviewTheme.text,
-                    ),
-                  ),
-                  trailing: _categoryId == c.id
-                      ? Icon(Icons.check_rounded, color: PreviewTheme.orange)
-                      : null,
-                  onTap: () => Navigator.pop(ctx, c.id),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-    if (!mounted || picked == null) return;
-    setState(() => _categoryId = picked < 0 ? null : picked);
-    await _fetch(reset: true);
-  }
-
   Future<void> _pickDate() async {
     HapticFeedback.selectionClick();
     final picked = await showModalBottomSheet<String?>(
@@ -373,10 +323,28 @@ class _DseAuditReportPreviewScreenState
     _searchCtrl.clear();
     setState(() {
       _status = 'all';
-      _categoryId = null;
       _auditDate = null;
     });
     _fetch(reset: true);
+  }
+
+  void _openStockLedger(DseAuditReportRow row) {
+    final storeId = _storeId;
+    if (storeId == null || storeId <= 0 || row.variantId <= 0) return;
+    HapticFeedback.selectionClick();
+    final sku = row.sku.trim().isNotEmpty ? row.sku.trim() : '—';
+    context.push(
+      '/preview/stock-ledger',
+      extra: {
+        'productName': row.name,
+        'variantLabel': sku,
+        'sku': sku,
+        'storeName': _storeName,
+        'imageUrl': row.image,
+        'variantId': row.variantId,
+        'businessLocationId': storeId,
+      },
+    );
   }
 
   @override
@@ -395,6 +363,18 @@ class _DseAuditReportPreviewScreenState
             }(),
             onBack: () => context.pop(),
             showNotifications: false,
+            searchController: _searchCtrl,
+            searchHint: 'Search product (name / SKU / code)...',
+            searchValue: _searchCtrl.text,
+            onSearchChanged: (value) {
+              setState(() {});
+              _onSearchChanged(value);
+            },
+            onClearSearch: () {
+              _searchCtrl.clear();
+              setState(() {});
+              _fetch(reset: true);
+            },
             bottom: Column(
               children: [
                 PreviewSelectField(
@@ -404,22 +384,10 @@ class _DseAuditReportPreviewScreenState
                   onTap: _pickMonth,
                 ),
                 const SizedBox(height: 8),
-                _SearchRow(
-                  controller: _searchCtrl,
-                  hint: 'Search product (name / SKU / code)...',
-                  onChanged: _onSearchChanged,
-                  onClear: () {
-                    _searchCtrl.clear();
-                    _fetch(reset: true);
-                  },
-                ),
-                const SizedBox(height: 8),
                 _Filters(
                   onHeader: true,
-                  categoryLabel: _categoryLabel,
                   statusLabel: _statusLabel,
                   dateLabel: _dateLabel,
-                  onCategory: _pickCategory,
                   onStatus: _pickStatus,
                   onDate: _pickDate,
                   onReset: _resetFilters,
@@ -456,6 +424,13 @@ class _DseAuditReportPreviewScreenState
                         value: '${_summary.excess}',
                         color: PreviewTheme.green,
                         soft: PreviewTheme.greenSoft,
+                      ),
+                      const SizedBox(width: 8),
+                      PreviewStatChip(
+                        label: 'Matched',
+                        value: '${_summary.matched}',
+                        color: PreviewTheme.textSecondary,
+                        soft: PreviewTheme.field,
                       ),
                     ],
                   ),
@@ -504,7 +479,10 @@ class _DseAuditReportPreviewScreenState
                   else ...[
                     for (var i = 0; i < _rows.length; i++) ...[
                       if (i > 0) const SizedBox(height: 12),
-                      _AuditCard(row: _rows[i]),
+                      _AuditCard(
+                        row: _rows[i],
+                        onTap: () => _openStockLedger(_rows[i]),
+                      ),
                     ],
                     if (_meta.page < _meta.totalPages) ...[
                       const SizedBox(height: 16),
@@ -532,127 +510,10 @@ class _DseAuditReportPreviewScreenState
   }
 }
 
-class _SearchRow extends StatelessWidget {
-  const _SearchRow({
-    required this.controller,
-    required this.hint,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final onOrange = !AppColors.isDark;
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: onOrange
-                  ? Colors.white.withValues(alpha: 0.18)
-                  : PreviewTheme.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: onOrange
-                    ? Colors.white.withValues(alpha: 0.28)
-                    : PreviewTheme.border,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  size: 18,
-                  color: onOrange
-                      ? Colors.white.withValues(alpha: 0.85)
-                      : PreviewTheme.textMuted,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    onChanged: onChanged,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: onOrange ? Colors.white : PreviewTheme.text,
-                    ),
-                    cursorColor: onOrange ? Colors.white : PreviewTheme.orange,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      hintText: hint,
-                      hintStyle: TextStyle(
-                        fontSize: 13,
-                        color: onOrange
-                            ? Colors.white.withValues(alpha: 0.7)
-                            : PreviewTheme.textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder: (context, value, _) {
-                    if (value.text.isEmpty) return const SizedBox.shrink();
-                    return GestureDetector(
-                      onTap: onClear,
-                      child: Icon(
-                        Icons.close_rounded,
-                        size: 18,
-                        color: onOrange
-                            ? Colors.white.withValues(alpha: 0.85)
-                            : PreviewTheme.textMuted,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: onOrange
-                ? Colors.white.withValues(alpha: 0.18)
-                : PreviewTheme.orangeSoft,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: onOrange
-                  ? Colors.white.withValues(alpha: 0.35)
-                  : PreviewTheme.orange.withValues(alpha: 0.55),
-            ),
-          ),
-          child: Icon(
-            Icons.filter_alt_rounded,
-            size: 20,
-            color: onOrange ? Colors.white : PreviewTheme.orange,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _Filters extends StatelessWidget {
   const _Filters({
-    required this.categoryLabel,
     required this.statusLabel,
     required this.dateLabel,
-    required this.onCategory,
     required this.onStatus,
     required this.onDate,
     required this.onReset,
@@ -660,10 +521,8 @@ class _Filters extends StatelessWidget {
   });
 
   final bool onHeader;
-  final String categoryLabel;
   final String statusLabel;
   final String dateLabel;
-  final VoidCallback onCategory;
   final VoidCallback onStatus;
   final VoidCallback onDate;
   final VoidCallback onReset;
@@ -675,8 +534,6 @@ class _Filters extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _chip(categoryLabel, onOrange, onCategory),
-          const SizedBox(width: 8),
           _chip(statusLabel, onOrange, onStatus),
           const SizedBox(width: 8),
           _chip(dateLabel, onOrange, onDate),
@@ -767,57 +624,123 @@ class _Filters extends StatelessWidget {
 }
 
 class _AuditCard extends StatelessWidget {
-  const _AuditCard({required this.row});
+  const _AuditCard({
+    required this.row,
+    required this.onTap,
+  });
+
   final DseAuditReportRow row;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final diffPositive = row.diff >= 0;
-    final accent = diffPositive ? PreviewTheme.green : PreviewTheme.red;
-    final diffBg = diffPositive ? PreviewTheme.greenSoft : PreviewTheme.redSoft;
-    final diffText = diffPositive ? '+${row.diff}' : '${row.diff}';
+    final isMatched = row.diff == 0;
+    final isExcess = row.diff > 0;
+    final accent = isMatched
+        ? PreviewTheme.blue
+        : (isExcess ? PreviewTheme.green : PreviewTheme.red);
+    final accentSoft = isMatched
+        ? PreviewTheme.blueSoft
+        : (isExcess ? PreviewTheme.greenSoft : PreviewTheme.redSoft);
+    final statusLabel = isMatched
+        ? 'Matched'
+        : (isExcess ? 'Excess' : 'Shortage');
+    final diffText = isExcess
+        ? '+${row.diff}'
+        : (isMatched ? '0' : '${row.diff}');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: PreviewTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PreviewTheme.border),
-        boxShadow: PreviewTheme.cardShadow,
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(16),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: accent.withValues(alpha: 0.22),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.12),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: const Color(0x0F0F172A),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accentSoft.withValues(alpha: 0.55),
+                        PreviewTheme.surface,
+                        PreviewTheme.surface,
+                      ],
+                      stops: const [0, 0.38, 1],
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 6,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        accent,
+                        accent.withValues(alpha: 0.55),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 14, 14),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 46,
-                          height: 46,
+                          padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: PreviewTheme.orangeSoft,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: PreviewTheme.orange.withValues(alpha: 0.45),
+                              color: accent.withValues(alpha: 0.35),
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.16),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          child: Icon(
-                            Icons.inventory_2_outlined,
-                            color: PreviewTheme.orange,
-                            size: 22,
+                          child: ProductImageThumb(
+                            imageUrl: row.image,
+                            width: 62,
+                            height: 62,
+                            borderRadius: 13,
+                            backgroundColor: PreviewTheme.surface,
+                            showBorder: false,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -825,111 +748,307 @@ class _AuditCard extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                row.date,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: PreviewTheme.textMuted,
-                                ),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _pill(
+                                    icon: Icons.calendar_month_rounded,
+                                    label: row.date,
+                                    fg: PreviewTheme.blue,
+                                    bg: PreviewTheme.blueSoft,
+                                  ),
+                                  _pill(
+                                    icon: isExcess
+                                        ? Icons.trending_up_rounded
+                                        : (isMatched
+                                            ? Icons.check_circle_outline_rounded
+                                            : Icons.trending_down_rounded),
+                                    label: statusLabel,
+                                    fg: accent,
+                                    bg: accentSoft,
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
                               Text(
                                 row.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 14.5,
+                                  fontSize: 15.5,
                                   fontWeight: FontWeight.w800,
+                                  height: 1.2,
+                                  letterSpacing: -0.2,
                                   color: PreviewTheme.text,
                                 ),
                               ),
-                              Text(
-                                'SKU: ${row.sku}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: PreviewTheme.textSecondary,
+                              const SizedBox(height: 5),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: PreviewTheme.orangeSoft,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'SKU: ${row.sku}',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: PreviewTheme.orange,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: diffBg,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            diffText,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: accent,
+                        const SizedBox(width: 8),
+                        Column(
+                          children: [
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(minWidth: 64),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: accentSoft,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: accent.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                                child: Text(
+                                  diffText,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                    height: 1,
+                                    color: accent,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 6),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 12,
+                              color: PreviewTheme.textMuted,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: PreviewTheme.field,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          _metric('System', '${row.system}', PreviewTheme.blue),
-                          _metric(
-                            'Sale/RTO',
-                            '${row.sale}/${row.rto}',
-                            PreviewTheme.text,
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _metricTile(
+                          label: 'System Stock',
+                          value: Text(
+                            '${row.system}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: PreviewTheme.blue,
+                            ),
                           ),
-                          _metric('IN', '${row.transferIn}', PreviewTheme.green),
-                          _metric('OUT', '${row.transferOut}', PreviewTheme.red),
-                          _metric('Expect', '${row.expected}', PreviewTheme.text),
-                          _metric('Claim', '${row.claim}', PreviewTheme.green),
-                        ],
-                      ),
+                          soft: PreviewTheme.blueSoft,
+                          accent: PreviewTheme.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        _metricTile(
+                          label: 'Sale / RTO',
+                          value: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '${row.sale}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: PreviewTheme.blue,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' / ',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: PreviewTheme.textSecondary,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '${row.rto}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: PreviewTheme.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          soft: PreviewTheme.field,
+                          accent: PreviewTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        _metricTile(
+                          label: 'Transfer (IN)',
+                          value: Text(
+                            '${row.transferIn}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: PreviewTheme.green,
+                            ),
+                          ),
+                          soft: PreviewTheme.greenSoft,
+                          accent: PreviewTheme.green,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _metricTile(
+                          label: 'Transfer (OUT)',
+                          value: Text(
+                            '${row.transferOut}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: PreviewTheme.red,
+                            ),
+                          ),
+                          soft: PreviewTheme.redSoft,
+                          accent: PreviewTheme.red,
+                        ),
+                        const SizedBox(width: 8),
+                        _metricTile(
+                          label: 'Expected Qty',
+                          value: Text(
+                            '${row.expected}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: PreviewTheme.text,
+                            ),
+                          ),
+                          soft: PreviewTheme.field,
+                          accent: PreviewTheme.text,
+                        ),
+                        const SizedBox(width: 8),
+                        _metricTile(
+                          label: 'DSE Claim',
+                          value: Text(
+                            '${row.claim}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: PreviewTheme.green,
+                            ),
+                          ),
+                          soft: PreviewTheme.greenSoft,
+                          accent: PreviewTheme.green,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _metric(String label, String value, Color valueColor) {
-    return Expanded(
-      child: Column(
+  Widget _pill({
+    required IconData icon,
+    required String label,
+    required Color fg,
+    required Color bg,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
           Text(
             label,
-            textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              color: PreviewTheme.textMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.5,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: valueColor,
+              color: fg,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _metricTile({
+    required String label,
+    required Widget value,
+    required Color soft,
+    required Color accent,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: PreviewTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: PreviewTheme.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              height: 3,
+              decoration: BoxDecoration(
+                color: soft,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: accent.withValues(alpha: 0.25)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                height: 1.15,
+                color: PreviewTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 5),
+            value,
+          ],
+        ),
       ),
     );
   }

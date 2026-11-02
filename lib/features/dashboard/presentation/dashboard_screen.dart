@@ -101,7 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
                       children: [
                         if (state.error != null)
                           Padding(
@@ -155,7 +155,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 context.go('/my-products?filter=short');
                               },
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                           ],
                           _AuditProgressCard(
                             strings: s,
@@ -169,7 +169,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               context.go('/audit');
                             },
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           _SummaryGrid(
                             strings: s,
                             summary: data.summary,
@@ -186,27 +186,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               }
                             },
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           Text(
                             s.quickActions,
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           _QuickActionsRow(strings: s),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 18),
                           Row(
                             children: [
                               Expanded(
                                 child: Text(
                                   s.recentOrders,
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textSecondary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.2,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                               ),
@@ -264,169 +266,292 @@ class _MismatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final first = alert.items.isNotEmpty ? alert.items.first : null;
+    final danger = const Color(0xFFDC2626);
+    final dangerDeep = const Color(0xFF9F1239);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.errorBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.errorBorder),
-          ),
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFDC2626),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.priority_high_rounded,
-                  color: Colors.white,
-                  size: 16,
-                ),
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: AppColors.isDark
+                  ? const [Color(0xFF3B1418), Color(0xFF1C0F14)]
+                  : const [Color(0xFFFFF1F2), Color(0xFFFFE4E6)],
+            ),
+            border: Border.all(
+              color: AppColors.isDark
+                  ? const Color(0xFF7F1D1D)
+                  : const Color(0xFFFECACA),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: danger.withValues(alpha: AppColors.isDark ? 0.28 : 0.14),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  strings.productMismatchFound(alert.count),
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.errorText,
-                  ),
-                ),
-              ),
+              ...AppColors.cardShadow,
             ],
           ),
-          if (first != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              strings.mismatchDetailMessage(
-                first.displayName,
-                first.difference,
-              ),
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textPrimary,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.errorBorder),
-              ),
-              child: Row(
-                children: [
-                  ProductImageThumb(
-                    imageUrl: first.image,
-                    width: 48,
-                    height: 48,
-                    borderRadius: 10,
-                    iconSize: 20,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -18,
+                top: -22,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: danger.withValues(alpha: 0.10),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          first.productName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [danger, dangerDeep],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: danger.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.white,
+                            size: 22,
                           ),
                         ),
-                        if ((first.variantLabel ?? '').trim().isNotEmpty)
-                          Text(
-                            first.variantLabel!.trim(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            strings.productMismatchFound(alert.count),
                             style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: AppColors.errorText,
                             ),
                           ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            _metric(strings.system, _fmt(first.systemStock)),
-                            _metric(strings.physical, _fmt(first.physicalStock)),
-                            _metric(
-                              strings.diff,
-                              '${first.difference}',
-                              valueColor: const Color(0xFFDC2626),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: danger.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: danger.withValues(alpha: 0.25),
                             ),
-                          ],
+                          ),
+                          child: Text(
+                            '${alert.count}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.errorText,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFCE7F3),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      first.status,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFBE185D),
+                    if (first != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        strings.mismatchDetailMessage(
+                          first.displayName,
+                          first.difference,
+                        ),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.4,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBg.withValues(
+                            alpha: AppColors.isDark ? 0.72 : 0.92,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.errorBorder.withValues(alpha: 0.7),
+                          ),
+                          boxShadow: AppColors.cardShadow,
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                ProductImageThumb(
+                                  imageUrl: first.image,
+                                  width: 52,
+                                  height: 52,
+                                  borderRadius: 14,
+                                  iconSize: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        first.productName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      if ((first.variantLabel ?? '')
+                                          .trim()
+                                          .isNotEmpty)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            first.variantLabel!.trim(),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w500,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFCE7F3),
+                                        Color(0xFFFBCFE8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    first.status,
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFFBE185D),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                _metricChip(
+                                  strings.system,
+                                  _fmt(first.systemStock),
+                                ),
+                                const SizedBox(width: 8),
+                                _metricChip(
+                                  strings.physical,
+                                  _fmt(first.physicalStock),
+                                ),
+                                const SizedBox(width: 8),
+                                _metricChip(
+                                  strings.diff,
+                                  '${first.difference}',
+                                  valueColor: danger,
+                                  emphasize: true,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ],
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _metric(String label, String value, {Color? valueColor}) {
+  Widget _metricChip(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool emphasize = false,
+  }) {
     return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: emphasize
+              ? const Color(0xFFDC2626).withValues(alpha: 0.08)
+              : AppColors.fieldBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: emphasize
+                ? const Color(0xFFDC2626).withValues(alpha: 0.18)
+                : AppColors.border,
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: valueColor ?? AppColors.textPrimary,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -460,77 +585,167 @@ class _AuditProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = (progress.percent.clamp(0, 100)) / 100.0;
+    const green = Color(0xFF16A34A);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.cardBg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.successBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.task_alt_rounded,
-                  size: 18,
-                  color: AppColors.successText,
-                ),
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: AppColors.isDark
+                  ? [AppColors.cardBg, const Color(0xFF12261A)]
+                  : [Colors.white, const Color(0xFFF0FDF4)],
+            ),
+            border: Border.all(
+              color: AppColors.isDark
+                  ? AppColors.successBorder
+                  : const Color(0xFFBBF7D0),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: green.withValues(alpha: AppColors.isDark ? 0.18 : 0.10),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  strings.todaysAudit,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Text(
-                '${progress.percent}%',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF16A34A),
-                ),
-              ),
+              ...AppColors.cardShadow,
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            strings.skuAuditedProgress(
-              progress.auditedToday,
-              progress.totalSkus,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 5,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF4ADE80), green],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF4ADE80), green],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: green.withValues(alpha: 0.35),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.task_alt_rounded,
+                              size: 22,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  strings.todaysAudit,
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.2,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  strings.skuAuditedProgress(
+                                    progress.auditedToday,
+                                    progress.totalSkus,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${progress.percent}%',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
+                              letterSpacing: -0.3,
+                              color: green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: AppColors.isDark
+                                    ? const Color(0xFF1F4D32)
+                                    : const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: pct,
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(999),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF4ADE80), green],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: green.withValues(alpha: 0.45),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: pct,
-              minHeight: 8,
-              backgroundColor: AppColors.border,
-              color: const Color(0xFF16A34A),
-            ),
-          ),
-        ],
           ),
         ),
       ),
@@ -642,57 +857,107 @@ class _SummaryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.cardBg,
-      borderRadius: BorderRadius.circular(14),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.cardBg,
+                Color.lerp(AppColors.cardBg, iconBg, 0.55) ?? AppColors.cardBg,
+              ],
+            ),
             border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: iconColor.withValues(
+                  alpha: AppColors.isDark ? 0.18 : 0.10,
+                ),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+              ...AppColors.cardShadow,
+            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: Icon(icon, size: 16, color: iconColor),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              for (final line in lines)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    line.text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: line.color ?? AppColors.textSecondary,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 4,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        iconColor,
+                        iconColor.withValues(alpha: 0.45),
+                      ],
                     ),
                   ),
                 ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(11, 12, 11, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: iconBg,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: iconColor.withValues(alpha: 0.22),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, size: 18, color: iconColor),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.1,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (var i = 0; i < lines.length; i++)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: i == lines.length - 1 ? 0 : 4,
+                          ),
+                          child: Text(
+                            lines[i].text,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: i == 0 ? 12.5 : 11.5,
+                              fontWeight:
+                                  i == 0 ? FontWeight.w700 : FontWeight.w600,
+                              color: lines[i].color ?? AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -744,8 +1009,7 @@ class _QuickActionsRow extends StatelessWidget {
           if (i > 0) const SizedBox(width: 8),
           Expanded(
             child: Material(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.transparent,
               child: InkWell(
                 onTap: () {
                   final route = actions[i].route;
@@ -756,37 +1020,68 @@ class _QuickActionsRow extends StatelessWidget {
                     context.go(route);
                   }
                 },
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    color: AppColors.cardBg,
                     border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: actions[i].fg.withValues(
+                          alpha: AppColors.isDark ? 0.16 : 0.08,
+                        ),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                      ...AppColors.cardShadow,
+                    ],
                   ),
                   child: Column(
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: actions[i].bg,
-                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              actions[i].bg,
+                              Color.lerp(
+                                    actions[i].bg,
+                                    actions[i].fg,
+                                    0.18,
+                                  ) ??
+                                  actions[i].bg,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: actions[i].fg.withValues(alpha: 0.22),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Icon(
                           actions[i].icon,
                           color: actions[i].fg,
-                          size: 18,
+                          size: 20,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
                       Text(
                         actions[i].label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                           height: 1.2,
                         ),
                       ),
@@ -813,101 +1108,183 @@ class _RecentOrderTile extends StatelessWidget {
     final subtitle = city.isEmpty
         ? order.customerName
         : '${order.customerName} · $city';
+    final accent = AppColors.primary;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => context.push('/orders/${order.id}'),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cardBg,
+                  Color.lerp(AppColors.cardBg, AppColors.softOrange, 0.35) ??
+                      AppColors.cardBg,
+                ],
+              ),
               border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                ProductImageThumb(
-                  imageUrl: order.firstProductImage,
-                  width: 48,
-                  height: 48,
-                  borderRadius: 10,
-                  iconSize: 20,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.code.isEmpty ? '#${order.id}' : order.code,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if ((order.createdAt ?? '').isNotEmpty)
-                        Text(
-                          formatOrderDate(order.createdAt!),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          if (order.hasDemandId)
-                            _pill(
-                              kDemandOrderBadgeLabel,
-                              kDemandOrderBadgeFg,
-                              kDemandOrderBadgeBg,
-                            ),
-                          _pill(
-                            order.paymentStatus.toUpperCase(),
-                            const Color(0xFFDC2626),
-                            const Color(0xFFFEE2E2),
-                          ),
-                          _pill(
-                            order.paymentType.toUpperCase(),
-                            AppColors.primary,
-                            const Color(0xFFFFE4D2),
-                          ),
-                          _pill(
-                            order.orderStatus,
-                            const Color(0xFFB45309),
-                            const Color(0xFFFEF3C7),
-                          ),
-                        ],
-                      ),
-                    ],
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(
+                    alpha: AppColors.isDark ? 0.14 : 0.08,
                   ),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
-                Text(
-                  formatMoney(order.grandTotal),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                ...AppColors.cardShadow,
               ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            accent,
+                            accent.withValues(alpha: 0.45),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accent.withValues(alpha: 0.12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: ProductImageThumb(
+                                imageUrl: order.firstProductImage,
+                                width: 52,
+                                height: 52,
+                                borderRadius: 14,
+                                iconSize: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    order.code.isEmpty
+                                        ? '#${order.id}'
+                                        : order.code,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.2,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  if ((order.createdAt ?? '').isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 1),
+                                      child: Text(
+                                        formatOrderDate(order.createdAt!),
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 7),
+                                  Wrap(
+                                    spacing: 5,
+                                    runSpacing: 5,
+                                    children: [
+                                      if (order.hasDemandId)
+                                        _pill(
+                                          kDemandOrderBadgeLabel,
+                                          kDemandOrderBadgeFg,
+                                          kDemandOrderBadgeBg,
+                                        ),
+                                      _pill(
+                                        order.paymentStatus.toUpperCase(),
+                                        const Color(0xFFDC2626),
+                                        const Color(0xFFFEE2E2),
+                                      ),
+                                      _pill(
+                                        order.paymentType.toUpperCase(),
+                                        AppColors.primary,
+                                        const Color(0xFFFFE4D2),
+                                      ),
+                                      _pill(
+                                        order.orderStatus,
+                                        const Color(0xFFB45309),
+                                        const Color(0xFFFEF3C7),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.softOrange,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.18),
+                                ),
+                              ),
+                              child: Text(
+                                formatMoney(order.grandTotal),
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -917,10 +1294,11 @@ class _RecentOrderTile extends StatelessWidget {
 
   Widget _pill(String text, Color fg, Color bg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fg.withValues(alpha: 0.14)),
       ),
       child: Text(
         text,

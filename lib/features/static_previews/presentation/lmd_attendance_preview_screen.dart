@@ -11,12 +11,11 @@ import '../../../core/storage/session_storage.dart';
 import '../../../core/theme/theme_mode_provider.dart';
 import '../../../core/widgets/app_date_pickers.dart';
 import '../../../core/widgets/module_ui.dart';
-import '../../stock_audit/data/models/dse_attendance_model.dart';
+import '../../stock_audit/data/models/lmd_attendance_model.dart';
 import '../../stock_audit/data/stock_audit_repository.dart';
-import 'lmd_attendance_detail_screen.dart';
 import 'preview_theme.dart';
 
-/// DSE Attendance — daily audit attendance from `/dse-attendance`.
+/// LMD Attendance — dynamic from `/lmd-attendance` (LMD Chase rules, app columns only).
 class LmdAttendancePreviewScreen extends ConsumerStatefulWidget {
   const LmdAttendancePreviewScreen({super.key});
 
@@ -30,8 +29,8 @@ class _LmdAttendancePreviewScreenState
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month, 1);
   int? _storeId;
   int? _employeeId;
-  List<DseAttendanceEmployee> _employees = const [];
-  List<DseAttendanceDay> _days = const [];
+  List<LmdAttendanceEmployee> _employees = const [];
+  List<LmdAttendanceDay> _days = const [];
   bool _loading = true;
   String? _error;
 
@@ -39,7 +38,7 @@ class _LmdAttendancePreviewScreenState
   String get _monthApi => DateFormat('yyyy-MM').format(_month);
 
   String get _employeeLabel {
-    if (_employees.isEmpty) return 'Employee';
+    if (_employees.isEmpty) return 'Select Employee';
     final match = _employees.where((e) => e.id == _employeeId);
     if (match.isNotEmpty) return match.first.label;
     return _employees.first.label;
@@ -83,6 +82,7 @@ class _LmdAttendancePreviewScreenState
         _loading = false;
         _error = 'Store select nahi hai. Pehle Stock tab se store choose karo.';
         _days = [];
+        _employees = [];
       });
       return;
     }
@@ -93,7 +93,7 @@ class _LmdAttendancePreviewScreenState
     });
 
     try {
-      final report = await ref.read(stockAuditRepositoryProvider).getDseAttendance(
+      final report = await ref.read(stockAuditRepositoryProvider).getLmdAttendance(
             businessLocationId: storeId,
             month: _monthApi,
             employeeUserId: _employeeId,
@@ -139,110 +139,112 @@ class _LmdAttendancePreviewScreenState
   Future<void> _pickEmployee() async {
     if (_employees.isEmpty) return;
     HapticFeedback.selectionClick();
-    final picked = await showModalBottomSheet<int>(
+    final selected = await showModalBottomSheet<int>(
       context: context,
-      backgroundColor: AppColors.cardBg,
+      backgroundColor: PreviewTheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Select employee',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: PreviewTheme.border,
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                 ),
-              ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final e in _employees)
-                      ListTile(
+                const SizedBox(height: 14),
+                Text(
+                  'Select Employee',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    color: PreviewTheme.text,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _employees.length,
+                    itemBuilder: (_, i) {
+                      final emp = _employees[i];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
                         leading: Icon(
                           Icons.person_outline_rounded,
-                          color: AppColors.primary,
+                          color: PreviewTheme.orange,
                         ),
                         title: Text(
-                          e.label,
+                          emp.label,
                           style: TextStyle(
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            letterSpacing: -0.1,
+                            color: PreviewTheme.text,
                           ),
                         ),
-                        trailing: e.id == _employeeId
-                            ? Icon(Icons.check_rounded, color: AppColors.primary)
+                        trailing: emp.id == _employeeId
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: PreviewTheme.orange,
+                              )
                             : null,
-                        onTap: () => Navigator.pop(ctx, e.id),
-                      ),
-                  ],
+                        onTap: () => Navigator.pop(ctx, emp.id),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
+              ],
+            ),
           ),
         );
       },
     );
-    if (!mounted || picked == null) return;
-    setState(() => _employeeId = picked);
+    if (!mounted || selected == null || selected == _employeeId) return;
+    setState(() => _employeeId = selected);
     await _fetch();
   }
 
   @override
   Widget build(BuildContext context) {
     ref.watch(appThemeModeProvider);
+    final store = ref.watch(headerGreetingProvider);
 
     return Scaffold(
       backgroundColor: PreviewTheme.bg,
       body: Column(
         children: [
           ModuleHeader(
-            pageLabel: 'DSE Attendance',
-            subtitle: () {
-              final store = ref.watch(headerGreetingProvider);
-              return store.isEmpty ? null : store;
-            }(),
+            pageLabel: 'LMD Attendance',
+            subtitle: store.isEmpty ? 'Field Attendance System' : store,
             onBack: () => context.pop(),
-            showNotifications: true,
-            bottom: Row(
+            showNotifications: false,
+            bottom: Column(
               children: [
-                Expanded(
-                  child: PreviewSelectField(
-                    icon: Icons.person_outline_rounded,
-                    label: _employeeLabel,
-                    onHeader: true,
-                    onTap: _pickEmployee,
-                  ),
+                PreviewSelectField(
+                  icon: Icons.person_outline_rounded,
+                  label: _employeeLabel,
+                  onHeader: true,
+                  onTap: _employees.isEmpty ? null : _pickEmployee,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: PreviewSelectField(
-                    icon: Icons.calendar_month_rounded,
-                    label: _monthLabel,
-                    onHeader: true,
-                    onTap: _pickMonth,
-                  ),
+                const SizedBox(height: 8),
+                PreviewSelectField(
+                  icon: Icons.calendar_month_rounded,
+                  label: _monthLabel,
+                  onHeader: true,
+                  onTap: _pickMonth,
                 ),
               ],
             ),
@@ -252,8 +254,10 @@ class _LmdAttendancePreviewScreenState
               color: PreviewTheme.orange,
               onRefresh: _fetch,
               child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
                 children: [
                   if (_loading)
                     const Padding(
@@ -277,7 +281,9 @@ class _LmdAttendancePreviewScreenState
                     Padding(
                       padding: const EdgeInsets.all(28),
                       child: Text(
-                        'Is month me koi attendance day nahi mila',
+                        _employees.isEmpty
+                            ? 'Is dark store ke liye koi LMD partner nahi mila'
+                            : 'Is month me koi attendance day nahi mila',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
@@ -286,23 +292,22 @@ class _LmdAttendancePreviewScreenState
                         ),
                       ),
                     )
-                  else
+                  else ...[
+                    Text(
+                      'Daily attendance',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: PreviewTheme.text,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     for (var i = 0; i < _days.length; i++) ...[
                       if (i > 0) const SizedBox(height: 12),
-                      _DayCard(
-                        day: LmdAttendanceDetailDay.fromDse(_days[i]),
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          context.push('/preview/lmd-attendance/detail', extra: {
-                            'employee': _employeeLabel,
-                            'month': _monthLabel,
-                            'day': LmdAttendanceDetailDay.fromDse(_days[i]),
-                          });
-                        },
-                      ),
+                      _LmdDayCard(day: _days[i]),
                     ],
-                  const SizedBox(height: 14),
-                  const _RulesCard(),
+                  ],
                 ],
               ),
             ),
@@ -313,141 +318,171 @@ class _LmdAttendancePreviewScreenState
   }
 }
 
-class _DayCard extends StatelessWidget {
-  const _DayCard({required this.day, this.onTap});
+class _LmdDayCard extends StatelessWidget {
+  const _LmdDayCard({required this.day});
 
-  final LmdAttendanceDetailDay day;
-  final VoidCallback? onTap;
+  final LmdAttendanceDay day;
+
+  (String, Color, Color) get _badge {
+    switch (day.status) {
+      case LmdAttendanceStatus.present:
+        return ('Present', PreviewTheme.green, PreviewTheme.greenSoft);
+      case LmdAttendanceStatus.weeklyOff:
+        return ('Weekly Off', PreviewTheme.blue, PreviewTheme.blueSoft);
+      case LmdAttendanceStatus.absent:
+        return ('Absent', PreviewTheme.red, PreviewTheme.redSoft);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final badge = day.badge;
-    final showTimes =
-        day.first != null && day.last != null && day.hours != null;
+    final badge = _badge;
+    final accent = badge.$2;
+    final showTimes = day.firstActivity != null &&
+        day.lastActivity != null &&
+        day.workingHours != null;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-          decoration: BoxDecoration(
-            color: PreviewTheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PreviewTheme.border),
-            boxShadow: PreviewTheme.cardShadow,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            PreviewTheme.surface,
+            Color.lerp(PreviewTheme.surface, badge.$3, 0.55) ??
+                PreviewTheme.surface,
+          ],
+        ),
+        border: Border.all(color: PreviewTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: AppColors.isDark ? 0.16 : 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-          child: Column(
+          ...PreviewTheme.cardShadow,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      day.title,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: PreviewTheme.text,
+              Container(width: 4, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              day.title,
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.2,
+                                color: PreviewTheme.text,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badge.$3,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: accent.withValues(alpha: 0.18),
+                              ),
+                            ),
+                            child: Text(
+                              badge.$1,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: badge.$2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: badge.$3,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      badge.$1,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w800,
-                        color: badge.$2,
+                      const SizedBox(height: 12),
+                      if (showTimes)
+                        Row(
+                          children: [
+                            _MetaChip(
+                              Icons.login_rounded,
+                              day.firstActivity!,
+                            ),
+                            const SizedBox(width: 6),
+                            _MetaChip(
+                              Icons.logout_rounded,
+                              day.lastActivity!,
+                            ),
+                            const SizedBox(width: 6),
+                            _MetaChip(
+                              Icons.timer_outlined,
+                              day.workingHours!,
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badge.$3,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.16),
+                            ),
+                          ),
+                          child: Text(
+                            day.note ?? '',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: badge.$2,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _MiniKpi(
+                            label: 'Picked Up',
+                            value: '${day.picked}',
+                            fg: PreviewTheme.green,
+                            bg: PreviewTheme.greenSoft,
+                          ),
+                          const SizedBox(width: 6),
+                          _MiniKpi(
+                            label: 'In Transit',
+                            value: '${day.transit}',
+                            fg: PreviewTheme.blue,
+                            bg: PreviewTheme.blueSoft,
+                          ),
+                          const SizedBox(width: 6),
+                          _MiniKpi(
+                            label: 'Delivered',
+                            value: '${day.delivered}',
+                            fg: PreviewTheme.orange,
+                            bg: PreviewTheme.orangeSoft,
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: PreviewTheme.textMuted,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (showTimes)
-                Row(
-                  children: [
-                    _meta(Icons.login_rounded, 'First Activity', day.first!),
-                    _meta(Icons.logout_rounded, 'Last Activity', day.last!),
-                    _meta(Icons.timer_outlined, 'Working Hours', day.hours!),
-                  ],
-                )
-              else
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 11,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badge.$3,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    day.note ?? '',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: badge.$2,
-                    ),
+                    ],
                   ),
                 ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _MiniKpi(
-                    icon: Icons.inventory_2_outlined,
-                    label: 'SKU Audited',
-                    value: '${day.audited}',
-                    fg: PreviewTheme.blue,
-                    bg: PreviewTheme.blueSoft,
-                  ),
-                  const SizedBox(width: 6),
-                  _MiniKpi(
-                    icon: Icons.pending_actions_outlined,
-                    label: 'SKU Pending',
-                    value: '${day.pending}',
-                    fg: PreviewTheme.orange,
-                    bg: PreviewTheme.orangeSoft,
-                  ),
-                  const SizedBox(width: 6),
-                  _MiniKpi(
-                    icon: Icons.check_circle_outline_rounded,
-                    label: 'Match',
-                    value: '${day.matchPct}%',
-                    fg: PreviewTheme.green,
-                    bg: PreviewTheme.greenSoft,
-                  ),
-                  const SizedBox(width: 6),
-                  _MiniKpi(
-                    icon: Icons.trending_down_rounded,
-                    label: 'Short',
-                    value: '${day.shortQty}',
-                    fg: PreviewTheme.rose,
-                    bg: PreviewTheme.roseSoft,
-                  ),
-                  const SizedBox(width: 6),
-                  _MiniKpi(
-                    icon: Icons.trending_up_rounded,
-                    label: 'Excess',
-                    value: '${day.excess}',
-                    fg: PreviewTheme.teal,
-                    bg: PreviewTheme.tealSoft,
-                  ),
-                ],
               ),
             ],
           ),
@@ -455,40 +490,44 @@ class _DayCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _meta(IconData icon, String label, String value) {
+class _MetaChip extends StatelessWidget {
+  const _MetaChip(this.icon, this.value);
+
+  final IconData icon;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 12, color: PreviewTheme.textMuted),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: PreviewTheme.textMuted,
-                  ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: PreviewTheme.field,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: PreviewTheme.border),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 13, color: PreviewTheme.textMuted),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: PreviewTheme.text,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w800,
-              color: PreviewTheme.text,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -496,14 +535,12 @@ class _DayCard extends StatelessWidget {
 
 class _MiniKpi extends StatelessWidget {
   const _MiniKpi({
-    required this.icon,
     required this.label,
     required this.value,
     required this.fg,
     required this.bg,
   });
 
-  final IconData icon;
   final String label;
   final String value;
   final Color fg;
@@ -513,171 +550,49 @@ class _MiniKpi extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+        padding: const EdgeInsets.fromLTRB(4, 9, 4, 9),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: fg.withValues(alpha: 0.14)),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: fg),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 9,
-                height: 1.15,
-                fontWeight: FontWeight.w700,
-                color: fg.withValues(alpha: 0.9),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: fg,
-                height: 1.1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RulesCard extends StatelessWidget {
-  const _RulesCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final rules = <(String, Color, Color, String)>[
-      (
-        'Present',
-        PreviewTheme.green,
-        PreviewTheme.greenSoft,
-        'SKU Pending = 0, Match = 100%, Short = 0, Excess = 0',
-      ),
-      (
-        'Half Day',
-        PreviewTheme.orange,
-        PreviewTheme.orangeSoft,
-        'SKU Pending = 0, Short > 0 or Excess > 0',
-      ),
-      (
-        'Absent',
-        PreviewTheme.red,
-        PreviewTheme.redSoft,
-        'SKU Pending > 0 and (Short > 0 or Excess > 0)',
-      ),
-      (
-        'Holiday',
-        PreviewTheme.blue,
-        PreviewTheme.blueSoft,
-        'Company defined holiday / weekly off day',
-      ),
-      (
-        'WOP',
-        AppColors.isDark ? const Color(0xFFB794F6) : const Color(0xFF7C3AED),
-        AppColors.isDark ? const Color(0xFF2E2145) : const Color(0xFFF3E8FF),
-        'Work Off Permission (Approved leave)',
-      ),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
-        color: AppColors.isDark
-            ? const Color(0xFF2A2438)
-            : const Color(0xFFF5F3FF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.isDark
-              ? const Color(0xFF3D3554)
-              : const Color(0xFFE9E5FF),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 18,
-                color: AppColors.isDark
-                    ? const Color(0xFFB794F6)
-                    : const Color(0xFF7C3AED),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Attendance Status Rules',
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.isDark
-                      ? const Color(0xFFE9D5FF)
-                      : const Color(0xFF5B21B6),
+                  fontSize: 9,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: fg.withValues(alpha: 0.9),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (var i = 0; i < rules.length; i++) ...[
-            if (i > 0) const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 78,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: rules[i].$3,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        rules[i].$1,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: rules[i].$2,
-                        ),
-                      ),
-                    ),
+            ),
+            const SizedBox(height: 5),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: fg,
+                    height: 1.1,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 3),
-                    child: Text(
-                      rules[i].$4,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.isDark
-                            ? const Color(0xFFD8B4FE)
-                            : const Color(0xFF4C1D95),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

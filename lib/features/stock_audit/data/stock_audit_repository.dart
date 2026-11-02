@@ -10,6 +10,7 @@ import '../data/models/product_model.dart';
 import '../data/models/stock_audit_detail_model.dart';
 import '../data/models/transaction_model.dart';
 import '../data/models/dse_attendance_model.dart';
+import '../data/models/lmd_attendance_model.dart';
 import '../data/models/dse_audit_report_model.dart';
 import '../data/models/product_stock_history_model.dart';
 import '../data/models/stock_reconciliation_model.dart';
@@ -178,6 +179,23 @@ class StockAuditRepository {
       },
     );
     return DseAttendanceReport.fromJson(requireJsonMap(json['data']));
+  }
+
+  Future<LmdAttendanceReport> getLmdAttendance({
+    required int businessLocationId,
+    required String month,
+    int? employeeUserId,
+  }) async {
+    final json = await _client.get(
+      '/lmd-attendance',
+      query: {
+        'business_location_id': businessLocationId,
+        'month': month,
+        if (employeeUserId != null && employeeUserId > 0)
+          'employee_user_id': employeeUserId,
+      },
+    );
+    return LmdAttendanceReport.fromJson(requireJsonMap(json['data']));
   }
 
   Future<DseAuditReport> getDseAuditReport({

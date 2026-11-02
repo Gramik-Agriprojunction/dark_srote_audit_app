@@ -215,6 +215,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 icon: Icons.groups_rounded,
                                 iconBg: const Color(0xFFDBEAFE),
                                 iconColor: const Color(0xFF1D4ED8),
+                                label: 'DSE Attendance',
+                                value: '',
+                                onTap: () =>
+                                    context.push('/preview/dse-attendance'),
+                              ),
+                              const _RowDivider(),
+                              _InfoRow(
+                                icon: Icons.delivery_dining_rounded,
+                                iconBg: AppColors.softOrange,
+                                iconColor: AppColors.primary,
                                 label: 'LMD Attendance',
                                 value: '',
                                 onTap: () =>

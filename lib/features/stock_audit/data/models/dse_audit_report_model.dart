@@ -34,6 +34,7 @@ class DseAuditReportRow {
     required this.claim,
     required this.diff,
     required this.status,
+    this.image,
     this.categoryId,
     this.categoryName,
   });
@@ -44,6 +45,7 @@ class DseAuditReportRow {
   final String auditDate;
   final String name;
   final String sku;
+  final String? image;
   final int system;
   final int sale;
   final int rto;
@@ -57,6 +59,8 @@ class DseAuditReportRow {
   final String? categoryName;
 
   factory DseAuditReportRow.fromJson(Map<String, dynamic> json) {
+    final rawImage = json['image'] ?? json['imageUrl'] ?? json['image_url'];
+    final image = rawImage == null ? null : rawImage.toString().trim();
     return DseAuditReportRow(
       id: jsonInt(json['id']),
       variantId: jsonInt(json['variantId'] ?? json['variant_id']),
@@ -64,6 +68,7 @@ class DseAuditReportRow {
       auditDate: (json['auditDate'] ?? json['audit_date'] ?? '').toString(),
       name: (json['name'] ?? 'Product').toString(),
       sku: (json['sku'] ?? '').toString(),
+      image: image == null || image.isEmpty ? null : image,
       system: jsonInt(json['system']),
       sale: jsonInt(json['sale']),
       rto: jsonInt(json['rto']),

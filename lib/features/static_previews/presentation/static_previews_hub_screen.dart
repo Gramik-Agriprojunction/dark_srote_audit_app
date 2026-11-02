@@ -38,9 +38,14 @@ class StaticPreviewsHubScreen extends ConsumerWidget {
                 ),
                 _PreviewTile(
                   icon: Icons.groups_rounded,
+                  title: 'DSE Attendance',
+                  subtitle: 'Monthly DSE day cards + audit KPIs',
+                  onTap: () => context.push('/preview/dse-attendance'),
+                ),
+                _PreviewTile(
+                  icon: Icons.delivery_dining_rounded,
                   title: 'LMD Attendance',
-                  subtitle:
-                      'List → day card opens DSE attendance detail',
+                  subtitle: 'Field attendance — pick / transit / delivered',
                   onTap: () => context.push('/preview/lmd-attendance'),
                 ),
                 _PreviewTile(
