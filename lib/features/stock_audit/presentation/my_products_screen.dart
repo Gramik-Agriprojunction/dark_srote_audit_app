@@ -513,20 +513,31 @@ class _ProductCard extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+        padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ProductImageThumb(
-                  imageUrl: row.image,
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: PreviewTheme.blue.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: ProductImageThumb(
+                    imageUrl: row.image,
+                    width: 54,
+                    height: 54,
+                    borderRadius: 12,
+                    showBorder: false,
+                    backgroundColor: PreviewTheme.blueSoft,
+                  ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,22 +547,23 @@ class _ProductCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13.5,
+                          fontSize: 15,
                           fontWeight: FontWeight.w800,
                           height: 1.2,
+                          letterSpacing: -0.2,
                           color: ModuleTokens.strongText,
                         ),
                       ),
                       if (variant.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           variant,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: ModuleTokens.mutedText,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: PreviewTheme.blue,
                           ),
                         ),
                       ],
@@ -562,8 +574,8 @@ class _ProductCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                             color: ModuleTokens.faintText,
                           ),
                         ),
@@ -571,7 +583,7 @@ class _ProductCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -602,22 +614,26 @@ class _ProductCard extends StatelessWidget {
                     ModuleStatusPill(
                       label: _statusLabel,
                       color: statusColor,
-                      filled: false,
-                    ),
-                    const SizedBox(height: 4),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: ModuleTokens.faintText,
+                      filled: true,
                     ),
                   ],
                 ),
+                const SizedBox(width: 2),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 22,
+                    color: ModuleTokens.faintText,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
               children: [
                 _StockMetricTile(
+                  icon: Icons.storage_rounded,
                   label: strings.system,
                   value: formatter.format(row.systemStock),
                   accent: PreviewTheme.blue,
@@ -625,17 +641,19 @@ class _ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
+                  icon: Icons.back_hand_outlined,
                   label: strings.onHand,
                   value: formatter.format(row.onHandQty),
-                  accent: PreviewTheme.textSecondary,
-                  soft: PreviewTheme.field,
+                  accent: const Color(0xFF1E3A5F),
+                  soft: const Color(0xFFE8EEF7),
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
+                  icon: Icons.inventory_2_outlined,
                   label: strings.physical,
                   value: formatter.format(row.totalPhysicalStock),
-                  accent: PreviewTheme.text,
-                  soft: PreviewTheme.field,
+                  accent: const Color(0xFF1E3A5F),
+                  soft: const Color(0xFFE8EEF7),
                 ),
               ],
             ),
@@ -643,6 +661,7 @@ class _ProductCard extends StatelessWidget {
             Row(
               children: [
                 _StockMetricTile(
+                  icon: Icons.check_circle_outline_rounded,
                   label: strings.usable,
                   value: formatter.format(row.physicalStock),
                   accent: PreviewTheme.green,
@@ -650,32 +669,39 @@ class _ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
+                  icon: Icons.warning_amber_rounded,
                   label: strings.damage,
                   value: formatter.format(row.damageStock),
                   accent: hasDamage
-                      ? _StockUi.shortage
-                      : PreviewTheme.textSecondary,
+                      ? const Color(0xFF7C3AED)
+                      : const Color(0xFF6D28D9),
                   soft: hasDamage
-                      ? PreviewTheme.redSoft
-                      : PreviewTheme.field,
+                      ? const Color(0xFFF3E8FF)
+                      : const Color(0xFFF5F3FF),
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
+                  icon: Icons.monitor_heart_outlined,
                   label: strings.liveStock,
                   value: formatter.format(liveQty),
                   accent: statusColor,
                   soft: statusColor.withValues(alpha: 0.12),
-                  emphasize: true,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: PreviewTheme.border.withValues(alpha: 0.9),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 if (store.isNotEmpty) ...[
                   Icon(
                     Icons.storefront_outlined,
-                    size: 12,
+                    size: 13,
                     color: ModuleTokens.faintText,
                   ),
                   const SizedBox(width: 4),
@@ -685,8 +711,8 @@ class _ProductCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
                         color: ModuleTokens.faintText,
                       ),
                     ),
@@ -695,15 +721,15 @@ class _ProductCard extends StatelessWidget {
                   const Spacer(),
                 Icon(
                   Icons.schedule_rounded,
-                  size: 11,
+                  size: 12,
                   color: ModuleTokens.faintText,
                 ),
                 const SizedBox(width: 3),
                 Text(
                   strings.updatedAgo(relative),
                   style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                     color: ModuleTokens.faintText,
                   ),
                 ),
@@ -718,18 +744,18 @@ class _ProductCard extends StatelessWidget {
 
 class _StockMetricTile extends StatelessWidget {
   const _StockMetricTile({
+    required this.icon,
     required this.label,
     required this.value,
     required this.accent,
     required this.soft,
-    this.emphasize = false,
   });
 
+  final IconData icon;
   final String label;
   final String value;
   final Color accent;
   final Color soft;
-  final bool emphasize;
 
   @override
   Widget build(BuildContext context) {
@@ -737,55 +763,36 @@ class _StockMetricTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
         decoration: BoxDecoration(
-          color: PreviewTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: emphasize
-                ? accent.withValues(alpha: 0.28)
-                : PreviewTheme.border,
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A0F172A),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          color: soft,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withValues(alpha: 0.14)),
         ),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              height: 3,
-              decoration: BoxDecoration(
-                color: soft,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: accent.withValues(alpha: 0.25)),
-              ),
-            ),
-            const SizedBox(height: 8),
+            Icon(icon, size: 16, color: accent),
+            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                height: 1.15,
+                fontWeight: FontWeight.w700,
                 color: PreviewTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
             Text(
               value,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: emphasize ? 16 : 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
-                letterSpacing: -0.3,
+                letterSpacing: -0.4,
+                height: 1.05,
                 color: accent,
               ),
             ),

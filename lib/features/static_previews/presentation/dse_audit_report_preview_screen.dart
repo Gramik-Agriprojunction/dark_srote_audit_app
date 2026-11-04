@@ -720,26 +720,19 @@ class _AuditCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(3),
+                          padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: accent.withValues(alpha: 0.35),
+                              color: PreviewTheme.blue.withValues(alpha: 0.28),
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accent.withValues(alpha: 0.16),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
                           child: ProductImageThumb(
                             imageUrl: row.image,
-                            width: 62,
-                            height: 62,
-                            borderRadius: 13,
-                            backgroundColor: PreviewTheme.surface,
+                            width: 54,
+                            height: 54,
+                            borderRadius: 12,
+                            backgroundColor: PreviewTheme.blueSoft,
                             showBorder: false,
                           ),
                         ),
@@ -850,12 +843,16 @@ class _AuditCard extends StatelessWidget {
                     Row(
                       children: [
                         _metricTile(
+                          icon: Icons.storage_rounded,
                           label: 'System Stock',
                           value: Text(
                             '${row.system}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.05,
                               color: PreviewTheme.blue,
                             ),
                           ),
@@ -864,6 +861,7 @@ class _AuditCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         _metricTile(
+                          icon: Icons.swap_horiz_rounded,
                           label: 'Sale / RTO',
                           value: Text.rich(
                             TextSpan(
@@ -894,18 +892,23 @@ class _AuditCard extends StatelessWidget {
                                 ),
                               ],
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          soft: PreviewTheme.field,
-                          accent: PreviewTheme.textSecondary,
+                          soft: const Color(0xFFE8EEF7),
+                          accent: const Color(0xFF1E3A5F),
                         ),
                         const SizedBox(width: 8),
                         _metricTile(
+                          icon: Icons.call_received_rounded,
                           label: 'Transfer (IN)',
                           value: Text(
                             '${row.transferIn}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.05,
                               color: PreviewTheme.green,
                             ),
                           ),
@@ -918,12 +921,16 @@ class _AuditCard extends StatelessWidget {
                     Row(
                       children: [
                         _metricTile(
+                          icon: Icons.call_made_rounded,
                           label: 'Transfer (OUT)',
                           value: Text(
                             '${row.transferOut}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.05,
                               color: PreviewTheme.red,
                             ),
                           ),
@@ -932,26 +939,34 @@ class _AuditCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         _metricTile(
+                          icon: Icons.flag_outlined,
                           label: 'Expected Qty',
                           value: Text(
                             '${row.expected}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.05,
                               color: PreviewTheme.text,
                             ),
                           ),
-                          soft: PreviewTheme.field,
-                          accent: PreviewTheme.text,
+                          soft: const Color(0xFFE8EEF7),
+                          accent: const Color(0xFF1E3A5F),
                         ),
                         const SizedBox(width: 8),
                         _metricTile(
+                          icon: Icons.check_circle_outline_rounded,
                           label: 'DSE Claim',
                           value: Text(
                             '${row.claim}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.05,
                               color: PreviewTheme.green,
                             ),
                           ),
@@ -1001,6 +1016,7 @@ class _AuditCard extends StatelessWidget {
   }
 
   Widget _metricTile({
+    required IconData icon,
     required String label,
     required Widget value,
     required Color soft,
@@ -1010,42 +1026,26 @@ class _AuditCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
         decoration: BoxDecoration(
-          color: PreviewTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: PreviewTheme.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A0F172A),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          color: soft,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withValues(alpha: 0.14)),
         ),
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              height: 3,
-              decoration: BoxDecoration(
-                color: soft,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: accent.withValues(alpha: 0.25)),
-              ),
-            ),
-            const SizedBox(height: 8),
+            Icon(icon, size: 16, color: accent),
+            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                height: 1.15,
+                fontWeight: FontWeight.w700,
                 color: PreviewTheme.textSecondary,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
             value,
           ],
         ),

@@ -512,56 +512,104 @@ class _RulesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rules = <(String, Color, Color, String)>[
+    final wopFg =
+        AppColors.isDark ? const Color(0xFFB794F6) : const Color(0xFF7C3AED);
+    final wopBg =
+        AppColors.isDark ? const Color(0xFF2E2145) : const Color(0xFFF3E8FF);
+
+    final rules = <({
+      String title,
+      IconData icon,
+      Color fg,
+      Color bg,
+      List<String> lines,
+    })>[
       (
-        'Present',
-        PreviewTheme.green,
-        PreviewTheme.greenSoft,
-        'SKU Pending = 0, Match = 100%, Short = 0, Excess = 0',
+        title: 'Present',
+        icon: Icons.check_circle_rounded,
+        fg: PreviewTheme.green,
+        bg: PreviewTheme.greenSoft,
+        lines: const [
+          'SKU Pending = 0',
+          'Match = 100%',
+          'Short = 0',
+          'Excess = 0',
+        ],
       ),
       (
-        'Half Day',
-        PreviewTheme.orange,
-        PreviewTheme.orangeSoft,
-        'SKU Pending = 0, Short > 0 or Excess > 0',
+        title: 'Half Day',
+        icon: Icons.timelapse_rounded,
+        fg: PreviewTheme.orange,
+        bg: PreviewTheme.orangeSoft,
+        lines: const [
+          'SKU Pending = 0',
+          'Short > 0 or Excess > 0',
+        ],
       ),
       (
-        'Absent',
-        PreviewTheme.red,
-        PreviewTheme.redSoft,
-        'SKU Pending > 0 and (Short > 0 or Excess > 0)',
+        title: 'Absent',
+        icon: Icons.cancel_rounded,
+        fg: PreviewTheme.red,
+        bg: PreviewTheme.redSoft,
+        lines: const [
+          'SKU Pending > 0',
+          'Short > 0 or Excess > 0',
+        ],
       ),
       (
-        'Holiday',
-        PreviewTheme.blue,
-        PreviewTheme.blueSoft,
-        'Company defined holiday / weekly off day',
+        title: 'Holiday',
+        icon: Icons.beach_access_rounded,
+        fg: PreviewTheme.blue,
+        bg: PreviewTheme.blueSoft,
+        lines: const [
+          'Company defined holiday',
+          'Weekly off day',
+        ],
       ),
       (
-        'WOP',
-        AppColors.isDark ? const Color(0xFFB794F6) : const Color(0xFF7C3AED),
-        AppColors.isDark ? const Color(0xFF2E2145) : const Color(0xFFF3E8FF),
-        'Work Off Permission (Approved leave)',
+        title: 'WOP',
+        icon: Icons.payments_rounded,
+        fg: wopFg,
+        bg: wopBg,
+        lines: const [
+          'Work Off Pay',
+          '(WOP) day',
+          '(Approved leave)',
+        ],
       ),
     ];
 
+    final headerFg =
+        AppColors.isDark ? const Color(0xFFE9D5FF) : const Color(0xFF5B21B6);
+    final headerIconBg =
+        AppColors.isDark ? const Color(0xFF3D3554) : const Color(0xFFEDE9FE);
+    final headerIconFg =
+        AppColors.isDark ? const Color(0xFFB794F6) : const Color(0xFF7C3AED);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: AppColors.isDark
               ? const [Color(0xFF2A2438), Color(0xFF1C1828)]
-              : const [Color(0xFFF8F5FF), Color(0xFFF3E8FF)],
+              : const [Color(0xFFFBF9FF), Color(0xFFF3E8FF)],
         ),
         border: Border.all(
           color: AppColors.isDark
               ? const Color(0xFF3D3554)
               : const Color(0xFFE9E5FF),
         ),
-        boxShadow: PreviewTheme.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: headerIconFg.withValues(alpha: AppColors.isDark ? 0.18 : 0.10),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+          ...PreviewTheme.cardShadow,
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,86 +617,220 @@ class _RulesCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.isDark
-                      ? const Color(0xFF3D3554)
-                      : const Color(0xFFEDE9FE),
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      headerIconBg,
+                      headerIconFg.withValues(alpha: 0.18),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: headerIconFg.withValues(alpha: 0.22),
+                  ),
                 ),
                 child: Icon(
-                  Icons.info_outline_rounded,
-                  size: 18,
-                  color: AppColors.isDark
-                      ? const Color(0xFFB794F6)
-                      : const Color(0xFF7C3AED),
+                  Icons.auto_awesome_rounded,
+                  size: 20,
+                  color: headerIconFg,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                'Attendance Status Rules',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.2,
-                  color: AppColors.isDark
-                      ? const Color(0xFFE9D5FF)
-                      : const Color(0xFF5B21B6),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Attendance Status Rules',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: headerFg,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'How each day status is decided',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: PreviewTheme.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           for (var i = 0; i < rules.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-              decoration: BoxDecoration(
-                color: PreviewTheme.surface.withValues(
-                  alpha: AppColors.isDark ? 0.45 : 0.72,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: PreviewTheme.border),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: rules[i].$3,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      rules[i].$1,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: rules[i].$2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      rules[i].$4,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                        color: PreviewTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            if (i > 0) const SizedBox(height: 10),
+            _RuleTile(rule: rules[i]),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _RuleTile extends StatelessWidget {
+  const _RuleTile({required this.rule});
+
+  final ({
+    String title,
+    IconData icon,
+    Color fg,
+    Color bg,
+    List<String> lines,
+  }) rule;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            PreviewTheme.surface.withValues(
+              alpha: AppColors.isDark ? 0.55 : 0.92,
+            ),
+            rule.bg.withValues(alpha: AppColors.isDark ? 0.35 : 0.55),
+          ],
+        ),
+        border: Border.all(color: rule.fg.withValues(alpha: 0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: rule.fg.withValues(alpha: AppColors.isDark ? 0.12 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      rule.fg,
+                      rule.fg.withValues(alpha: 0.45),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: rule.bg,
+                              borderRadius: BorderRadius.circular(11),
+                              border: Border.all(
+                                color: rule.fg.withValues(alpha: 0.18),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: rule.fg.withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(rule.icon, size: 18, color: rule.fg),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: rule.bg,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: rule.fg.withValues(alpha: 0.16),
+                              ),
+                            ),
+                            child: Text(
+                              rule.title,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.1,
+                                color: rule.fg,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      for (final line in rule.lines)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: rule.fg,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: rule.fg.withValues(alpha: 0.35),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: Text(
+                                  line,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.3,
+                                    fontWeight: FontWeight.w600,
+                                    color: PreviewTheme.text,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
