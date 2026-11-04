@@ -16,12 +16,30 @@ import '../../static_previews/presentation/preview_theme.dart';
 import '../data/models/product_mismatch_model.dart';
 import 'providers/my_products_provider.dart';
 
-/// Design tokens matching the Live Stock mock.
+/// Design tokens matching the Live Stock mock (light + dark).
 class _StockUi {
-  static const matched = Color(0xFF15803D);
-  static const shortage = Color(0xFFDC2626);
-  static const excess = Color(0xFF2563EB);
-  static const live = Color(0xFF16A34A);
+  static Color get matched =>
+      AppColors.isDark ? const Color(0xFF6BCF8E) : const Color(0xFF15803D);
+  static Color get shortage =>
+      AppColors.isDark ? const Color(0xFFE88A9A) : const Color(0xFFDC2626);
+  static Color get excess =>
+      AppColors.isDark ? const Color(0xFF7EB8E8) : const Color(0xFF2563EB);
+  static Color get live =>
+      AppColors.isDark ? const Color(0xFF6BCF8E) : const Color(0xFF16A34A);
+
+  static Color get onHandAccent =>
+      AppColors.isDark ? const Color(0xFF9BB4D4) : const Color(0xFF1E3A5F);
+  static Color get onHandSoft =>
+      AppColors.isDark ? const Color(0xFF2A3548) : const Color(0xFFE8EEF7);
+
+  static Color get damageAccent =>
+      AppColors.isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED);
+  static Color get damageSoft =>
+      AppColors.isDark ? const Color(0xFF2A1F40) : const Color(0xFFF3E8FF);
+  static Color get damageMutedAccent =>
+      AppColors.isDark ? const Color(0xFFA78BFA) : const Color(0xFF6D28D9);
+  static Color get damageMutedSoft =>
+      AppColors.isDark ? const Color(0xFF241B38) : const Color(0xFFF5F3FF);
 }
 
 class MyProductsScreen extends ConsumerStatefulWidget {
@@ -366,7 +384,7 @@ class _LiveStockSectionHeader extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: _StockUi.live,
                         shape: BoxShape.circle,
                       ),
@@ -489,8 +507,11 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _statusColor;
     final hasDamage = row.damageStock > 0;
-    final skuLine = (row.sku ?? '').trim();
-    final variant = (row.variantLabel ?? '').trim();
+    final skuLine = _stockDisplayPack(row.sku);
+    final variant = _stockDisplayPack(row.variantLabel);
+    final packLabel = variant != '—'
+        ? variant
+        : (skuLine != '—' ? skuLine : '');
     final store = (row.storeName ?? '').trim();
     // Same source as Lens ON HAND QTY (warehouse on-hand).
     final liveQty = row.onHandQty;
@@ -503,8 +524,8 @@ class _ProductCard extends StatelessWidget {
           '/preview/stock-ledger',
           extra: {
             'productName': row.productName,
-            'variantLabel': variant.isNotEmpty ? variant : '—',
-            'sku': skuLine.isNotEmpty ? skuLine : '—',
+            'variantLabel': packLabel.isNotEmpty ? packLabel : '—',
+            'sku': skuLine != '—' ? skuLine : '—',
             'storeName': store.isNotEmpty ? store : 'Dark Store',
             'imageUrl': row.image,
             'variantId': row.variantId,
@@ -554,29 +575,29 @@ class _ProductCard extends StatelessWidget {
                           color: ModuleTokens.strongText,
                         ),
                       ),
-                      if (variant.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          variant,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: PreviewTheme.blue,
-                          ),
-                        ),
-                      ],
-                      if (skuLine.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'SKU: $skuLine',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: ModuleTokens.faintText,
+                      if (packLabel.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: PreviewTheme.orangeSoft,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              packLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: PreviewTheme.orange,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -593,7 +614,7 @@ class _ProductCard extends StatelessWidget {
                         Container(
                           width: 7,
                           height: 7,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: _StockUi.live,
                             shape: BoxShape.circle,
                           ),
@@ -601,7 +622,7 @@ class _ProductCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           strings.liveBadge,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.3,
@@ -644,16 +665,16 @@ class _ProductCard extends StatelessWidget {
                   icon: Icons.back_hand_outlined,
                   label: strings.onHand,
                   value: formatter.format(row.onHandQty),
-                  accent: const Color(0xFF1E3A5F),
-                  soft: const Color(0xFFE8EEF7),
+                  accent: _StockUi.onHandAccent,
+                  soft: _StockUi.onHandSoft,
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
                   icon: Icons.inventory_2_outlined,
                   label: strings.physical,
                   value: formatter.format(row.totalPhysicalStock),
-                  accent: const Color(0xFF1E3A5F),
-                  soft: const Color(0xFFE8EEF7),
+                  accent: _StockUi.onHandAccent,
+                  soft: _StockUi.onHandSoft,
                 ),
               ],
             ),
@@ -673,11 +694,11 @@ class _ProductCard extends StatelessWidget {
                   label: strings.damage,
                   value: formatter.format(row.damageStock),
                   accent: hasDamage
-                      ? const Color(0xFF7C3AED)
-                      : const Color(0xFF6D28D9),
+                      ? _StockUi.damageAccent
+                      : _StockUi.damageMutedAccent,
                   soft: hasDamage
-                      ? const Color(0xFFF3E8FF)
-                      : const Color(0xFFF5F3FF),
+                      ? _StockUi.damageSoft
+                      : _StockUi.damageMutedSoft,
                 ),
                 const SizedBox(width: 8),
                 _StockMetricTile(
@@ -685,7 +706,9 @@ class _ProductCard extends StatelessWidget {
                   label: strings.liveStock,
                   value: formatter.format(liveQty),
                   accent: statusColor,
-                  soft: statusColor.withValues(alpha: 0.12),
+                  soft: AppColors.isDark
+                      ? statusColor.withValues(alpha: 0.18)
+                      : statusColor.withValues(alpha: 0.12),
                 ),
               ],
             ),
@@ -742,6 +765,16 @@ class _ProductCard extends StatelessWidget {
   }
 }
 
+String _stockDisplayPack(String? raw) {
+  var value = (raw ?? '').trim();
+  if (value.isEmpty) return '—';
+  value = value.replaceFirst(
+    RegExp(r'^sku\s*[:\-]?\s*', caseSensitive: false),
+    '',
+  );
+  return value.trim().isEmpty ? '—' : value.trim();
+}
+
 class _StockMetricTile extends StatelessWidget {
   const _StockMetricTile({
     required this.icon,
@@ -761,39 +794,45 @@ class _StockMetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
         decoration: BoxDecoration(
           color: soft,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withValues(alpha: 0.14)),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 16, color: accent),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: PreviewTheme.textSecondary,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 14, color: accent),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
-              textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.4,
-                height: 1.05,
-                color: accent,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                height: 1,
+                color: PreviewTheme.text,
               ),
             ),
           ],

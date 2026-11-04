@@ -763,10 +763,10 @@ class _AuditCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: PreviewTheme.surface,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: PreviewTheme.border),
+            border: Border.all(color: PreviewTheme.cardEdge, width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: accent.withValues(alpha: AppColors.isDark ? 0.14 : 0.08),
+                color: accent.withValues(alpha: AppColors.isDark ? 0.18 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -976,7 +976,7 @@ class _AuditCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: PreviewTheme.field,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: PreviewTheme.border),
+                            border: Border.all(color: PreviewTheme.cardEdge),
                           ),
                           child: Row(
                             children: [

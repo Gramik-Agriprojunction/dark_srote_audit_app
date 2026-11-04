@@ -63,6 +63,9 @@ class _StockLedgerPreviewScreenState
   bool _loadingMore = false;
   String? _error;
   String? _resolvedImageUrl;
+  double? _openingStock;
+  double? _closingStock;
+  double? _currentOnHand;
 
   @override
   void initState() {
@@ -144,6 +147,11 @@ class _StockLedgerPreviewScreenState
       setState(() {
         _pagination = report.pagination;
         _rows = reset ? report.rows : [..._rows, ...report.rows];
+        if (reset) {
+          _openingStock = report.openingStock;
+          _closingStock = report.closingStock;
+          _currentOnHand = report.currentOnHand;
+        }
         final img = report.productImage?.trim();
         if (img != null && img.isNotEmpty) {
           _resolvedImageUrl = img;
@@ -276,7 +284,7 @@ class _StockLedgerPreviewScreenState
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Stock movements',
+                    'Transaction history',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
@@ -284,6 +292,25 @@ class _StockLedgerPreviewScreenState
                       color: PreviewTheme.text,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Type · Change · Pehle → Stock',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: PreviewTheme.textMuted,
+                    ),
+                  ),
+                  if (_openingStock != null ||
+                      _closingStock != null ||
+                      _currentOnHand != null) ...[
+                    const SizedBox(height: 10),
+                    _StockSummaryStrip(
+                      opening: _openingStock,
+                      closing: _closingStock,
+                      now: _currentOnHand,
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   if (_loading && _rows.isEmpty)
                     const Padding(
@@ -322,7 +349,7 @@ class _StockLedgerPreviewScreenState
                         row: row,
                         displayDateFmt: _displayDateFmt,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                     ],
                     if (_pagination.hasMore && _query.isEmpty)
                       TextButton(
@@ -688,9 +715,11 @@ class _LedgerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pill = _pill;
     final qty = row.displayQty;
+    final isOut = qty != null && qty < 0;
+    final isIn = qty != null && qty > 0;
     final qtyColor = qty == null
         ? PreviewTheme.textMuted
-        : qty >= 0
+        : isIn
             ? PreviewTheme.green
             : PreviewTheme.red;
     final qtyText = qty == null
@@ -702,314 +731,298 @@ class _LedgerCard extends StatelessWidget {
     final dt = row.dateIst?.toLocal();
     final dateStr = dt != null ? displayDateFmt.format(dt) : '—';
     final running = row.runningStock;
-    final runningText = running == null ? '—' : running.round().toString();
-    final orderNo = row.orderNumber.trim().isEmpty ? '—' : row.orderNumber.trim();
-    final customer = row.customer.trim().isEmpty ? '—' : row.customer.trim();
+    final afterText = running == null ? '—' : running.round().toString();
+    final beforeText = (running != null && qty != null)
+        ? '${running.round() - qty}'
+        : '—';
+    final orderNo =
+        row.orderNumber.trim().isEmpty ? '—' : row.orderNumber.trim();
+    final customer =
+        row.customer.trim().isEmpty ? '—' : row.customer.trim();
+
+    final accent = pill.$2;
+    final edge = Color.lerp(
+          PreviewTheme.cardEdge,
+          accent,
+          AppColors.isDark ? 0.35 : 0.28,
+        ) ??
+        PreviewTheme.cardEdge;
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            PreviewTheme.surface,
-            Color.lerp(PreviewTheme.surface, pill.$1, 0.45) ??
-                PreviewTheme.surface,
-          ],
-        ),
-        border: Border.all(color: PreviewTheme.border),
+        color: PreviewTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: edge, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: pill.$2.withValues(alpha: AppColors.isDark ? 0.16 : 0.10),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: accent.withValues(alpha: AppColors.isDark ? 0.16 : 0.10),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
           ...PreviewTheme.cardShadow,
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 4,
-                color: pill.$2,
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [accent, accent.withValues(alpha: 0.55)],
+                ),
               ),
-              Expanded(
-                child: Column(
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: pill.$1,
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Icon(pill.$3, size: 18, color: accent),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: PreviewTheme.field,
-                                    borderRadius: BorderRadius.circular(9),
-                                  ),
-                                  child: Icon(
-                                    Icons.calendar_today_rounded,
-                                    size: 13,
+                          Text(
+                            row.bucket,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: PreviewTheme.text,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  orderNo,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
                                     color: PreviewTheme.textSecondary,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    dateStr,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.2,
-                                      color: PreviewTheme.text,
-                                      height: 1.2,
+                              ),
+                              if (orderNo != '—') ...[
+                                const SizedBox(width: 4),
+                                InkWell(
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: orderNo),
+                                    );
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Order code copied'),
+                                        duration: Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(2),
+                                    child: Icon(
+                                      Icons.content_copy_rounded,
+                                      size: 14,
+                                      color: PreviewTheme.textMuted,
                                     ),
                                   ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
-                          Expanded(
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: qtyColor.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: qtyColor.withValues(alpha: 0.18),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2_outlined,
-                                      size: 14,
-                                      color: qtyColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Qty : ',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: PreviewTheme.textSecondary,
-                                      ),
-                                    ),
-                                    Text(
-                                      qtyText,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        color: qtyColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                          if (customer != '—') ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              customer,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: PreviewTheme.textMuted,
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 9,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: pill.$1,
-                                  borderRadius: BorderRadius.circular(999),
-                                  border: Border.all(
-                                    color: pill.$2.withValues(alpha: 0.18),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(pill.$3, size: 12, color: pill.$2),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      row.bucket,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: pill.$2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                          ],
+                          const SizedBox(height: 8),
+                          Text(
+                            '$dateStr  ·  Pehle $beforeText  →  $afterText',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: PreviewTheme.textMuted,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: PreviewTheme.border.withValues(alpha: 0.85),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: PreviewTheme.field,
-                                    borderRadius: BorderRadius.circular(9),
-                                  ),
-                                  child: Icon(
-                                    Icons.person_outline_rounded,
-                                    size: 15,
-                                    color: PreviewTheme.textSecondary,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              orderNo,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w800,
-                                                color: PreviewTheme.text,
-                                                height: 1.2,
-                                              ),
-                                            ),
-                                          ),
-                                          if (orderNo != '—') ...[
-                                            const SizedBox(width: 4),
-                                            InkWell(
-                                              onTap: () async {
-                                                await Clipboard.setData(
-                                                  ClipboardData(text: orderNo),
-                                                );
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Order code copied',
-                                                    ),
-                                                    duration: Duration(
-                                                      seconds: 2,
-                                                    ),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(2),
-                                                child: Icon(
-                                                  Icons.content_copy_rounded,
-                                                  size: 14,
-                                                  color: PreviewTheme.textMuted,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      Text(
-                                        customer,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: PreviewTheme.textMuted,
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: PreviewTheme.field,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: PreviewTheme.border),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.widgets_outlined,
-                                  size: 14,
-                                  color: PreviewTheme.textSecondary,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'Stock : ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: PreviewTheme.textSecondary,
-                                  ),
-                                ),
-                                Text(
-                                  runningText,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: running == null
-                                        ? PreviewTheme.textMuted
-                                        : PreviewTheme.text,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 10),
+                    Text(
+                      qtyText,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        height: 1.1,
+                        color: qtyColor,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StockSummaryStrip extends StatelessWidget {
+  const _StockSummaryStrip({
+    required this.opening,
+    required this.closing,
+    required this.now,
+  });
+
+  final double? opening;
+  final double? closing;
+  final double? now;
+
+  String _fmt(double? v) => v == null ? '—' : v.round().toString();
+
+  @override
+  Widget build(BuildContext context) {
+    final nowVal = now ?? closing;
+    return Row(
+      children: [
+        Expanded(
+          child: _SummaryTile(
+            label: 'Opening',
+            value: _fmt(opening),
+            icon: Icons.history_rounded,
+            accent: PreviewTheme.blue,
+            soft: PreviewTheme.blueSoft,
           ),
         ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _SummaryTile(
+            label: 'Now',
+            value: _fmt(nowVal),
+            icon: Icons.inventory_2_rounded,
+            accent: PreviewTheme.orange,
+            soft: PreviewTheme.orangeSoft,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.accent,
+    required this.soft,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color accent;
+  final Color soft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: PreviewTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: PreviewTheme.cardEdge, width: 1.2),
+        boxShadow: [
+          ...PreviewTheme.cardShadow,
+          BoxShadow(
+            color: accent.withValues(alpha: AppColors.isDark ? 0.14 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: soft,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: accent.withValues(alpha: 0.22)),
+            ),
+            child: Icon(icon, size: 18, color: accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.6,
+                    height: 1,
+                    color: PreviewTheme.text,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

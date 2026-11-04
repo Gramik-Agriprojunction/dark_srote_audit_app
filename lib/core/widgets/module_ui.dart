@@ -18,7 +18,9 @@ class ModuleTokens {
   ModuleTokens._();
 
   static const cardRadius = 16.0;
-  static Color get cardBorder => AppColors.border;
+  static Color get cardBorder => AppColors.isDark
+      ? const Color(0xFF3A3A48)
+      : const Color(0xFFD0D5DD);
   static Color get chipBorder => AppColors.borderInput;
   static Color get mutedText => AppColors.textSecondary;
   static Color get strongText => AppColors.textPrimary;
