@@ -14,6 +14,10 @@ class PreviewTheme {
   static Color get textSecondary => AppColors.textSecondary;
   static Color get textMuted => AppColors.textMuted;
   static Color get border => AppColors.border;
+  /// Stronger edge for white/surface cards (visible in light + dark).
+  static Color get cardEdge => AppColors.isDark
+      ? const Color(0xFF3A3A48)
+      : const Color(0xFFD0D5DD);
   static Color get orangeSoft => AppColors.softOrange;
 
   static Color get green =>
