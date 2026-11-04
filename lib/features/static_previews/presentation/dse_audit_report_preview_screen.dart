@@ -403,38 +403,34 @@ class _DseAuditReportPreviewScreenState
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
                 children: [
-                  Row(
-                    children: [
-                      PreviewStatChip(
-                        label: 'SKUs',
-                        value: '${_summary.skus}',
-                        color: PreviewTheme.blue,
-                        soft: PreviewTheme.blueSoft,
-                      ),
-                      const SizedBox(width: 8),
-                      PreviewStatChip(
-                        label: 'Shortage',
-                        value: '${_summary.shortage}',
-                        color: PreviewTheme.red,
-                        soft: PreviewTheme.redSoft,
-                      ),
-                      const SizedBox(width: 8),
-                      PreviewStatChip(
-                        label: 'Excess',
-                        value: '${_summary.excess}',
-                        color: PreviewTheme.green,
-                        soft: PreviewTheme.greenSoft,
-                      ),
-                      const SizedBox(width: 8),
-                      PreviewStatChip(
-                        label: 'Matched',
-                        value: '${_summary.matched}',
-                        color: PreviewTheme.textSecondary,
-                        soft: PreviewTheme.field,
-                      ),
-                    ],
-                  ),
+                  _SummaryStrip(summary: _summary),
                   const SizedBox(height: 14),
+                  if (!_loading || _rows.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Audit list',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
+                              color: PreviewTheme.text,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${_meta.total} SKUs',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: PreviewTheme.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (_loading && _rows.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 48),
@@ -623,6 +619,114 @@ class _Filters extends StatelessWidget {
   }
 }
 
+class _SummaryStrip extends StatelessWidget {
+  const _SummaryStrip({required this.summary});
+
+  final DseAuditReportSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: PreviewTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: PreviewTheme.border),
+        boxShadow: PreviewTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          _SummaryTile(
+            label: 'SKUs',
+            value: '${summary.skus}',
+            color: PreviewTheme.blue,
+            soft: PreviewTheme.blueSoft,
+          ),
+          const SizedBox(width: 8),
+          _SummaryTile(
+            label: 'Shortage',
+            value: '${summary.shortage}',
+            color: PreviewTheme.red,
+            soft: PreviewTheme.redSoft,
+          ),
+          const SizedBox(width: 8),
+          _SummaryTile(
+            label: 'Excess',
+            value: '${summary.excess}',
+            color: PreviewTheme.orange,
+            soft: PreviewTheme.orangeSoft,
+          ),
+          const SizedBox(width: 8),
+          _SummaryTile(
+            label: 'Matched',
+            value: '${summary.matched}',
+            color: PreviewTheme.green,
+            soft: PreviewTheme.greenSoft,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.soft,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final Color soft;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: soft,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.4,
+                height: 1,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _displaySku(String? raw) {
+  var value = (raw ?? '').trim();
+  if (value.isEmpty) return '—';
+  value = value.replaceFirst(RegExp(r'^sku\s*[:\-]?\s*', caseSensitive: false), '');
+  return value.trim().isEmpty ? '—' : value.trim();
+}
+
 class _AuditCard extends StatelessWidget {
   const _AuditCard({
     required this.row,
@@ -634,14 +738,15 @@ class _AuditCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final skuLabel = _displaySku(row.sku);
     final isMatched = row.diff == 0;
     final isExcess = row.diff > 0;
     final accent = isMatched
-        ? PreviewTheme.blue
-        : (isExcess ? PreviewTheme.green : PreviewTheme.red);
-    final accentSoft = isMatched
-        ? PreviewTheme.blueSoft
-        : (isExcess ? PreviewTheme.greenSoft : PreviewTheme.redSoft);
+        ? PreviewTheme.green
+        : (isExcess ? PreviewTheme.orange : PreviewTheme.red);
+    final soft = isMatched
+        ? PreviewTheme.greenSoft
+        : (isExcess ? PreviewTheme.orangeSoft : PreviewTheme.redSoft);
     final statusLabel = isMatched
         ? 'Matched'
         : (isExcess ? 'Excess' : 'Shortage');
@@ -653,403 +758,389 @@ class _AuditCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: accent.withValues(alpha: 0.22),
-              width: 1.2,
-            ),
+            color: PreviewTheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: PreviewTheme.border),
             boxShadow: [
               BoxShadow(
-                color: accent.withValues(alpha: 0.12),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+                color: accent.withValues(alpha: AppColors.isDark ? 0.14 : 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
-              BoxShadow(
-                color: const Color(0x0F0F172A),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
+              ...PreviewTheme.cardShadow,
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        accentSoft.withValues(alpha: 0.55),
-                        PreviewTheme.surface,
-                        PreviewTheme.surface,
-                      ],
-                      stops: const [0, 0.38, 1],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 6,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 5,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        accent,
-                        accent.withValues(alpha: 0.55),
-                      ],
+                      colors: [accent, accent.withValues(alpha: 0.45)],
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 14, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: PreviewTheme.blue.withValues(alpha: 0.28),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: ProductImageThumb(
+                                imageUrl: row.image,
+                                width: 56,
+                                height: 56,
+                                borderRadius: 14,
+                                backgroundColor: PreviewTheme.field,
+                                showBorder: false,
+                              ),
                             ),
-                          ),
-                          child: ProductImageThumb(
-                            imageUrl: row.image,
-                            width: 54,
-                            height: 54,
-                            borderRadius: 12,
-                            backgroundColor: PreviewTheme.blueSoft,
-                            showBorder: false,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                crossAxisAlignment: WrapCrossAlignment.center,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _pill(
-                                    icon: Icons.calendar_month_rounded,
-                                    label: row.date,
-                                    fg: PreviewTheme.blue,
-                                    bg: PreviewTheme.blueSoft,
+                                  Text(
+                                    row.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.2,
+                                      letterSpacing: -0.25,
+                                      color: PreviewTheme.text,
+                                    ),
                                   ),
-                                  _pill(
-                                    icon: isExcess
-                                        ? Icons.trending_up_rounded
-                                        : (isMatched
-                                            ? Icons.check_circle_outline_rounded
-                                            : Icons.trending_down_rounded),
-                                    label: statusLabel,
-                                    fg: accent,
-                                    bg: accentSoft,
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: PreviewTheme.orangeSoft,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            skuLabel,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: PreviewTheme.orange,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        row.date,
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: PreviewTheme.textMuted,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                row.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w800,
-                                  height: 1.2,
-                                  letterSpacing: -0.2,
-                                  color: PreviewTheme.text,
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: soft,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.2),
                                 ),
                               ),
-                              const SizedBox(height: 5),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: PreviewTheme.orangeSoft,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'SKU: ${row.sku}',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: PreviewTheme.orange,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isMatched
+                                        ? Icons.check_circle_rounded
+                                        : (isExcess
+                                            ? Icons.trending_up_rounded
+                                            : Icons.trending_down_rounded),
+                                    size: 13,
+                                    color: accent,
                                   ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    statusLabel,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _QtyPanel(
+                                label: 'Expected',
+                                value: '${row.expected}',
+                                icon: Icons.flag_outlined,
+                                color: PreviewTheme.blue,
+                                soft: PreviewTheme.blueSoft,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _QtyPanel(
+                                label: 'DSE Claim',
+                                value: '${row.claim}',
+                                icon: Icons.verified_outlined,
+                                color: PreviewTheme.green,
+                                soft: PreviewTheme.greenSoft,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 64,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: soft,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Diff',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: accent.withValues(alpha: 0.85),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    diffText,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.4,
+                                      height: 1,
+                                      color: accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: PreviewTheme.field,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: PreviewTheme.border),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _FlowMetric(
+                                  label: 'System',
+                                  value: '${row.system}',
+                                ),
+                              ),
+                              _FlowDivider(),
+                              Expanded(
+                                child: _FlowMetric(
+                                  label: 'Sale/RTO',
+                                  value: '${row.sale}/${row.rto}',
+                                ),
+                              ),
+                              _FlowDivider(),
+                              Expanded(
+                                child: _FlowMetric(
+                                  label: 'IN',
+                                  value: '${row.transferIn}',
+                                  valueColor: PreviewTheme.green,
+                                ),
+                              ),
+                              _FlowDivider(),
+                              Expanded(
+                                child: _FlowMetric(
+                                  label: 'OUT',
+                                  value: '${row.transferOut}',
+                                  valueColor: PreviewTheme.red,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Column(
-                          children: [
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 64),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: accentSoft,
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: accent.withValues(alpha: 0.28),
-                                  ),
-                                ),
-                                child: Text(
-                                  diffText,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.4,
-                                    height: 1,
-                                    color: accent,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 12,
-                              color: PreviewTheme.textMuted,
-                            ),
-                          ],
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        _metricTile(
-                          icon: Icons.storage_rounded,
-                          label: 'System Stock',
-                          value: Text(
-                            '${row.system}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.05,
-                              color: PreviewTheme.blue,
-                            ),
-                          ),
-                          soft: PreviewTheme.blueSoft,
-                          accent: PreviewTheme.blue,
-                        ),
-                        const SizedBox(width: 8),
-                        _metricTile(
-                          icon: Icons.swap_horiz_rounded,
-                          label: 'Sale / RTO',
-                          value: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '${row.sale}',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    color: PreviewTheme.blue,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' / ',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: PreviewTheme.textSecondary,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '${row.rto}',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    color: PreviewTheme.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          soft: const Color(0xFFE8EEF7),
-                          accent: const Color(0xFF1E3A5F),
-                        ),
-                        const SizedBox(width: 8),
-                        _metricTile(
-                          icon: Icons.call_received_rounded,
-                          label: 'Transfer (IN)',
-                          value: Text(
-                            '${row.transferIn}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.05,
-                              color: PreviewTheme.green,
-                            ),
-                          ),
-                          soft: PreviewTheme.greenSoft,
-                          accent: PreviewTheme.green,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _metricTile(
-                          icon: Icons.call_made_rounded,
-                          label: 'Transfer (OUT)',
-                          value: Text(
-                            '${row.transferOut}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.05,
-                              color: PreviewTheme.red,
-                            ),
-                          ),
-                          soft: PreviewTheme.redSoft,
-                          accent: PreviewTheme.red,
-                        ),
-                        const SizedBox(width: 8),
-                        _metricTile(
-                          icon: Icons.flag_outlined,
-                          label: 'Expected Qty',
-                          value: Text(
-                            '${row.expected}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.05,
-                              color: PreviewTheme.text,
-                            ),
-                          ),
-                          soft: const Color(0xFFE8EEF7),
-                          accent: const Color(0xFF1E3A5F),
-                        ),
-                        const SizedBox(width: 8),
-                        _metricTile(
-                          icon: Icons.check_circle_outline_rounded,
-                          label: 'DSE Claim',
-                          value: Text(
-                            '${row.claim}',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.05,
-                              color: PreviewTheme.green,
-                            ),
-                          ),
-                          soft: PreviewTheme.greenSoft,
-                          accent: PreviewTheme.green,
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _pill({
-    required IconData icon,
-    required String label,
-    required Color fg,
-    required Color bg,
-  }) {
+class _QtyPanel extends StatelessWidget {
+  const _QtyPanel({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.soft,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color soft;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
+        color: soft,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 12, color: fg),
-          const SizedBox(width: 4),
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
           Text(
-            label,
+            value,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: fg,
+              letterSpacing: -0.5,
+              height: 1,
+              color: PreviewTheme.text,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _metricTile({
-    required IconData icon,
-    required String label,
-    required Widget value,
-    required Color soft,
-    required Color accent,
-  }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 10),
-        decoration: BoxDecoration(
-          color: soft,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withValues(alpha: 0.14)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 16, color: accent),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: PreviewTheme.textSecondary,
-              ),
+class _FlowMetric extends StatelessWidget {
+  const _FlowMetric({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: PreviewTheme.textMuted,
             ),
-            const SizedBox(height: 4),
+          ),
+          const SizedBox(height: 5),
+          Text(
             value,
-          ],
-        ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.35,
+              height: 1,
+              color: valueColor ?? PreviewTheme.text,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _FlowDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 28,
+      color: PreviewTheme.border,
     );
   }
 }
