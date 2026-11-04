@@ -892,16 +892,56 @@ class _LedgerCard extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        orderNo,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 12.5,
-                                          fontWeight: FontWeight.w800,
-                                          color: PreviewTheme.text,
-                                          height: 1.2,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              orderNo,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: PreviewTheme.text,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                          ),
+                                          if (orderNo != '—') ...[
+                                            const SizedBox(width: 4),
+                                            InkWell(
+                                              onTap: () async {
+                                                await Clipboard.setData(
+                                                  ClipboardData(text: orderNo),
+                                                );
+                                                if (!context.mounted) return;
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Order code copied',
+                                                    ),
+                                                    duration: Duration(
+                                                      seconds: 2,
+                                                    ),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(2),
+                                                child: Icon(
+                                                  Icons.content_copy_rounded,
+                                                  size: 14,
+                                                  color: PreviewTheme.textMuted,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       Text(
                                         customer,

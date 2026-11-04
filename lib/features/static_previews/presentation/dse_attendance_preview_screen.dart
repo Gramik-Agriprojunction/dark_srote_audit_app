@@ -127,25 +127,27 @@ class _DseAttendancePreviewScreenState
   Map<String, int> get _statusCounts {
     var present = 0;
     var half = 0;
-    var absent = 0;
-    var other = 0;
-    for (final raw in _days) {
-      final label = DseAttendanceDetailDay.fromDse(raw).badge.$1.toLowerCase();
-      if (label.contains('present')) {
-        present++;
-      } else if (label.contains('half')) {
-        half++;
-      } else if (label.contains('absent')) {
-        absent++;
-      } else {
-        other++;
+    var holiday = 0;
+    var wop = 0;
+    for (final day in _days) {
+      switch (day.status) {
+        case DseAttendanceStatus.present:
+          present++;
+        case DseAttendanceStatus.halfDay:
+          half++;
+        case DseAttendanceStatus.holiday:
+          holiday++;
+        case DseAttendanceStatus.wop:
+          wop++;
+        case DseAttendanceStatus.absent:
+          break;
       }
     }
     return {
       'present': present,
       'half': half,
-      'absent': absent,
-      'other': other,
+      'holiday': holiday,
+      'wop': wop,
     };
   }
 
@@ -203,40 +205,25 @@ class _DseAttendancePreviewScreenState
                       accent: PreviewTheme.textMuted,
                     )
                   else ...[
-                    _MonthPulse(
-                      monthLabel: _monthLabel,
+                    _StatusSummaryGrid(
                       present: counts['present']!,
                       half: counts['half']!,
-                      absent: counts['absent']!,
-                      other: counts['other']!,
-                      total: _days.length,
+                      holiday: counts['holiday']!,
+                      wop: counts['wop']!,
                     ),
                     const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Text(
-                          'Daily log',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.3,
-                            color: PreviewTheme.text,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '${_days.length} days',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: PreviewTheme.textMuted,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Daily Attendance',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: PreviewTheme.text,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     for (var i = 0; i < _days.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 10),
+                      if (i > 0) const SizedBox(height: 12),
                       _FadeIn(
                         delayMs: (40 * i).clamp(0, 280),
                         child: _DayCard(
@@ -302,181 +289,154 @@ class _FadeInState extends State<_FadeIn> with SingleTickerProviderStateMixin {
   }
 }
 
-class _MonthPulse extends StatelessWidget {
-  const _MonthPulse({
-    required this.monthLabel,
+class _StatusSummaryGrid extends StatelessWidget {
+  const _StatusSummaryGrid({
     required this.present,
     required this.half,
-    required this.absent,
-    required this.other,
-    required this.total,
+    required this.holiday,
+    required this.wop,
   });
 
-  final String monthLabel;
   final int present;
   final int half;
-  final int absent;
-  final int other;
-  final int total;
+  final int holiday;
+  final int wop;
+
+  Color get _wopFg =>
+      AppColors.isDark ? const Color(0xFFB794F6) : const Color(0xFF7C3AED);
+  Color get _wopBg =>
+      AppColors.isDark ? const Color(0xFF2E2145) : const Color(0xFFF3E8FF);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: AppColors.isDark
-              ? [
-                  Color.lerp(PreviewTheme.surface, PreviewTheme.orange, 0.12)!,
-                  PreviewTheme.surface,
-                ]
-              : [
-                  Color.lerp(Colors.white, PreviewTheme.orange, 0.08)!,
-                  PreviewTheme.surface,
-                ],
-        ),
-        border: Border.all(color: PreviewTheme.border),
-        boxShadow: PreviewTheme.cardShadow,
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: PreviewTheme.orangeSoft,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: PreviewTheme.orange.withValues(alpha: 0.22),
-                  ),
-                ),
-                child: Icon(
-                  Icons.insights_rounded,
-                  color: PreviewTheme.orange,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      monthLabel,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                        color: PreviewTheme.text,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$total logged days this month',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: PreviewTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _PulseStat(
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryTile(
+                icon: Icons.check_circle_rounded,
                 label: 'Present',
                 value: '$present',
-                color: PreviewTheme.green,
-                soft: PreviewTheme.greenSoft,
-              ),
-              const SizedBox(width: 8),
-              _PulseStat(
-                label: 'Half',
-                value: '$half',
-                color: PreviewTheme.orange,
-                soft: PreviewTheme.orangeSoft,
-              ),
-              const SizedBox(width: 8),
-              _PulseStat(
-                label: 'Absent',
-                value: '$absent',
-                color: PreviewTheme.red,
-                soft: PreviewTheme.redSoft,
-              ),
-              if (other > 0) ...[
-                const SizedBox(width: 8),
-                _PulseStat(
-                  label: 'Other',
-                  value: '$other',
-                  color: PreviewTheme.blue,
-                  soft: PreviewTheme.blueSoft,
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulseStat extends StatelessWidget {
-  const _PulseStat({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.soft,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-  final Color soft;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: soft,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.14)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: color.withValues(alpha: 0.9),
+                fg: PreviewTheme.green,
+                bg: PreviewTheme.greenSoft,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                height: 1,
-                letterSpacing: -0.5,
-                color: color,
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SummaryTile(
+                icon: Icons.timelapse_rounded,
+                label: 'Half Day Absent',
+                value: '$half',
+                fg: PreviewTheme.orange,
+                bg: PreviewTheme.orangeSoft,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _SummaryTile(
+                icon: Icons.beach_access_rounded,
+                label: 'Holiday',
+                value: '$holiday',
+                fg: PreviewTheme.blue,
+                bg: PreviewTheme.blueSoft,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SummaryTile(
+                icon: Icons.work_outline_rounded,
+                label: 'WOP',
+                value: '$wop',
+                fg: _wopFg,
+                bg: _wopBg,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.fg,
+    required this.bg,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color fg;
+  final Color bg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: PreviewTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: fg.withValues(alpha: 0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: fg.withValues(alpha: AppColors.isDark ? 0.14 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          ...PreviewTheme.cardShadow,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: fg.withValues(alpha: 0.16)),
+            ),
+            child: Icon(icon, size: 18, color: fg),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: PreviewTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    height: 1.05,
+                    letterSpacing: -0.5,
+                    color: fg,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -544,17 +504,29 @@ class _DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final badge = day.badge;
-    final showTimes =
-        day.first != null && day.last != null && day.hours != null;
     final accent = badge.$2;
-    final dateParts = _splitTitle(day.title);
 
     return Container(
       decoration: BoxDecoration(
-        color: PreviewTheme.surface,
         borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            PreviewTheme.surface,
+            Color.lerp(PreviewTheme.surface, badge.$3, 0.55) ??
+                PreviewTheme.surface,
+          ],
+        ),
         border: Border.all(color: PreviewTheme.border),
-        boxShadow: PreviewTheme.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: AppColors.isDark ? 0.16 : 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          ...PreviewTheme.cardShadow,
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
@@ -562,76 +534,37 @@ class _DayCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 68,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      accent.withValues(alpha: AppColors.isDark ? 0.28 : 0.16),
-                      accent.withValues(alpha: AppColors.isDark ? 0.10 : 0.06),
-                    ],
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      dateParts.$1,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      dateParts.$2,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        height: 1,
-                        letterSpacing: -0.6,
-                        color: PreviewTheme.text,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      dateParts.$3,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: PreviewTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(width: 1, color: PreviewTheme.border),
+              Container(width: 4, color: accent),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              day.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
-                                color: PreviewTheme.text,
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: badge.$3,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.14),
+                                ),
+                              ),
+                              child: Text(
+                                day.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.2,
+                                  color: accent,
+                                ),
                               ),
                             ),
                           ),
@@ -651,7 +584,7 @@ class _DayCard extends StatelessWidget {
                             child: Text(
                               badge.$1,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w800,
                                 color: badge.$2,
                               ),
@@ -659,95 +592,42 @@ class _DayCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      if (showTimes)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 9,
-                          ),
-                          decoration: BoxDecoration(
-                            color: PreviewTheme.field,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: PreviewTheme.border),
-                          ),
-                          child: Row(
-                            children: [
-                              _TimeBit(
-                                icon: Icons.login_rounded,
-                                value: day.first!,
-                              ),
-                              _TimeDivider(),
-                              _TimeBit(
-                                icon: Icons.logout_rounded,
-                                value: day.last!,
-                              ),
-                              _TimeDivider(),
-                              _TimeBit(
-                                icon: Icons.timer_outlined,
-                                value: day.hours!,
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: badge.$3,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: accent.withValues(alpha: 0.14),
-                            ),
-                          ),
-                          child: Text(
-                            day.note ?? '',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: badge.$2,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
+                      const SizedBox(height: 12),
+                      Row(
                         children: [
-                          _MetricPill(
-                            label: 'Audited',
+                          _MiniKpi(
+                            label: 'SKU Audited',
                             value: '${day.audited}',
-                            color: PreviewTheme.blue,
-                            soft: PreviewTheme.blueSoft,
+                            fg: PreviewTheme.blue,
+                            bg: PreviewTheme.blueSoft,
                           ),
-                          _MetricPill(
-                            label: 'Pending',
+                          const SizedBox(width: 6),
+                          _MiniKpi(
+                            label: 'SKU Pending',
                             value: '${day.pending}',
-                            color: PreviewTheme.orange,
-                            soft: PreviewTheme.orangeSoft,
+                            fg: PreviewTheme.orange,
+                            bg: PreviewTheme.orangeSoft,
                           ),
-                          _MetricPill(
+                          const SizedBox(width: 6),
+                          _MiniKpi(
                             label: 'Match',
                             value: '${day.matchPct}%',
-                            color: PreviewTheme.green,
-                            soft: PreviewTheme.greenSoft,
+                            fg: PreviewTheme.green,
+                            bg: PreviewTheme.greenSoft,
                           ),
-                          _MetricPill(
+                          const SizedBox(width: 6),
+                          _MiniKpi(
                             label: 'Short',
                             value: '${day.shortQty}',
-                            color: PreviewTheme.rose,
-                            soft: PreviewTheme.roseSoft,
+                            fg: PreviewTheme.rose,
+                            bg: PreviewTheme.roseSoft,
                           ),
-                          _MetricPill(
+                          const SizedBox(width: 6),
+                          _MiniKpi(
                             label: 'Excess',
                             value: '${day.excess}',
-                            color: PreviewTheme.teal,
-                            soft: PreviewTheme.tealSoft,
+                            fg: PreviewTheme.teal,
+                            bg: PreviewTheme.tealSoft,
                           ),
                         ],
                       ),
@@ -761,114 +641,68 @@ class _DayCard extends StatelessWidget {
       ),
     );
   }
-
-  /// "Sunday, 1 Nov 2026" → (Sun, 1, Nov)
-  (String, String, String) _splitTitle(String title) {
-    try {
-      final cleaned = title.replaceAll(',', '');
-      final parts = cleaned.split(RegExp(r'\s+'));
-      if (parts.length >= 3) {
-        final weekday = parts[0].length >= 3
-            ? parts[0].substring(0, 3).toUpperCase()
-            : parts[0].toUpperCase();
-        final dayNum = parts[1];
-        final month = parts[2].length >= 3
-            ? parts[2].substring(0, 3)
-            : parts[2];
-        return (weekday, dayNum, month);
-      }
-    } catch (_) {}
-    return ('DAY', '—', '');
-  }
 }
 
-class _TimeBit extends StatelessWidget {
-  const _TimeBit({required this.icon, required this.value});
-
-  final IconData icon;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 13, color: PreviewTheme.textMuted),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: PreviewTheme.text,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TimeDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 16,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      color: PreviewTheme.border,
-    );
-  }
-}
-
-class _MetricPill extends StatelessWidget {
-  const _MetricPill({
+class _MiniKpi extends StatelessWidget {
+  const _MiniKpi({
     required this.label,
     required this.value,
-    required this.color,
-    required this.soft,
+    required this.fg,
+    required this.bg,
   });
 
   final String label;
   final String value;
-  final Color color;
-  final Color soft;
+  final Color fg;
+  final Color bg;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-      decoration: BoxDecoration(
-        color: soft,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: color.withValues(alpha: 0.9),
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(4, 9, 4, 9),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: fg.withValues(alpha: 0.14)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 9,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: fg.withValues(alpha: 0.9),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w800,
-              color: color,
+            const SizedBox(height: 5),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: fg,
+                    height: 1.1,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
